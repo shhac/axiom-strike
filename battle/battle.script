@@ -11,6 +11,15 @@ local function send_gui(msg_id, params)
 	msg.post(GUI_URL, msg_id, params or {})
 end
 
+local function record_elo(self, correct, question_elo, time_taken)
+	local attempts = (self.save_data.elo_attempts[self.elo_skill_key] or 0) + 1
+	self.save_data.elo_attempts[self.elo_skill_key] = attempts
+	self.player_elo = elo_module.update(self.player_elo, question_elo, correct, time_taken, attempts)
+	self.save_data.player_elo[self.elo_skill_key] = self.player_elo
+	self.save_data.last_played = os.time()
+	progress_module.save(self.save_data)
+end
+
 local function sync_all_enemy_hp(self)
 	local enemies_data = {}
 	for i, e in ipairs(self.enemies) do
@@ -232,15 +241,8 @@ function on_message(self, message_id, message, sender)
 			local is_exact = (result == target.weakness)
 			target.hp = math.max(0, target.hp - dmg)
 
-			-- Update Elo: exact match = correct, close = correct, far = incorrect
-			local correct = math.abs(result - target.weakness) <= 3
-			local q_elo = target.question_elo or (self.player_elo - 50)
-			local attempts = (self.save_data.elo_attempts[self.elo_skill_key] or 0) + 1
-			self.save_data.elo_attempts[self.elo_skill_key] = attempts
-			self.player_elo = elo_module.update(self.player_elo, q_elo, correct, time_taken, attempts)
-			self.save_data.player_elo[self.elo_skill_key] = self.player_elo
-			self.save_data.last_played = os.time()
-			progress_module.save(self.save_data)
+			local correct = math.abs(result - target.weakness) <= CONSTANTS.ELO_ATTACK_THRESHOLD
+			record_elo(self, correct, target.question_elo or (self.player_elo - 50), time_taken)
 
 			send_gui("disable_input")
 			sync_all_enemy_hp(self)
@@ -252,16 +254,10 @@ function on_message(self, message_id, message, sender)
 
 		elseif self.phase == CONSTANTS.PHASE_PLAYER_DEFEND then
 			local dmg_taken, label = damage_module.calculate_block(result, self.current_attack_number, self.current_attacker_power)
-			local correct = (dmg_taken == 0) or math.abs(result - self.current_attack_number) <= 2
+			local correct = (dmg_taken == 0) or math.abs(result - self.current_attack_number) <= CONSTANTS.ELO_DEFEND_THRESHOLD
 			self.hero_hp = math.max(0, self.hero_hp - dmg_taken)
 
-			-- Update Elo for defense
-			local q_elo = self.player_elo - 30
-			local attempts = (self.save_data.elo_attempts[self.elo_skill_key] or 0) + 1
-			self.save_data.elo_attempts[self.elo_skill_key] = attempts
-			self.player_elo = elo_module.update(self.player_elo, q_elo, correct, time_taken, attempts)
-			self.save_data.player_elo[self.elo_skill_key] = self.player_elo
-			progress_module.save(self.save_data)
+			record_elo(self, correct, self.player_elo - 30, time_taken)
 
 			send_gui("disable_input")
 			send_gui("update_hero_hp", {hp = self.hero_hp, max_hp = self.hero_max_hp})

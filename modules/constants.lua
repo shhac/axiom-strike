@@ -35,6 +35,10 @@ M.PHASE_WAVE_COMPLETE = "wave_complete"
 M.PHASE_BATTLE_WON = "battle_won"
 M.PHASE_BATTLE_LOST = "battle_lost"
 
+-- Elo correctness thresholds (distance from target to count as "correct" for Elo)
+M.ELO_ATTACK_THRESHOLD = 3
+M.ELO_DEFEND_THRESHOLD = 2
+
 -- Timing
 M.ANIMATION_DURATION = 0.8
 M.BETWEEN_WAVE_DELAY = 1.5
