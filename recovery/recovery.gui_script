@@ -12,6 +12,13 @@ local hero_max_hp = 100
 local streak_count = 0
 local healed_amount = 0
 
+local function pop(node)
+	gui.cancel_animation(node, gui.PROP_SCALE)
+	local s = gui.get_scale(node)
+	gui.set_scale(node, vmath.vector3(s.x * 1.15, s.y * 1.15, 1))
+	gui.animate(node, gui.PROP_SCALE, s, gui.EASING_OUTBACK, 0.2)
+end
+
 local function destroy_answer_nodes()
 	for _, n in ipairs(answer_nodes) do
 		gui.delete_node(n.box)
@@ -23,33 +30,37 @@ end
 local function show_question()
 	phase = "question"
 
-	-- Hide passage and reading UI
 	gui.set_alpha(gui.get_node("passage_bg"), 0)
 	gui.set_text(gui.get_node("passage_text"), "")
 	gui.set_text(gui.get_node("timer_text"), "")
-	gui.set_size(gui.get_node("timer_bar_fill"), vmath.vector3(160, 4, 0))
+	gui.set_text(gui.get_node("subject_tag"), "")
+	gui.set_size(gui.get_node("timer_bar_fill"), vmath.vector3(200, 6, 0))
 
-	-- Show question prominently
 	gui.set_text(gui.get_node("question_text"), current_passage.question)
 	gui.set_alpha(gui.get_node("question_text"), 1)
 	gui.set_text(gui.get_node("hint_text"), "Choose the best answer:")
 
-	-- Build answer buttons — spaced from top
 	destroy_answer_nodes()
 	current_answers = passages.build_answers(current_passage)
 
 	for i, answer in ipairs(current_answers) do
 		local x = 640
-		local y = 480 - i * 65
-		local box = gui.new_box_node(vmath.vector3(x, y, 0), vmath.vector3(750, 50, 0))
-		gui.set_color(box, vmath.vector4(0.12, 0.14, 0.18, 1))
+		local y = 500 - i * 65
+		local box = gui.new_box_node(vmath.vector3(x, y, 0), vmath.vector3(750, 52, 0))
+		gui.set_color(box, vmath.vector4(0.14, 0.17, 0.24, 1))
 
 		local label = string.char(64 + i) .. ".  " .. answer.text
-		local txt = gui.new_text_node(vmath.vector3(x - 350, y, 0), label)
+		local txt = gui.new_text_node(vmath.vector3(x - 340, y, 0), label)
 		gui.set_font(txt, "system_font")
 		gui.set_pivot(txt, gui.PIVOT_W)
-		gui.set_scale(txt, vmath.vector3(0.85, 0.85, 1))
-		gui.set_color(txt, vmath.vector4(0.85, 0.85, 0.95, 1))
+		gui.set_scale(txt, vmath.vector3(0.9, 0.9, 1))
+		gui.set_color(txt, vmath.vector4(0.85, 0.85, 0.92, 1))
+
+		-- Staggered pop-in
+		gui.set_scale(box, vmath.vector3(0.8, 0, 1))
+		gui.animate(box, gui.PROP_SCALE, vmath.vector3(1, 1, 1), gui.EASING_OUTBACK, 0.3, i * 0.08)
+		gui.set_alpha(txt, 0)
+		gui.animate(txt, "color.w", 1, gui.EASING_OUTQUAD, 0.2, i * 0.08 + 0.1)
 
 		answer_nodes[i] = {box = box, text = txt, quality = answer.quality}
 	end
@@ -67,29 +78,37 @@ local function show_result(answer_quality)
 		streak_count = 0
 	end
 
-	-- Highlight correct and chosen answers
 	for _, n in ipairs(answer_nodes) do
 		if n.quality == "correct" then
-			gui.set_color(n.box, vmath.vector4(0.08, 0.35, 0.15, 1))
-			gui.set_color(n.text, vmath.vector4(0.3, 1.0, 0.5, 1))
+			gui.set_color(n.box, vmath.vector4(0.1, 0.4, 0.18, 1))
+			gui.set_color(n.text, vmath.vector4(0.35, 1.0, 0.5, 1))
+			pop(n.box)
 		elseif n.quality == answer_quality and answer_quality ~= "correct" then
-			gui.set_color(n.box, vmath.vector4(0.35, 0.08, 0.08, 1))
-			gui.set_color(n.text, vmath.vector4(1.0, 0.5, 0.5, 1))
+			gui.set_color(n.box, vmath.vector4(0.4, 0.1, 0.1, 1))
+			gui.set_color(n.text, vmath.vector4(1.0, 0.5, 0.45, 1))
 		else
-			gui.set_color(n.box, vmath.vector4(0.08, 0.08, 0.1, 0.5))
-			gui.set_color(n.text, vmath.vector4(0.4, 0.4, 0.5, 0.5))
+			gui.set_color(n.box, vmath.vector4(0.1, 0.1, 0.13, 0.4))
+			gui.set_color(n.text, vmath.vector4(0.35, 0.35, 0.4, 0.4))
 		end
 	end
 
-	-- Show feedback above the answers
-	gui.set_text(gui.get_node("feedback_text"), feedback .. "  +" .. healed .. " HP")
-	gui.set_alpha(gui.get_node("feedback_text"), 1.0)
-	if answer_quality == "correct" then
-		gui.set_color(gui.get_node("feedback_text"), vmath.vector4(0.3, 1.0, 0.5, 1))
-	elseif answer_quality == "almost_right" then
-		gui.set_color(gui.get_node("feedback_text"), vmath.vector4(1.0, 0.87, 0.3, 1))
+	-- Better messaging when at full HP
+	local feedback_msg
+	if max_recovery <= 0 then
+		feedback_msg = "Already at full health!"
 	else
-		gui.set_color(gui.get_node("feedback_text"), vmath.vector4(0.8, 0.5, 0.5, 1))
+		feedback_msg = feedback .. "  +" .. healed .. " HP"
+	end
+
+	gui.set_text(gui.get_node("feedback_text"), feedback_msg)
+	gui.set_alpha(gui.get_node("feedback_text"), 1.0)
+
+	if answer_quality == "correct" then
+		gui.set_color(gui.get_node("feedback_text"), vmath.vector4(0.35, 1.0, 0.5, 1))
+	elseif answer_quality == "almost_right" then
+		gui.set_color(gui.get_node("feedback_text"), vmath.vector4(1.0, 0.85, 0.3, 1))
+	else
+		gui.set_color(gui.get_node("feedback_text"), vmath.vector4(0.85, 0.5, 0.45, 1))
 	end
 
 	gui.set_text(gui.get_node("hint_text"), "Tap anywhere to continue")
@@ -110,11 +129,12 @@ function on_message(self, message_id, message, sender)
 	if message_id == hash("setup") then
 		hero_hp = message.hero_hp or 50
 		hero_max_hp = message.hero_max_hp or 100
-		gui.set_text(gui.get_node("hp_label"), "HP: " .. hero_hp .. "/" .. hero_max_hp)
+		gui.set_text(gui.get_node("hp_label"), "HP: " .. hero_hp)
 
 		current_passage = passages.get_random(1, 5)
 		gui.set_alpha(gui.get_node("passage_bg"), 1)
 		gui.set_text(gui.get_node("passage_text"), current_passage.text)
+		gui.set_text(gui.get_node("subject_tag"), (current_passage.subject or ""):upper())
 		gui.set_text(gui.get_node("question_text"), "")
 		gui.set_text(gui.get_node("feedback_text"), "")
 		gui.set_alpha(gui.get_node("feedback_text"), 0)
@@ -139,7 +159,7 @@ function update(self, dt)
 		gui.set_text(gui.get_node("timer_text"), string.format("%d:%02d", mins, secs))
 
 		local progress = 1 - (timer_remaining / READING_TIME)
-		gui.set_size(gui.get_node("timer_bar_fill"), vmath.vector3(160 * progress, 4, 0))
+		gui.set_size(gui.get_node("timer_bar_fill"), vmath.vector3(200 * progress, 6, 0))
 	end
 end
 
@@ -151,6 +171,7 @@ function on_input(self, action_id, action)
 	if phase == "question" then
 		for _, n in ipairs(answer_nodes) do
 			if gui.pick_node(n.box, action.x, action.y) then
+				pop(n.box)
 				show_result(n.quality)
 				return true
 			end

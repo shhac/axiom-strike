@@ -93,6 +93,16 @@ local function build_map()
 				gui.set_color(stars_node, vmath.vector4(1, 0.8, 0.267, 1))
 			end
 
+			-- Pop-in animation
+			gui.set_scale(circle, vmath.vector3(0, 0, 1))
+			gui.animate(circle, gui.PROP_SCALE, vmath.vector3(1, 1, 1), gui.EASING_OUTBACK, 0.3, #node_buttons * 0.04)
+
+			-- Pulse available nodes to attract attention
+			if unlocked and not done then
+				gui.animate(circle, gui.PROP_SCALE, vmath.vector3(1.12, 1.12, 1), gui.EASING_INOUTSINE,
+					0.8, 0.5, nil, gui.PLAYBACK_LOOP_PINGPONG)
+			end
+
 			node_buttons[#node_buttons + 1] = {
 				circle = circle,
 				text = txt,
@@ -104,6 +114,12 @@ local function build_map()
 			}
 		end
 	end
+end
+
+local function pop(node)
+	local s = gui.get_scale(node)
+	gui.set_scale(node, vmath.vector3(s.x * 1.2, s.y * 1.2, 1))
+	gui.animate(node, gui.PROP_SCALE, s, gui.EASING_OUTBACK, 0.2)
 end
 
 function init(self)
@@ -119,6 +135,7 @@ function on_input(self, action_id, action)
 
 	-- Back button
 	if gui.pick_node(gui.get_node("btn_back"), action.x, action.y) then
+		pop(gui.get_node("btn_back"))
 		msg.post("main:/controller#script", "back_to_menu")
 		return true
 	end
@@ -126,9 +143,10 @@ function on_input(self, action_id, action)
 	-- Node taps
 	for _, nb in ipairs(node_buttons) do
 		if nb.unlocked and gui.pick_node(nb.circle, action.x, action.y) then
+			pop(nb.circle)
 			local node, region = map_data.find_node(nb.node_id)
 			if node then
-				gui.set_text(gui.get_node("node_info"), node.name .. " (Difficulty " .. node.difficulty .. ")")
+				gui.set_text(gui.get_node("node_info"), node.name)
 				msg.post("main:/controller#script", "start_level", {
 					node_id = node.id,
 					difficulty = node.difficulty,
