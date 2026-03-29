@@ -1,25 +1,42 @@
+local current_screen = nil
+
+local function load_screen(self, proxy)
+	msg.post(proxy, "load")
+	self.loading_proxy = proxy
+end
+
+local function unload_screen(self, proxy)
+	msg.post(proxy, "disable")
+	msg.post(proxy, "final")
+	msg.post(proxy, "unload")
+end
+
 function init(self)
 	msg.post(".", "acquire_input_focus")
-	-- Load battle screen immediately for Phase 1
-	msg.post("#battle_proxy", "load")
+	self.loading_proxy = nil
+	load_screen(self, "#menu_proxy")
 end
 
 function on_message(self, message_id, message, sender)
 	if message_id == hash("proxy_loaded") then
 		msg.post(sender, "init")
 		msg.post(sender, "enable")
+		current_screen = self.loading_proxy
+		self.loading_proxy = nil
+
 	elseif message_id == hash("proxy_unloaded") then
 		-- Screen fully unloaded
-	elseif message_id == hash("show_battle") then
-		msg.post("#battle_proxy", "load")
+
+	elseif message_id == hash("play_pressed") then
+		if current_screen then
+			unload_screen(self, current_screen)
+		end
+		load_screen(self, "#battle_proxy")
+
 	elseif message_id == hash("battle_complete") then
-		-- In Phase 1, just reload battle for another round
-		msg.post(sender, "disable")
-		msg.post(sender, "final")
-		msg.post("#battle_proxy", "unload")
-		-- Reload after a moment
-		timer.delay(0.5, false, function()
-			msg.post("#battle_proxy", "load")
-		end)
+		if current_screen then
+			unload_screen(self, current_screen)
+		end
+		load_screen(self, "#menu_proxy")
 	end
 end
