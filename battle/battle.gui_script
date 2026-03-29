@@ -402,38 +402,12 @@ local function create_scene()
 	for _, n in ipairs(scene_nodes) do gui.delete_node(n) end
 	scene_nodes = {}
 
-	-- Hero body (bigger!)
-	local body = gui.new_box_node(vmath.vector3(HERO_X, HERO_Y, 0), vmath.vector3(75, 95, 0))
-	gui.set_color(body, C.hero_body)
-	scene_nodes[#scene_nodes + 1] = body
-
-	local head = gui.new_box_node(vmath.vector3(HERO_X, HERO_Y + 65, 0), vmath.vector3(55, 55, 0))
-	gui.set_color(head, C.hero_head)
-	scene_nodes[#scene_nodes + 1] = head
-
-	local hair = gui.new_box_node(vmath.vector3(HERO_X, HERO_Y + 90, 0), vmath.vector3(60, 20, 0))
-	gui.set_color(hair, C.hero_hair)
-	scene_nodes[#scene_nodes + 1] = hair
-
-	-- Eyes
-	local el = gui.new_box_node(vmath.vector3(HERO_X - 12, HERO_Y + 68, 0), vmath.vector3(12, 14, 0))
-	gui.set_color(el, C.eye_white)
-	scene_nodes[#scene_nodes + 1] = el
-	local pl = gui.new_box_node(vmath.vector3(HERO_X - 10, HERO_Y + 66, 0), vmath.vector3(7, 8, 0))
-	gui.set_color(pl, C.eye_dark)
-	scene_nodes[#scene_nodes + 1] = pl
-
-	local er = gui.new_box_node(vmath.vector3(HERO_X + 12, HERO_Y + 68, 0), vmath.vector3(12, 14, 0))
-	gui.set_color(er, C.eye_white)
-	scene_nodes[#scene_nodes + 1] = er
-	local pr = gui.new_box_node(vmath.vector3(HERO_X + 14, HERO_Y + 66, 0), vmath.vector3(7, 8, 0))
-	gui.set_color(pr, C.eye_dark)
-	scene_nodes[#scene_nodes + 1] = pr
-
-	-- Smile
-	local mouth = gui.new_box_node(vmath.vector3(HERO_X, HERO_Y + 52, 0), vmath.vector3(16, 4, 0))
-	gui.set_color(mouth, vmath.vector4(0.75, 0.4, 0.35, 1))
-	scene_nodes[#scene_nodes + 1] = mouth
+	-- Hero sprite from Kenney roguelike pack
+	local hero_size = 96
+	local hero = gui.new_box_node(vmath.vector3(HERO_X, HERO_Y + 20, 0), vmath.vector3(hero_size, hero_size, 0))
+	gui.set_texture(hero, "characters")
+	gui.play_flipbook(hero, "hero_knight")
+	scene_nodes[#scene_nodes + 1] = hero
 
 	-- Idle bob on body parts
 	for _, n in ipairs(scene_nodes) do
@@ -640,33 +614,27 @@ local function create_enemy_nodes(enemies, target_index)
 		local alive = e.alive
 		local is_target = (i == target_index and alive)
 
-		local body = gui.new_box_node(vmath.vector3(x, ENEMY_Y, 0), vmath.vector3(w, h, 0))
-		gui.set_color(body, alive and C.enemy_body or C.enemy_dead)
+		-- Enemy sprite from Kenney roguelike pack
+		local sprite_size = e.is_boss and 96 or 80
+		local body = gui.new_box_node(vmath.vector3(x, ENEMY_Y, 0), vmath.vector3(sprite_size, sprite_size, 0))
+		gui.set_texture(body, "characters")
 
-		local belly = gui.new_box_node(vmath.vector3(x, ENEMY_Y - 10, 0), vmath.vector3(w - 14, h * 0.4, 0))
-		gui.set_color(belly, alive and C.enemy_dark or C.enemy_dead)
+		-- Pick sprite based on skill type
+		local sprite_name = "enemy_slime_green"  -- default
+		local skill = e.skill or "+"
+		if skill == "+" then
+			sprite_name = e.is_boss and "enemy_goblin_green" or "enemy_slime_green"
+		elseif skill == "-" then
+			sprite_name = e.is_boss and "enemy_dragon_red" or "enemy_demon_red"
+		elseif skill == "x" then
+			sprite_name = e.is_boss and "enemy_mage_purple" or "enemy_ghost_purple"
+		elseif skill == "/" then
+			sprite_name = e.is_boss and "enemy_water_blue" or "enemy_ice_blue"
+		end
+		gui.play_flipbook(body, sprite_name)
 
-		local ew, eh = e.is_boss and 15 or 12, e.is_boss and 17 or 13
-		local el = gui.new_box_node(vmath.vector3(x - w * 0.2, ENEMY_Y + h * 0.15, 0), vmath.vector3(ew, eh, 0))
-		gui.set_color(el, alive and C.enemy_eye or C.enemy_dead)
-		local pl = gui.new_box_node(vmath.vector3(x - w * 0.2 + 1, ENEMY_Y + h * 0.12, 0), vmath.vector3(ew * 0.55, eh * 0.6, 0))
-		gui.set_color(pl, alive and C.enemy_pupil or C.enemy_dead)
-
-		local er = gui.new_box_node(vmath.vector3(x + w * 0.2, ENEMY_Y + h * 0.15, 0), vmath.vector3(ew, eh, 0))
-		gui.set_color(er, alive and C.enemy_eye or C.enemy_dead)
-		local pr = gui.new_box_node(vmath.vector3(x + w * 0.2 + 1, ENEMY_Y + h * 0.12, 0), vmath.vector3(ew * 0.55, eh * 0.6, 0))
-		gui.set_color(pr, alive and C.enemy_pupil or C.enemy_dead)
-
-		local mw = e.is_boss and 30 or 20
-		local mouth = gui.new_box_node(vmath.vector3(x, ENEMY_Y - h * 0.1, 0), vmath.vector3(mw, 5, 0))
-		gui.set_color(mouth, alive and C.enemy_mouth or C.enemy_dead)
-
-		local fang_l, fang_r
-		if e.is_boss and alive then
-			fang_l = gui.new_box_node(vmath.vector3(x - 9, ENEMY_Y - h * 0.18, 0), vmath.vector3(5, 9, 0))
-			gui.set_color(fang_l, C.white)
-			fang_r = gui.new_box_node(vmath.vector3(x + 9, ENEMY_Y - h * 0.18, 0), vmath.vector3(5, 9, 0))
-			gui.set_color(fang_r, C.white)
+		if not alive then
+			gui.set_color(body, vmath.vector4(0.3, 0.3, 0.35, 0.35))
 		end
 
 		-- Weakness badge on enemy body
@@ -687,18 +655,16 @@ local function create_enemy_nodes(enemies, target_index)
 			bob(arrow, ENEMY_Y + h/2 + 36, 5, 0.6)
 		end
 
-		-- Idle bob (each enemy slightly different timing)
+		-- Idle bob
 		if alive then
-			local all_parts = {body, belly, el, pl, er, pr, mouth, badge, wtext}
-			if fang_l then all_parts[#all_parts+1] = fang_l; all_parts[#all_parts+1] = fang_r end
+			local all_parts = {body, badge, wtext}
 			for _, n in ipairs(all_parts) do
 				bob(n, gui.get_position(n).y, 3, 1.5 + i * 0.3)
 			end
 		end
 
 		enemy_nodes[i] = {
-			body = body, belly = belly, el = el, pl = pl, er = er, pr = pr, mouth = mouth,
-			fang_l = fang_l, fang_r = fang_r, badge = badge, wtext = wtext, arrow = arrow,
+			body = body, badge = badge, wtext = wtext, arrow = arrow,
 			alive = alive,
 		}
 	end

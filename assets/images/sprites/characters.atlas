@@ -1,0 +1,44 @@
+
+images {
+  image: "/assets/images/sprites/characters/enemy_bat_green.png"
+}
+images {
+  image: "/assets/images/sprites/characters/enemy_demon_red.png"
+}
+images {
+  image: "/assets/images/sprites/characters/enemy_dragon_red.png"
+}
+images {
+  image: "/assets/images/sprites/characters/enemy_fire_red.png"
+}
+images {
+  image: "/assets/images/sprites/characters/enemy_ghost_purple.png"
+}
+images {
+  image: "/assets/images/sprites/characters/enemy_goblin_green.png"
+}
+images {
+  image: "/assets/images/sprites/characters/enemy_ice_blue.png"
+}
+images {
+  image: "/assets/images/sprites/characters/enemy_mage_purple.png"
+}
+images {
+  image: "/assets/images/sprites/characters/enemy_slime_green.png"
+}
+images {
+  image: "/assets/images/sprites/characters/enemy_water_blue.png"
+}
+images {
+  image: "/assets/images/sprites/characters/hero_knight.png"
+}
+images {
+  image: "/assets/images/sprites/characters/hero_mage.png"
+}
+images {
+  image: "/assets/images/sprites/characters/hero_rogue.png"
+}
+images {
+  image: "/assets/images/sprites/characters/hero_warrior.png"
+}
+margin: 1
