@@ -1,0 +1,22 @@
+images {
+  image: "/assets/images/particles/circle.png"
+}
+images {
+  image: "/assets/images/particles/fire.png"
+}
+images {
+  image: "/assets/images/particles/flame.png"
+}
+images {
+  image: "/assets/images/particles/flare.png"
+}
+images {
+  image: "/assets/images/particles/glow.png"
+}
+images {
+  image: "/assets/images/particles/spark.png"
+}
+images {
+  image: "/assets/images/particles/star.png"
+}
+margin: 1

@@ -12,7 +12,7 @@ local function create_floating_symbols()
 		local x = math.random(80, 1200)
 		local y = math.random(100, 650)
 		local txt = gui.new_text_node(vmath.vector3(x, y, 0), sym)
-		gui.set_font(txt, "system_font")
+		gui.set_font(txt, "game_font")
 		local s = 0.6 + math.random() * 1.0
 		gui.set_scale(txt, vmath.vector3(s, s, 1))
 		gui.set_color(txt, vmath.vector4(0.2, 0.15, 0.35, 0.2 + math.random() * 0.15))

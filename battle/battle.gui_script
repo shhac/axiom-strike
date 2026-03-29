@@ -180,7 +180,7 @@ local function show_equation_feedback(result, target, mode)
 	end
 
 	eq_feedback_node = gui.new_text_node(vmath.vector3(400, 185, 0), msg)
-	gui.set_font(eq_feedback_node, "system_font")
+	gui.set_font(eq_feedback_node, "game_font")
 	gui.set_scale(eq_feedback_node, vmath.vector3(0.75, 0.75, 1))
 	gui.set_color(eq_feedback_node, vmath.vector4(1, 0.7, 0.4, 1))
 	gui.set_alpha(eq_feedback_node, 0)
@@ -222,7 +222,7 @@ local function show_fill_blank_ui(display, options, blank_type)
 
 	-- Show the equation with blank prominently
 	fill_blank_display_node = gui.new_text_node(vmath.vector3(400, 148, 0), display)
-	gui.set_font(fill_blank_display_node, "system_font")
+	gui.set_font(fill_blank_display_node, "game_font")
 	gui.set_scale(fill_blank_display_node, vmath.vector3(1.5, 1.5, 1))
 	gui.set_color(fill_blank_display_node, vmath.vector4(1, 1, 0.95, 1))
 
@@ -239,7 +239,7 @@ local function show_fill_blank_ui(display, options, blank_type)
 		end
 
 		local txt = gui.new_text_node(vmath.vector3(x, 55, 0), tostring(opt))
-		gui.set_font(txt, "system_font")
+		gui.set_font(txt, "game_font")
 		gui.set_scale(txt, vmath.vector3(1.4, 1.4, 1))
 		gui.set_color(txt, vmath.vector4(1, 1, 1, 1))
 
@@ -313,7 +313,7 @@ local function create_hud()
 	gui.set_color(banner_bg, C.banner_atk)
 
 	banner_text = gui.new_text_node(vmath.vector3(640, 700, 0), "")
-	gui.set_font(banner_text, "system_font")
+	gui.set_font(banner_text, "game_font")
 	gui.set_color(banner_text, C.text_atk)
 
 	-- Target display
@@ -321,17 +321,17 @@ local function create_hud()
 	gui.set_color(target_bg, vmath.vector4(0.12, 0.2, 0.42, 0.9))
 
 	target_label = gui.new_text_node(vmath.vector3(480, 398, 0), "TARGET")
-	gui.set_font(target_label, "system_font")
+	gui.set_font(target_label, "game_font")
 	gui.set_scale(target_label, vmath.vector3(0.55, 0.55, 1))
 	gui.set_color(target_label, vmath.vector4(0.55, 0.7, 1, 1))
 
 	target_text = gui.new_text_node(vmath.vector3(480, 372, 0), "")
-	gui.set_font(target_text, "system_font")
+	gui.set_font(target_text, "game_font")
 	gui.set_scale(target_text, vmath.vector3(2.0, 2.0, 1))
 	gui.set_color(target_text, C.white)
 
 	wave_text = gui.new_text_node(vmath.vector3(1220, 700, 0), "")
-	gui.set_font(wave_text, "system_font")
+	gui.set_font(wave_text, "game_font")
 	gui.set_scale(wave_text, vmath.vector3(0.7, 0.7, 1))
 	gui.set_color(wave_text, vmath.vector4(0.5, 0.5, 0.65, 1))
 
@@ -345,7 +345,7 @@ local function create_hud()
 	gui.set_pivot(enemy_hp_fill, gui.PIVOT_E)
 
 	enemy_hp_text = gui.new_text_node(vmath.vector3(940, 700, 0), "")
-	gui.set_font(enemy_hp_text, "system_font")
+	gui.set_font(enemy_hp_text, "game_font")
 	gui.set_scale(enemy_hp_text, vmath.vector3(0.9, 0.9, 1))
 	gui.set_color(enemy_hp_text, C.white)
 end
@@ -400,7 +400,7 @@ local function create_tile_nodes()
 		local box = gui.new_box_node(vmath.vector3(x, NUM_Y, 0), vmath.vector3(TILE_W, TILE_H, 0))
 		gui.set_color(box, C.tile_num)
 		local txt = gui.new_text_node(vmath.vector3(x, NUM_Y, 0), tostring(number_tile_values[i]))
-		gui.set_font(txt, "system_font")
+		gui.set_font(txt, "game_font")
 		gui.set_scale(txt, vmath.vector3(1.3, 1.3, 1))
 		gui.set_color(txt, C.tile_text)
 		number_tile_nodes[i] = {box = box, text = txt}
@@ -416,7 +416,7 @@ local function create_tile_nodes()
 		local box = gui.new_box_node(vmath.vector3(x, OP_Y, 0), vmath.vector3(TILE_W, TILE_H, 0))
 		gui.set_color(box, C.tile_op)
 		local txt = gui.new_text_node(vmath.vector3(x, OP_Y, 0), operator_tile_values[i])
-		gui.set_font(txt, "system_font")
+		gui.set_font(txt, "game_font")
 		gui.set_scale(txt, vmath.vector3(1.4, 1.4, 1))
 		gui.set_color(txt, C.tile_text)
 		operator_tile_nodes[i] = {box = box, text = txt}
@@ -530,7 +530,7 @@ local function create_enemy_nodes(enemies, target_index)
 		local badge = gui.new_box_node(vmath.vector3(x, ENEMY_Y + h/2 + 16, 0), vmath.vector3(38, 22, 0))
 		gui.set_color(badge, is_target and C.badge_gold or (alive and C.badge_red or C.enemy_dead))
 		local wtext = gui.new_text_node(vmath.vector3(x, ENEMY_Y + h/2 + 16, 0), tostring(e.weakness))
-		gui.set_font(wtext, "system_font")
+		gui.set_font(wtext, "game_font")
 		gui.set_scale(wtext, vmath.vector3(0.85, 0.85, 1))
 		gui.set_color(wtext, alive and C.white or C.tile_used_t)
 
@@ -538,7 +538,7 @@ local function create_enemy_nodes(enemies, target_index)
 		local arrow
 		if is_target then
 			arrow = gui.new_text_node(vmath.vector3(x, ENEMY_Y + h/2 + 36, 0), "v")
-			gui.set_font(arrow, "system_font")
+			gui.set_font(arrow, "game_font")
 			gui.set_scale(arrow, vmath.vector3(1.1, 1.1, 1))
 			gui.set_color(arrow, C.gold)
 			bob(arrow, ENEMY_Y + h/2 + 36, 5, 0.6)
@@ -574,18 +574,18 @@ local function show_between_waves_ui(data)
 	gui.set_color(bw.overlay, vmath.vector4(0.06, 0.05, 0.12, 0.95))
 
 	bw.title = gui.new_text_node(vmath.vector3(640, 500, 0), "Wave " .. data.wave .. " incoming!")
-	gui.set_font(bw.title, "system_font")
+	gui.set_font(bw.title, "game_font")
 	gui.set_scale(bw.title, vmath.vector3(1.15, 1.15, 1))
 	gui.set_color(bw.title, C.gold)
 
 	bw.hp = gui.new_text_node(vmath.vector3(640, 450, 0), "HP: " .. data.hero_hp)
-	gui.set_font(bw.hp, "system_font")
+	gui.set_font(bw.hp, "game_font")
 	gui.set_color(bw.hp, C.hp_green)
 
 	bw.btn = gui.new_box_node(vmath.vector3(640, 380, 0), vmath.vector3(200, 50, 0))
 	gui.set_color(bw.btn, C.btn_green)
 	bw.btn_t = gui.new_text_node(vmath.vector3(640, 380, 0), "FIGHT!")
-	gui.set_font(bw.btn_t, "system_font")
+	gui.set_font(bw.btn_t, "game_font")
 	gui.set_scale(bw.btn_t, vmath.vector3(1.1, 1.1, 1))
 	gui.set_color(bw.btn_t, C.white)
 
@@ -593,7 +593,7 @@ local function show_between_waves_ui(data)
 		bw.rest = gui.new_box_node(vmath.vector3(640, 320, 0), vmath.vector3(200, 50, 0))
 		gui.set_color(bw.rest, vmath.vector4(0.12, 0.35, 0.2, 1))
 		bw.rest_t = gui.new_text_node(vmath.vector3(640, 320, 0), "REST & READ")
-		gui.set_font(bw.rest_t, "system_font")
+		gui.set_font(bw.rest_t, "game_font")
 		gui.set_color(bw.rest_t, vmath.vector4(0.35, 0.95, 0.55, 1))
 	end
 end
@@ -752,7 +752,7 @@ function on_message(self, message_id, message, sender)
 		if message.stars then
 			local star_str = string.rep("*", message.stars) .. string.rep("-", 3 - message.stars)
 			local star_node = gui.new_text_node(vmath.vector3(640, 400, 0), star_str)
-			gui.set_font(star_node, "system_font")
+			gui.set_font(star_node, "game_font")
 			gui.set_scale(star_node, vmath.vector3(2.5, 2.5, 1))
 			gui.set_color(star_node, vmath.vector4(1, 0.85, 0.2, 1))
 			-- Pop each star in staggered

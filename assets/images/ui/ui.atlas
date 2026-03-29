@@ -1,0 +1,4 @@
+images {
+  image: "/assets/images/ui/panel.png"
+}
+margin: 1

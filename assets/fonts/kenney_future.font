@@ -1,0 +1,8 @@
+font: "/assets/fonts/kenney_future.ttf"
+material: "/builtins/fonts/font-df.material"
+size: 28
+output_format: TYPE_DISTANCE_FIELD
+all_chars: true
+cache_width: 512
+cache_height: 512
+render_mode: MODE_SINGLE_LAYER

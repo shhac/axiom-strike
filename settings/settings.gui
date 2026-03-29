@@ -1,5 +1,9 @@
 script: "/settings/settings.gui_script"
 fonts {
+  name: "game_font"
+  font: "/assets/fonts/kenney_pixel.font"
+}
+fonts {
   name: "system_font"
   font: "/builtins/fonts/default.font"
 }
@@ -42,7 +46,7 @@ nodes {
   }
   type: TYPE_TEXT
   text: "SETTINGS"
-  font: "system_font"
+  font: "game_font"
   id: "title"
   pivot: PIVOT_CENTER
   outline {
@@ -92,7 +96,7 @@ nodes {
   }
   type: TYPE_TEXT
   text: "Sound"
-  font: "system_font"
+  font: "game_font"
   id: "label_sound"
   pivot: PIVOT_W
   outline {
@@ -178,7 +182,7 @@ nodes {
   }
   type: TYPE_TEXT
   text: "ON"
-  font: "system_font"
+  font: "game_font"
   id: "btn_sound_text"
   pivot: PIVOT_CENTER
   outline {
@@ -228,7 +232,7 @@ nodes {
   }
   type: TYPE_TEXT
   text: "Time Pressure"
-  font: "system_font"
+  font: "game_font"
   id: "label_time_pressure"
   pivot: PIVOT_W
   outline {
@@ -314,7 +318,7 @@ nodes {
   }
   type: TYPE_TEXT
   text: "OFF"
-  font: "system_font"
+  font: "game_font"
   id: "btn_time_pressure_text"
   pivot: PIVOT_CENTER
   outline {
@@ -364,7 +368,7 @@ nodes {
   }
   type: TYPE_TEXT
   text: "Tile Persistence"
-  font: "system_font"
+  font: "game_font"
   id: "label_tile_persist"
   pivot: PIVOT_W
   outline {
@@ -450,7 +454,7 @@ nodes {
   }
   type: TYPE_TEXT
   text: "OFF"
-  font: "system_font"
+  font: "game_font"
   id: "btn_tile_persist_text"
   pivot: PIVOT_CENTER
   outline {
@@ -500,7 +504,7 @@ nodes {
   }
   type: TYPE_TEXT
   text: "Reading Level"
-  font: "system_font"
+  font: "game_font"
   id: "label_reading"
   pivot: PIVOT_W
   outline {
@@ -586,7 +590,7 @@ nodes {
   }
   type: TYPE_TEXT
   text: "AUTO"
-  font: "system_font"
+  font: "game_font"
   id: "btn_reading_text"
   pivot: PIVOT_CENTER
   outline {
@@ -672,7 +676,7 @@ nodes {
   }
   type: TYPE_TEXT
   text: "BACK"
-  font: "system_font"
+  font: "game_font"
   id: "btn_back_text"
   pivot: PIVOT_CENTER
   outline {

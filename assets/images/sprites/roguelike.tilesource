@@ -1,0 +1,7 @@
+image: "/assets/images/sprites/roguelike_sheet.png"
+tile_width: 16
+tile_height: 16
+tile_margin: 1
+tile_spacing: 1
+collision: ""
+material_tag: "tile"

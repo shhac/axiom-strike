@@ -1,5 +1,9 @@
 script: "/map/map.gui_script"
 fonts {
+  name: "game_font"
+  font: "/assets/fonts/kenney_pixel.font"
+}
+fonts {
   name: "system_font"
   font: "/builtins/fonts/default.font"
 }
@@ -42,7 +46,7 @@ nodes {
   }
   type: TYPE_TEXT
   text: "AXIOM STRIKE"
-  font: "system_font"
+  font: "game_font"
   id: "title"
   pivot: PIVOT_CENTER
   outline {
@@ -92,7 +96,7 @@ nodes {
   }
   type: TYPE_TEXT
   text: ""
-  font: "system_font"
+  font: "game_font"
   id: "node_info"
   pivot: PIVOT_CENTER
   outline {
@@ -178,7 +182,7 @@ nodes {
   }
   type: TYPE_TEXT
   text: "MENU"
-  font: "system_font"
+  font: "game_font"
   id: "btn_back_text"
   pivot: PIVOT_CENTER
   outline {

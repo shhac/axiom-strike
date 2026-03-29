@@ -1,5 +1,9 @@
 script: "/menu/menu.gui_script"
 fonts {
+  name: "game_font"
+  font: "/assets/fonts/kenney_pixel.font"
+}
+fonts {
   name: "system_font"
   font: "/builtins/fonts/default.font"
 }
@@ -42,7 +46,7 @@ nodes {
   }
   type: TYPE_TEXT
   text: "AXIOM STRIKE"
-  font: "system_font"
+  font: "game_font"
   id: "title"
   pivot: PIVOT_CENTER
   outline {
@@ -92,7 +96,7 @@ nodes {
   }
   type: TYPE_TEXT
   text: "Math is your weapon"
-  font: "system_font"
+  font: "game_font"
   id: "subtitle"
   pivot: PIVOT_CENTER
   outline {
@@ -178,7 +182,7 @@ nodes {
   }
   type: TYPE_TEXT
   text: "PLAY"
-  font: "system_font"
+  font: "game_font"
   id: "btn_play_text"
   pivot: PIVOT_CENTER
   outline {
@@ -228,7 +232,7 @@ nodes {
   }
   type: TYPE_TEXT
   text: "v0.1.0"
-  font: "system_font"
+  font: "game_font"
   id: "version"
   pivot: PIVOT_CENTER
   outline {
@@ -314,7 +318,7 @@ nodes {
   }
   type: TYPE_TEXT
   text: "SETTINGS"
-  font: "system_font"
+  font: "game_font"
   id: "btn_settings_text"
   pivot: PIVOT_CENTER
   outline {

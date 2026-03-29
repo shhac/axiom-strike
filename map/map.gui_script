@@ -36,7 +36,7 @@ local function build_map()
 		local lx = first_node.x + SCROLL_OFFSET_X - 40
 		local ly = first_node.y + 50
 		local label = gui.new_text_node(vmath.vector3(lx, ly, 0), region.name)
-		gui.set_font(label, "system_font")
+		gui.set_font(label, "game_font")
 		gui.set_scale(label, vmath.vector3(0.7, 0.7, 1))
 		gui.set_color(label, vmath.vector4(region.color[1], region.color[2], region.color[3], 0.7))
 		gui.set_pivot(label, gui.PIVOT_W)
@@ -80,7 +80,7 @@ local function build_map()
 
 			local display = done and tostring(save_data.stars[node.id] or 1) or (unlocked and tostring(node.difficulty) or "?")
 			local txt = gui.new_text_node(vmath.vector3(nx, ny, 0), display)
-			gui.set_font(txt, "system_font")
+			gui.set_font(txt, "game_font")
 			gui.set_color(txt, unlocked and vmath.vector4(1, 1, 1, 1) or vmath.vector4(0.3, 0.3, 0.4, 1))
 
 			local stars_node = nil
@@ -88,7 +88,7 @@ local function build_map()
 				local star_count = save_data.stars[node.id] or 1
 				local star_str = string.rep("*", star_count)
 				stars_node = gui.new_text_node(vmath.vector3(nx, ny - NODE_RADIUS - 10, 0), star_str)
-				gui.set_font(stars_node, "system_font")
+				gui.set_font(stars_node, "game_font")
 				gui.set_scale(stars_node, vmath.vector3(0.6, 0.6, 1))
 				gui.set_color(stars_node, vmath.vector4(1, 0.8, 0.267, 1))
 			end

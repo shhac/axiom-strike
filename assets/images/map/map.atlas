@@ -1,0 +1,19 @@
+images {
+  image: "/assets/images/map/castle.png"
+}
+images {
+  image: "/assets/images/map/tower.png"
+}
+images {
+  image: "/assets/images/map/treePine.png"
+}
+images {
+  image: "/assets/images/map/campfire.png"
+}
+images {
+  image: "/assets/images/map/skull.png"
+}
+images {
+  image: "/assets/images/map/banner.png"
+}
+margin: 1
