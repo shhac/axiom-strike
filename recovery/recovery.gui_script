@@ -1,0 +1,156 @@
+local passages = require("data.passages")
+local recovery_module = require("modules.recovery")
+
+local READING_TIME = 45
+local current_passage = nil
+local current_answers = nil
+local timer_remaining = 0
+local phase = "reading" -- "reading", "question", "result"
+local answer_nodes = {}
+local hero_hp = 0
+local hero_max_hp = 100
+local streak_count = 0
+
+local function destroy_answer_nodes()
+	for _, n in ipairs(answer_nodes) do
+		gui.delete_node(n.box)
+		gui.delete_node(n.text)
+	end
+	answer_nodes = {}
+end
+
+local function show_question()
+	phase = "question"
+
+	-- Hide passage, show question
+	gui.set_text(gui.get_node("passage_text"), "")
+	gui.set_text(gui.get_node("question_text"), current_passage.question)
+	gui.set_text(gui.get_node("hint_text"), "Choose the best answer:")
+	gui.set_text(gui.get_node("timer_text"), "")
+
+	-- Build answer buttons
+	destroy_answer_nodes()
+	current_answers = passages.build_answers(current_passage)
+
+	for i, answer in ipairs(current_answers) do
+		local x = 640
+		local y = 540 - i * 70
+		local box = gui.new_box_node(vmath.vector3(x, y, 0), vmath.vector3(700, 48, 0))
+		gui.set_color(box, vmath.vector4(0.08, 0.1, 0.08, 1))
+
+		local label = string.char(64 + i) .. ".  " .. answer.text
+		local txt = gui.new_text_node(vmath.vector3(x - 320, y, 0), label)
+		gui.set_font(txt, "system_font")
+		gui.set_pivot(txt, gui.PIVOT_W)
+		gui.set_scale(txt, vmath.vector3(0.8, 0.8, 1))
+		gui.set_color(txt, vmath.vector4(0.8, 0.8, 0.9, 1))
+
+		answer_nodes[i] = {box = box, text = txt, quality = answer.quality}
+	end
+end
+
+local function show_result(answer_quality)
+	phase = "result"
+
+	-- Calculate recovery
+	local max_recovery = hero_max_hp - hero_hp
+	local healed, feedback = recovery_module.calculate(max_recovery, answer_quality, streak_count)
+
+	-- Update streak
+	if answer_quality == "correct" or answer_quality == "almost_right" then
+		streak_count = streak_count + 1
+	else
+		streak_count = 0
+	end
+
+	-- Highlight correct answer
+	for i, n in ipairs(answer_nodes) do
+		if n.quality == "correct" then
+			gui.set_color(n.box, vmath.vector4(0.1, 0.3, 0.15, 1))
+			gui.set_color(n.text, vmath.vector4(0.267, 0.8, 0.4, 1))
+		elseif n.quality == answer_quality and answer_quality ~= "correct" then
+			gui.set_color(n.box, vmath.vector4(0.25, 0.1, 0.1, 1))
+		end
+	end
+
+	-- Show feedback
+	gui.set_text(gui.get_node("feedback_text"), feedback .. " (+" .. healed .. " HP)")
+	gui.set_alpha(gui.get_node("feedback_text"), 1.0)
+	gui.set_text(gui.get_node("hint_text"), "Tap anywhere to continue")
+	gui.set_text(gui.get_node("question_text"), "")
+
+	-- Store healed amount for when player taps to continue
+	self_healed = healed
+end
+
+function init(self)
+	msg.post(".", "acquire_input_focus")
+
+	-- Will receive setup data via message
+	phase = "reading"
+	timer_remaining = READING_TIME
+	streak_count = 0
+	self_healed = 0
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("setup") then
+		hero_hp = message.hero_hp or 50
+		hero_max_hp = message.hero_max_hp or 100
+		gui.set_text(gui.get_node("hp_label"), "HP: " .. hero_hp .. "/" .. hero_max_hp)
+
+		-- Pick a passage
+		current_passage = passages.get_random(1, 5)
+		gui.set_text(gui.get_node("passage_text"), current_passage.text)
+		gui.set_text(gui.get_node("question_text"), "")
+		gui.set_text(gui.get_node("feedback_text"), "")
+		gui.set_alpha(gui.get_node("feedback_text"), 0)
+		gui.set_text(gui.get_node("hint_text"), "Read carefully... A question will appear when the timer ends.")
+
+		phase = "reading"
+		timer_remaining = READING_TIME
+	end
+end
+
+function update(self, dt)
+	if phase == "reading" then
+		timer_remaining = timer_remaining - dt
+		if timer_remaining <= 0 then
+			timer_remaining = 0
+			show_question()
+		end
+
+		-- Update timer display
+		local secs = math.ceil(timer_remaining)
+		local mins = math.floor(secs / 60)
+		secs = secs % 60
+		gui.set_text(gui.get_node("timer_text"), string.format("%d:%02d", mins, secs))
+
+		-- Timer bar (fills up as time passes)
+		local progress = 1 - (timer_remaining / READING_TIME)
+		gui.set_size(gui.get_node("timer_bar_fill"), vmath.vector3(160 * progress, 4, 0))
+	end
+end
+
+function on_input(self, action_id, action)
+	if action_id ~= hash("touch") or not action.pressed then
+		return false
+	end
+
+	if phase == "question" then
+		for i, n in ipairs(answer_nodes) do
+			if gui.pick_node(n.box, action.x, action.y) then
+				show_result(n.quality)
+				return true
+			end
+		end
+
+	elseif phase == "result" then
+		-- Tap to continue — send recovery result back
+		destroy_answer_nodes()
+		msg.post("main:/controller#script", "recovery_done", {healed = self_healed or 0})
+		return true
+	end
+
+	return false
+end

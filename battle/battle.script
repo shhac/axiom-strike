@@ -181,9 +181,9 @@ function on_message(self, message_id, message, sender)
 		self.difficulty = message.difficulty or 1
 		self.skill = message.skill or CONSTANTS.OP_ADD
 		self.waves = wave_data.generate_level(self.difficulty, self.skill)
-		self.current_wave = 1
-		self.hero_hp = self.hero_max_hp
-		self.recovery_available = true
+		self.current_wave = message.start_wave or 1
+		self.hero_hp = message.restored_hp or self.hero_max_hp
+		self.recovery_available = not message.restored_hp
 		send_gui("update_hero_hp", {hp = self.hero_hp, max_hp = self.hero_max_hp})
 		start_wave(self)
 
@@ -238,6 +238,9 @@ function on_message(self, message_id, message, sender)
 			msg.post("main:/controller#script", "show_recovery", {
 				hero_hp = self.hero_hp,
 				hero_max_hp = self.hero_max_hp,
+				wave = self.current_wave,
+				difficulty = self.difficulty,
+				skill = self.skill,
 			})
 		end
 

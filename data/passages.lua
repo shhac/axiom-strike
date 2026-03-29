@@ -1,0 +1,160 @@
+-- Placeholder reading passages for the recovery mechanic.
+-- In production, these would be sourced from the public domain corpus pipeline.
+-- Each entry has: text, question, correct, almost_right, reasonable, wrong (2 entries)
+
+local M = {}
+
+M.passages = {
+	{
+		text = "The Sun is a star at the centre of our solar system. It is made up of very hot gases, mostly hydrogen and helium. The Sun is so large that about 1.3 million Earths could fit inside it. Light from the Sun takes about 8 minutes to reach Earth.",
+		question = "How long does light from the Sun take to reach Earth?",
+		correct = "About 8 minutes",
+		almost_right = "About 8 seconds",
+		reasonable = "About 1 hour",
+		wrong = {"About 1 day", "It arrives instantly"},
+		subject = "Science",
+		grade = 3,
+	},
+	{
+		text = "Ants are insects that live in large groups called colonies. A colony can have thousands or even millions of ants. Each ant has a job to do. Some ants are workers who find food. Some are soldiers who protect the colony. The queen ant lays all the eggs.",
+		question = "What is the queen ant's job?",
+		correct = "Laying all the eggs",
+		almost_right = "Leading the workers",
+		reasonable = "Finding food",
+		wrong = {"Building the colony", "Protecting from enemies"},
+		subject = "Science",
+		grade = 2,
+	},
+	{
+		text = "The Great Wall of China is one of the most famous structures in the world. It was built over many centuries to protect China from invaders. The wall stretches for thousands of kilometres across mountains, deserts, and grasslands. It is so long that it would take about 18 months to walk its entire length.",
+		question = "Why was the Great Wall of China built?",
+		correct = "To protect China from invaders",
+		almost_right = "To mark the border of China",
+		reasonable = "As a road for trade",
+		wrong = {"For a sports competition", "To hold back flood water"},
+		subject = "History",
+		grade = 4,
+	},
+	{
+		text = "Water can exist in three forms: solid, liquid, and gas. When water is very cold, it freezes into ice. When ice is warmed up, it melts back into liquid water. If water gets very hot, it turns into steam, which is a gas. This process of changing between forms is called the water cycle.",
+		question = "What happens when ice is warmed up?",
+		correct = "It melts back into liquid water",
+		almost_right = "It turns into steam",
+		reasonable = "It gets harder",
+		wrong = {"It disappears", "It changes colour"},
+		subject = "Science",
+		grade = 2,
+	},
+	{
+		text = "Sharks have been swimming in the oceans for over 400 million years. That means sharks were around before the dinosaurs! There are more than 500 different species of shark. The smallest shark, the dwarf lanternshark, is only about 20 centimetres long. The largest, the whale shark, can grow up to 12 metres.",
+		question = "How long have sharks been in the oceans?",
+		correct = "Over 400 million years",
+		almost_right = "Over 400 thousand years",
+		reasonable = "Since the dinosaurs",
+		wrong = {"About 100 years", "Since the last ice age"},
+		subject = "Science",
+		grade = 3,
+	},
+	{
+		text = "The Amazon rainforest is the largest tropical rainforest in the world. It covers parts of nine countries in South America. The rainforest is home to more types of plants and animals than any other place on Earth. Scientists believe that about 10 per cent of all species on Earth live in the Amazon.",
+		question = "How many countries does the Amazon rainforest cover?",
+		correct = "Nine countries",
+		almost_right = "Eight countries",
+		reasonable = "All of South America",
+		wrong = {"Only Brazil", "Three countries"},
+		subject = "Geography",
+		grade = 4,
+	},
+	{
+		text = "A tortoise named Jonathan is believed to be the oldest living land animal. He was born around 1832 and lives on the island of Saint Helena in the South Atlantic Ocean. Jonathan has lived through two World Wars and has seen more than 30 governors of the island come and go.",
+		question = "Where does Jonathan the tortoise live?",
+		correct = "On the island of Saint Helena",
+		almost_right = "On an island in the Atlantic",
+		reasonable = "In a zoo in London",
+		wrong = {"In the Amazon rainforest", "In Australia"},
+		subject = "Science",
+		grade = 5,
+	},
+	{
+		text = "In ancient Egypt, cats were considered sacred animals. Egyptians believed that cats brought good luck to their owners. Killing a cat, even by accident, was a serious crime. When a family cat died, the family members would shave their eyebrows as a sign of mourning.",
+		question = "What would ancient Egyptians do when a family cat died?",
+		correct = "Shave their eyebrows",
+		almost_right = "Hold a funeral ceremony",
+		reasonable = "Get a new cat immediately",
+		wrong = {"Celebrate with a feast", "Paint their house"},
+		subject = "History",
+		grade = 4,
+	},
+	{
+		text = "Honey never spoils. Archaeologists have found pots of honey in ancient Egyptian tombs that are over 3,000 years old, and the honey was still perfectly good to eat. Honey lasts forever because it is very low in moisture and very acidic, which makes it impossible for bacteria to grow.",
+		question = "Why does honey never spoil?",
+		correct = "It is low in moisture and very acidic",
+		almost_right = "It is kept in sealed pots",
+		reasonable = "It contains special chemicals",
+		wrong = {"It is made by bees", "It is always refrigerated"},
+		subject = "Science",
+		grade = 5,
+	},
+	{
+		text = "An octopus has three hearts and blue blood. Two of its hearts pump blood to the gills, where the blood picks up oxygen. The third heart pumps blood to the rest of the body. When an octopus swims, the heart that delivers blood to the body actually stops beating, which is why octopuses prefer crawling to swimming.",
+		question = "How many hearts does an octopus have?",
+		correct = "Three hearts",
+		almost_right = "Two hearts",
+		reasonable = "Four hearts",
+		wrong = {"One heart", "No hearts"},
+		subject = "Science",
+		grade = 5,
+	},
+}
+
+--- Get a random passage, optionally filtered by grade range.
+--- @param min_grade number|nil
+--- @param max_grade number|nil
+--- @return table passage
+function M.get_random(min_grade, max_grade)
+	min_grade = min_grade or 1
+	max_grade = max_grade or 7
+
+	local candidates = {}
+	for _, p in ipairs(M.passages) do
+		if p.grade >= min_grade and p.grade <= max_grade then
+			candidates[#candidates + 1] = p
+		end
+	end
+
+	if #candidates == 0 then
+		candidates = M.passages
+	end
+
+	return candidates[math.random(1, #candidates)]
+end
+
+--- Build the 5 answer options from a passage, shuffled.
+--- Returns: {answers = {{text, quality}...}, correct_index}
+function M.build_answers(passage)
+	local answers = {
+		{text = passage.correct, quality = "correct"},
+		{text = passage.almost_right, quality = "almost_right"},
+		{text = passage.reasonable, quality = "reasonable"},
+		{text = passage.wrong[1], quality = "wrong"},
+		{text = passage.wrong[2], quality = "wrong"},
+	}
+
+	-- Shuffle
+	for i = #answers, 2, -1 do
+		local j = math.random(1, i)
+		answers[i], answers[j] = answers[j], answers[i]
+	end
+
+	local correct_index = 0
+	for i, a in ipairs(answers) do
+		if a.quality == "correct" then
+			correct_index = i
+			break
+		end
+	end
+
+	return answers, correct_index
+end
+
+return M
