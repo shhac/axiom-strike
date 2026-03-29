@@ -1,6 +1,7 @@
 local equation = require("modules.equation")
 local CONSTANTS = require("modules.constants")
 local util = require("modules.util")
+local sfx = require("modules.sfx")
 
 -- Dynamic nodes
 local number_tile_nodes = {}
@@ -811,7 +812,7 @@ function on_message(self, message_id, message, sender)
 		end
 
 	elseif message_id == hash("enemy_hit") then
-		-- Flash white and shake enemy on damage
+		sfx.play("attack_hit")
 		local idx = message.index
 		if enemy_nodes[idx] then
 			flash_white(enemy_nodes[idx].body, C.enemy_body)
@@ -820,7 +821,7 @@ function on_message(self, message_id, message, sender)
 		end
 
 	elseif message_id == hash("hero_hit") then
-		-- Flash red and shake hero on damage
+		sfx.play("attack_hit", 0.7)
 		for _, n in ipairs(scene_nodes) do
 			shake(n)
 		end
@@ -840,6 +841,11 @@ function on_message(self, message_id, message, sender)
 		show_fill_blank_ui(message.display, message.options, message.blank_type)
 
 	elseif message_id == hash("fill_blank_result") then
+		if message.correct then
+			sfx.play("correct_answer")
+		else
+			sfx.play("wrong_answer")
+		end
 		if message.correct then
 			-- Flash all options green briefly
 			for i = 1, 4 do
@@ -883,6 +889,7 @@ function on_message(self, message_id, message, sender)
 	elseif message_id == hash("show_result") then
 		battle_over = true; input_enabled = false
 		destroy_fill_blank()
+		sfx.play("enemy_defeat")
 
 		-- Create victory overlay dynamically so it renders ON TOP of all other dynamic nodes
 		local overlay = gui.new_box_node(vmath.vector3(640, 400, 0), vmath.vector3(500, 300, 0))
@@ -953,6 +960,7 @@ function on_input(self, action_id, action)
 		for i = 1, 4 do
 			local n = fill_blank_nodes[i]
 			if n and n.box and gui.pick_node(n.box, action.x, action.y) then
+				sfx.play("tile_tap")
 				pop(n.box)
 				msg.post(SCRIPT_URL, "fill_blank_answer", {answer = n.value})
 				return true
@@ -968,24 +976,27 @@ function on_input(self, action_id, action)
 	if gui.pick_node(gui.get_node("btn_strike"), action.x, action.y) then
 		local result, err = equation.evaluate(equation_tokens)
 		if result and not err then
+			sfx.play("equation_complete")
 			pop(gui.get_node("btn_strike"), 1.15, 0.2)
 			input_enabled = false
 			msg.post(SCRIPT_URL, "equation_submitted", {result = math.floor(result), tokens = equation_tokens})
 		end
 		return true
 	end
-	if gui.pick_node(gui.get_node("btn_undo"), action.x, action.y) then pop(gui.get_node("btn_undo")); undo_last(); return true end
-	if gui.pick_node(gui.get_node("btn_clear"), action.x, action.y) then pop(gui.get_node("btn_clear")); clear_equation(); return true end
+	if gui.pick_node(gui.get_node("btn_undo"), action.x, action.y) then sfx.play("undo"); pop(gui.get_node("btn_undo")); undo_last(); return true end
+	if gui.pick_node(gui.get_node("btn_clear"), action.x, action.y) then sfx.play("undo"); pop(gui.get_node("btn_clear")); clear_equation(); return true end
 
 	if expecting_number then
 		for i, nd in ipairs(number_tile_nodes) do
 			if not tile_used["num_" .. i] and gui.pick_node(nd.box, action.x, action.y) then
+				sfx.play("tile_tap")
 				tile_used["num_" .. i] = true; pop(nd.box, 1.2, 0.15); dim_tile(nd); equation_tokens[#equation_tokens + 1] = number_tile_values[i]; expecting_number = false; update_equation_display(); return true
 			end
 		end
 	else
 		for i, nd in ipairs(operator_tile_nodes) do
 			if not tile_used["op_" .. i] and gui.pick_node(nd.box, action.x, action.y) then
+				sfx.play("tile_tap")
 				tile_used["op_" .. i] = true; pop(nd.box, 1.2, 0.15); dim_tile(nd); equation_tokens[#equation_tokens + 1] = operator_tile_values[i]; expecting_number = true; update_equation_display(); return true
 			end
 		end

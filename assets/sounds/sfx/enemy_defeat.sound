@@ -1,0 +1,4 @@
+sound: "/assets/sounds/sfx/enemy_defeat.ogg"
+looping: 0
+group: "master"
+gain: 1.0
