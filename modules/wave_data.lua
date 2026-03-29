@@ -1,12 +1,14 @@
 local M = {}
 
 local CONSTANTS = require("modules.constants")
+local question_gen = require("modules.question_gen")
 
 --- Generate a level with 3 waves of enemies.
 --- @param difficulty number 1-5 difficulty tier
 --- @param skill string Operation type ("+", "-", "x", "/")
+--- @param player_elo number|nil Optional player Elo for adaptive generation
 --- @return table waves Array of wave tables, each containing enemy arrays
-function M.generate_level(difficulty, skill)
+function M.generate_level(difficulty, skill, player_elo)
 	difficulty = difficulty or 1
 	skill = skill or CONSTANTS.OP_ADD
 
@@ -20,15 +22,21 @@ function M.generate_level(difficulty, skill)
 
 		if is_boss_level and w == wave_count then
 			-- Boss wave
-			local boss = M._make_enemy(difficulty, skill, true)
-			enemies[1] = boss
-			-- Add minions for harder boss levels
+			if player_elo then
+				enemies[1] = question_gen.generate_enemy(player_elo, skill, true, 1)
+			else
+				enemies[1] = M._make_enemy(difficulty, skill, true)
+			end
 			if difficulty >= 4 then
-				enemies[2] = M._make_enemy(math.max(1, difficulty - 2), skill, false)
-				enemies[3] = M._make_enemy(math.max(1, difficulty - 2), skill, false)
+				if player_elo then
+					enemies[2] = question_gen.generate_enemy(player_elo, skill, false, 2)
+					enemies[3] = question_gen.generate_enemy(player_elo, skill, false, 3)
+				else
+					enemies[2] = M._make_enemy(math.max(1, difficulty - 2), skill, false)
+					enemies[3] = M._make_enemy(math.max(1, difficulty - 2), skill, false)
+				end
 			end
 		else
-			-- Normal wave: escalating enemy count
 			if w == 1 then
 				enemy_count = math.min(2, 1 + math.floor(difficulty / 2))
 			elseif w == 2 then
@@ -38,7 +46,11 @@ function M.generate_level(difficulty, skill)
 			end
 
 			for i = 1, enemy_count do
-				enemies[i] = M._make_enemy(difficulty, skill, false)
+				if player_elo then
+					enemies[i] = question_gen.generate_enemy(player_elo, skill, false, i)
+				else
+					enemies[i] = M._make_enemy(difficulty, skill, false)
+				end
 			end
 		end
 

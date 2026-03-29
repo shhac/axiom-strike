@@ -1,6 +1,8 @@
 local tiles_module = require("modules.tiles")
 local damage_module = require("modules.damage")
 local wave_data = require("modules.wave_data")
+local elo_module = require("modules.elo")
+local progress_module = require("modules.progress")
 local CONSTANTS = require("modules.constants")
 
 local GUI_URL = "#gui"
@@ -60,6 +62,7 @@ local function start_attack_phase(self)
 	send_gui("set_phase", {text = "ATTACK! Target weakness: " .. target.weakness})
 	sync_all_enemy_hp(self)
 	send_gui("enable_input")
+	self.turn_start_time = os.clock()
 end
 
 local function find_next_attacker(self)
@@ -84,6 +87,7 @@ local function start_enemy_attack(self, attacker_index)
 	send_gui("set_phase", {text = "DEFEND! Enemy #" .. attacker_index .. " attacks: " .. self.current_attack_number})
 	send_gui("highlight_attacker", {index = attacker_index})
 	send_gui("enable_input")
+	self.turn_start_time = os.clock()
 end
 
 local function on_animation_complete(self)
@@ -155,12 +159,17 @@ function init(self)
 	self.current_attack_number = 0
 	self.current_attacker_power = 0
 
-	-- Read difficulty from level data passed via message, or default
 	self.difficulty = 1
 	self.skill = CONSTANTS.OP_ADD
+	self.turn_start_time = 0
 
-	-- Generate waves
-	self.waves = wave_data.generate_level(self.difficulty, self.skill)
+	-- Load player Elo
+	self.save_data = progress_module.load()
+	self.player_elo = self.save_data.player_elo.addition or elo_module.DEFAULT_ELO
+	self.elo_skill_key = "addition"
+
+	-- Generate waves with Elo
+	self.waves = wave_data.generate_level(self.difficulty, self.skill, self.player_elo)
 
 	send_gui("update_hero_hp", {hp = self.hero_hp, max_hp = self.hero_max_hp})
 	start_wave(self)
@@ -180,10 +189,28 @@ function on_message(self, message_id, message, sender)
 	if message_id == hash("set_level") then
 		self.difficulty = message.difficulty or 1
 		self.skill = message.skill or CONSTANTS.OP_ADD
-		self.waves = wave_data.generate_level(self.difficulty, self.skill)
 		self.current_wave = message.start_wave or 1
 		self.hero_hp = message.restored_hp or self.hero_max_hp
 		self.recovery_available = not message.restored_hp
+
+		-- Map skill to Elo key
+		local skill_map = {["+"] = "addition", ["-"] = "subtraction", ["x"] = "multiplication", ["/"] = "division"}
+		self.elo_skill_key = skill_map[self.skill] or "addition"
+
+		-- Load Elo
+		self.save_data = progress_module.load()
+		self.player_elo = self.save_data.player_elo[self.elo_skill_key] or elo_module.DEFAULT_ELO
+
+		-- Apply session decay
+		if self.save_data.last_played and self.save_data.last_played > 0 then
+			local now = os.time()
+			local days = (now - self.save_data.last_played) / 86400
+			if days > 0.5 then
+				self.player_elo = elo_module.apply_session_decay(self.player_elo, days)
+			end
+		end
+
+		self.waves = wave_data.generate_level(self.difficulty, self.skill, self.player_elo)
 		send_gui("update_hero_hp", {hp = self.hero_hp, max_hp = self.hero_max_hp})
 		start_wave(self)
 
@@ -197,10 +224,23 @@ function on_message(self, message_id, message, sender)
 	elseif message_id == hash("equation_submitted") then
 		local result = message.result
 
+		local time_taken = os.clock() - (self.turn_start_time or 0)
+
 		if self.phase == CONSTANTS.PHASE_PLAYER_ATTACK then
 			local target = self.enemies[self.target_index]
 			local dmg, label = damage_module.calculate_attack(result, target.weakness)
+			local is_exact = (result == target.weakness)
 			target.hp = math.max(0, target.hp - dmg)
+
+			-- Update Elo: exact match = correct, close = correct, far = incorrect
+			local correct = math.abs(result - target.weakness) <= 3
+			local q_elo = target.question_elo or (self.player_elo - 50)
+			local attempts = (self.save_data.elo_attempts[self.elo_skill_key] or 0) + 1
+			self.save_data.elo_attempts[self.elo_skill_key] = attempts
+			self.player_elo = elo_module.update(self.player_elo, q_elo, correct, time_taken, attempts)
+			self.save_data.player_elo[self.elo_skill_key] = self.player_elo
+			self.save_data.last_played = os.time()
+			progress_module.save(self.save_data)
 
 			send_gui("disable_input")
 			sync_all_enemy_hp(self)
@@ -212,7 +252,16 @@ function on_message(self, message_id, message, sender)
 
 		elseif self.phase == CONSTANTS.PHASE_PLAYER_DEFEND then
 			local dmg_taken, label = damage_module.calculate_block(result, self.current_attack_number, self.current_attacker_power)
+			local correct = (dmg_taken == 0) or math.abs(result - self.current_attack_number) <= 2
 			self.hero_hp = math.max(0, self.hero_hp - dmg_taken)
+
+			-- Update Elo for defense
+			local q_elo = self.player_elo - 30
+			local attempts = (self.save_data.elo_attempts[self.elo_skill_key] or 0) + 1
+			self.save_data.elo_attempts[self.elo_skill_key] = attempts
+			self.player_elo = elo_module.update(self.player_elo, q_elo, correct, time_taken, attempts)
+			self.save_data.player_elo[self.elo_skill_key] = self.player_elo
+			progress_module.save(self.save_data)
 
 			send_gui("disable_input")
 			send_gui("update_hero_hp", {hp = self.hero_hp, max_hp = self.hero_max_hp})
