@@ -1,57 +1,142 @@
 local tiles_module = require("modules.tiles")
 local damage_module = require("modules.damage")
+local wave_data = require("modules.wave_data")
 local CONSTANTS = require("modules.constants")
 
 local GUI_URL = "#gui"
 
-local function setup_enemy(self)
-	self.enemy_weakness = math.random(5, 20)
-	self.enemy_hp = CONSTANTS.ENEMY_BASE_HP
-	self.enemy_max_hp = CONSTANTS.ENEMY_BASE_HP
-	self.enemy_attack_power = math.random(5, 12)
+local function send_gui(msg_id, params)
+	msg.post(GUI_URL, msg_id, params or {})
+end
 
-	msg.post(GUI_URL, "update_enemy_hp", {hp = self.enemy_hp, max_hp = self.enemy_max_hp})
-	msg.post(GUI_URL, "set_enemy_weakness", {weakness = self.enemy_weakness})
-	msg.post(GUI_URL, "update_hero_hp", {hp = self.hero_hp, max_hp = self.hero_max_hp})
+local function sync_all_enemy_hp(self)
+	local enemies_data = {}
+	for i, e in ipairs(self.enemies) do
+		enemies_data[i] = {hp = e.hp, max_hp = e.max_hp, weakness = e.weakness, is_boss = e.is_boss, alive = e.hp > 0}
+	end
+	send_gui("sync_enemies", {enemies = enemies_data, target = self.target_index})
+end
+
+local function count_alive(self)
+	local n = 0
+	for _, e in ipairs(self.enemies) do
+		if e.hp > 0 then n = n + 1 end
+	end
+	return n
+end
+
+local function next_alive_target(self)
+	-- If current target is dead, find next alive
+	if self.enemies[self.target_index] and self.enemies[self.target_index].hp > 0 then
+		return
+	end
+	for i, e in ipairs(self.enemies) do
+		if e.hp > 0 then
+			self.target_index = i
+			return
+		end
+	end
+end
+
+local function start_wave(self)
+	self.enemies = self.waves[self.current_wave]
+	self.target_index = 1
+	self.enemy_attack_index = 0
+	send_gui("set_phase", {text = "WAVE " .. self.current_wave .. " / " .. #self.waves})
+	sync_all_enemy_hp(self)
+
+	-- Brief wave intro delay
+	self.phase = "wave_intro"
+	self.animation_timer = 1.0
 end
 
 local function start_attack_phase(self)
 	self.phase = CONSTANTS.PHASE_PLAYER_ATTACK
 
-	local numbers, operators = tiles_module.deal_hand(self.enemy_weakness, CONSTANTS.OP_ADD)
-	msg.post(GUI_URL, "deal_tiles", {numbers = numbers, operators = operators})
-	msg.post(GUI_URL, "set_phase", {text = "YOUR TURN - ATTACK!"})
-	msg.post(GUI_URL, "set_enemy_weakness", {weakness = self.enemy_weakness})
-	msg.post(GUI_URL, "enable_input")
+	next_alive_target(self)
+	local target = self.enemies[self.target_index]
+	local numbers, operators = tiles_module.deal_hand(target.weakness, target.skill or CONSTANTS.OP_ADD, target.max_operand)
+	send_gui("deal_tiles", {numbers = numbers, operators = operators})
+	send_gui("set_phase", {text = "ATTACK! Target weakness: " .. target.weakness})
+	sync_all_enemy_hp(self)
+	send_gui("enable_input")
 end
 
-local function start_defend_phase(self)
+local function find_next_attacker(self)
+	for i = self.enemy_attack_index + 1, #self.enemies do
+		if self.enemies[i].hp > 0 then
+			return i
+		end
+	end
+	return nil
+end
+
+local function start_enemy_attack(self, attacker_index)
+	self.enemy_attack_index = attacker_index
+	local enemy = self.enemies[attacker_index]
 	self.phase = CONSTANTS.PHASE_PLAYER_DEFEND
 
-	self.enemy_attack_number = math.random(3, 15)
+	self.current_attack_number = math.random(3, math.max(5, enemy.attack_power))
+	self.current_attacker_power = enemy.attack_power
 
-	local numbers, operators = tiles_module.deal_hand(self.enemy_attack_number, CONSTANTS.OP_ADD)
-	msg.post(GUI_URL, "deal_tiles", {numbers = numbers, operators = operators})
-	msg.post(GUI_URL, "set_phase", {text = "DEFEND! Match: " .. self.enemy_attack_number})
-	msg.post(GUI_URL, "set_enemy_weakness", {weakness = self.enemy_attack_number})
-	msg.post(GUI_URL, "enable_input")
+	local numbers, operators = tiles_module.deal_hand(self.current_attack_number, enemy.skill or CONSTANTS.OP_ADD, enemy.max_operand)
+	send_gui("deal_tiles", {numbers = numbers, operators = operators})
+	send_gui("set_phase", {text = "DEFEND! Enemy #" .. attacker_index .. " attacks: " .. self.current_attack_number})
+	send_gui("highlight_attacker", {index = attacker_index})
+	send_gui("enable_input")
 end
 
 local function on_animation_complete(self)
-	if self.phase == CONSTANTS.PHASE_ANIMATE_ATTACK then
-		if self.enemy_hp <= 0 then
-			self.phase = CONSTANTS.PHASE_BATTLE_WON
-			msg.post(GUI_URL, "show_result", {title = "VICTORY!"})
+	if self.phase == "wave_intro" then
+		start_attack_phase(self)
+
+	elseif self.phase == CONSTANTS.PHASE_ANIMATE_ATTACK then
+		-- Check if target is dead
+		if self.enemies[self.target_index].hp <= 0 then
+			send_gui("show_damage", {text = "DEFEATED!", x = 600 + self.target_index * 80, y = 500})
+		end
+
+		if count_alive(self) == 0 then
+			-- Wave cleared
+			if self.current_wave >= #self.waves then
+				self.phase = CONSTANTS.PHASE_BATTLE_WON
+				send_gui("show_result", {title = "VICTORY!"})
+			else
+				self.current_wave = self.current_wave + 1
+				-- Offer recovery between waves
+				self.phase = "between_waves"
+				send_gui("show_between_waves", {
+					wave = self.current_wave,
+					total_waves = #self.waves,
+					hero_hp = self.hero_hp,
+					hero_max_hp = self.hero_max_hp,
+					recovery_available = self.recovery_available,
+				})
+			end
 		else
-			start_defend_phase(self)
+			-- Enemies attack back, one at a time
+			self.enemy_attack_index = 0
+			local next_idx = find_next_attacker(self)
+			if next_idx then
+				start_enemy_attack(self, next_idx)
+			else
+				start_attack_phase(self)
+			end
 		end
 
 	elseif self.phase == CONSTANTS.PHASE_ANIMATE_DEFEND then
 		if self.hero_hp <= 0 then
 			self.phase = CONSTANTS.PHASE_BATTLE_LOST
-			msg.post(GUI_URL, "show_result", {title = "DEFEATED..."})
+			send_gui("show_result", {title = "DEFEATED..."})
 		else
-			start_attack_phase(self)
+			-- Next enemy attacks
+			local next_idx = find_next_attacker(self)
+			if next_idx then
+				start_enemy_attack(self, next_idx)
+			else
+				-- All enemies attacked, back to player
+				start_attack_phase(self)
+			end
 		end
 	end
 end
@@ -61,15 +146,24 @@ function init(self)
 
 	self.hero_hp = CONSTANTS.HERO_START_HP
 	self.hero_max_hp = CONSTANTS.HERO_MAX_HP
-	self.enemy_hp = CONSTANTS.ENEMY_BASE_HP
-	self.enemy_max_hp = CONSTANTS.ENEMY_BASE_HP
-	self.enemy_weakness = 0
-	self.enemy_attack_power = CONSTANTS.ENEMY_BASE_ATTACK
-	self.phase = CONSTANTS.PHASE_PLAYER_ATTACK
+	self.phase = "init"
 	self.animation_timer = 0
+	self.target_index = 1
+	self.enemy_attack_index = 0
+	self.current_wave = 1
+	self.recovery_available = true
+	self.current_attack_number = 0
+	self.current_attacker_power = 0
 
-	setup_enemy(self)
-	start_attack_phase(self)
+	-- Read difficulty from level data passed via message, or default
+	self.difficulty = 1
+	self.skill = CONSTANTS.OP_ADD
+
+	-- Generate waves
+	self.waves = wave_data.generate_level(self.difficulty, self.skill)
+
+	send_gui("update_hero_hp", {hp = self.hero_hp, max_hp = self.hero_max_hp})
+	start_wave(self)
 end
 
 function update(self, dt)
@@ -83,34 +177,49 @@ function update(self, dt)
 end
 
 function on_message(self, message_id, message, sender)
-	if message_id == hash("equation_submitted") then
+	if message_id == hash("set_level") then
+		self.difficulty = message.difficulty or 1
+		self.skill = message.skill or CONSTANTS.OP_ADD
+		self.waves = wave_data.generate_level(self.difficulty, self.skill)
+		self.current_wave = 1
+		self.hero_hp = self.hero_max_hp
+		self.recovery_available = true
+		send_gui("update_hero_hp", {hp = self.hero_hp, max_hp = self.hero_max_hp})
+		start_wave(self)
+
+	elseif message_id == hash("select_target") then
+		local idx = message.index
+		if idx and self.enemies[idx] and self.enemies[idx].hp > 0 then
+			self.target_index = idx
+			sync_all_enemy_hp(self)
+		end
+
+	elseif message_id == hash("equation_submitted") then
 		local result = message.result
 
 		if self.phase == CONSTANTS.PHASE_PLAYER_ATTACK then
-			local dmg, label = damage_module.calculate_attack(result, self.enemy_weakness)
-			self.enemy_hp = math.max(0, self.enemy_hp - dmg)
+			local target = self.enemies[self.target_index]
+			local dmg, label = damage_module.calculate_attack(result, target.weakness)
+			target.hp = math.max(0, target.hp - dmg)
 
-			msg.post(GUI_URL, "disable_input")
-			msg.post(GUI_URL, "update_enemy_hp", {hp = self.enemy_hp, max_hp = self.enemy_max_hp})
-			msg.post(GUI_URL, "show_damage", {text = "-" .. dmg .. " " .. label, x = 850, y = 500})
-			msg.post(GUI_URL, "set_phase", {text = label .. " (-" .. dmg .. " HP)"})
+			send_gui("disable_input")
+			sync_all_enemy_hp(self)
+			send_gui("show_damage", {text = "-" .. dmg .. " " .. label, x = 600 + self.target_index * 80, y = 500})
+			send_gui("set_phase", {text = label .. " (-" .. dmg .. " HP)"})
 
 			self.phase = CONSTANTS.PHASE_ANIMATE_ATTACK
 			self.animation_timer = CONSTANTS.ANIMATION_DURATION
 
 		elseif self.phase == CONSTANTS.PHASE_PLAYER_DEFEND then
-			local dmg_taken, label = damage_module.calculate_block(result, self.enemy_attack_number, self.enemy_attack_power)
+			local dmg_taken, label = damage_module.calculate_block(result, self.current_attack_number, self.current_attacker_power)
 			self.hero_hp = math.max(0, self.hero_hp - dmg_taken)
 
-			msg.post(GUI_URL, "disable_input")
-			msg.post(GUI_URL, "update_hero_hp", {hp = self.hero_hp, max_hp = self.hero_max_hp})
+			send_gui("disable_input")
+			send_gui("update_hero_hp", {hp = self.hero_hp, max_hp = self.hero_max_hp})
 
-			if dmg_taken > 0 then
-				msg.post(GUI_URL, "show_damage", {text = "-" .. dmg_taken .. " " .. label, x = 180, y = 500})
-			else
-				msg.post(GUI_URL, "show_damage", {text = label, x = 180, y = 500})
-			end
-			msg.post(GUI_URL, "set_phase", {text = label})
+			local dmg_text = dmg_taken > 0 and ("-" .. dmg_taken .. " " .. label) or label
+			send_gui("show_damage", {text = dmg_text, x = 180, y = 500})
+			send_gui("set_phase", {text = label})
 
 			self.phase = CONSTANTS.PHASE_ANIMATE_DEFEND
 			self.animation_timer = CONSTANTS.ANIMATION_DURATION
@@ -118,5 +227,24 @@ function on_message(self, message_id, message, sender)
 
 	elseif message_id == hash("continue_pressed") then
 		msg.post("main:/controller#script", "battle_complete")
+
+	elseif message_id == hash("next_wave_pressed") then
+		start_wave(self)
+
+	elseif message_id == hash("recovery_pressed") then
+		if self.recovery_available then
+			self.recovery_available = false
+			-- Signal to main controller to show recovery screen
+			msg.post("main:/controller#script", "show_recovery", {
+				hero_hp = self.hero_hp,
+				hero_max_hp = self.hero_max_hp,
+			})
+		end
+
+	elseif message_id == hash("recovery_complete") then
+		local healed = message.healed or 0
+		self.hero_hp = math.min(self.hero_max_hp, self.hero_hp + healed)
+		send_gui("update_hero_hp", {hp = self.hero_hp, max_hp = self.hero_max_hp})
+		start_wave(self)
 	end
 end
