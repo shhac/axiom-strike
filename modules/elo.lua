@@ -31,7 +31,7 @@ M.AGE_PRIORS = {
 --- @param question_elo number
 --- @return number probability 0-1
 function M.expected(player_elo, question_elo)
-	return 1 / (1 + math.pow(10, (question_elo - player_elo) / 400))
+	return 1 / (1 + 10 ^( (question_elo - player_elo) / 400))
 end
 
 --- Calculate K-factor based on number of attempts (decreases with experience).
@@ -83,7 +83,7 @@ function M.select_difficulty(player_elo)
 	-- 10^((q - p)/400) = 1/0.70 - 1 = 0.4286
 	-- (q - p)/400 = log10(0.4286) = -0.368
 	-- q - p = -147.2
-	local offset = 400 * math.log10((1 / M.TARGET_SUCCESS_RATE) - 1)
+	local offset = 400 * math.log((1 / M.TARGET_SUCCESS_RATE) - 1, 10)
 	return math.floor(player_elo + offset)
 end
 
@@ -95,7 +95,7 @@ function M.apply_session_decay(player_elo, days_since_last)
 	if days_since_last <= 0 then return player_elo end
 	days_since_last = math.min(days_since_last, M.MAX_DECAY_DAYS)
 
-	local decay = math.pow(M.DAILY_DECAY_RATE, days_since_last)
+	local decay = M.DAILY_DECAY_RATE ^ days_since_last
 	local baseline = M.DEFAULT_ELO
 	return math.floor(baseline + (player_elo - baseline) * decay)
 end
