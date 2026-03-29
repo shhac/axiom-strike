@@ -4,6 +4,10 @@ fonts {
   font: "/assets/fonts/kenney_pixel.font"
 }
 fonts {
+  name: "reading_font"
+  font: "/assets/fonts/kenney_future.font"
+}
+fonts {
   name: "system_font"
   font: "/builtins/fonts/default.font"
 }
@@ -114,7 +118,7 @@ nodes {
   color { x: 0.9 y: 0.88 z: 0.8 w: 1.0 }
   type: TYPE_TEXT
   text: ""
-  font: "game_font"
+  font: "reading_font"
   id: "passage_text"
   pivot: PIVOT_CENTER
   line_break: true

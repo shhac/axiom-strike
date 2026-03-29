@@ -143,20 +143,35 @@ end
 -- ============================================================
 
 local function show_hint()
-	if hint_shown then return end
-	-- Glow the first unused tile by pulsing its alpha
-	for i, nd in ipairs(number_tile_nodes) do
-		if not tile_used["num_" .. i] and expecting_number then
-			gui.animate(nd.box, gui.PROP_COLOR, vmath.vector4(0.5, 0.7, 1.0, 1), gui.EASING_INOUTSINE, 0.4, 0, nil, gui.PLAYBACK_LOOP_PINGPONG)
-			hint_shown = true
-			return
+	if hint_shown or fill_blank_mode then return end
+
+	-- If no tokens placed yet, highlight the first unused number tile
+	if #equation_tokens == 0 and expecting_number then
+		for i, nd in ipairs(number_tile_nodes) do
+			if not tile_used["num_" .. i] then
+				gui.animate(nd.box, gui.PROP_COLOR, vmath.vector4(0.5, 0.7, 1.0, 1), gui.EASING_INOUTSINE, 0.4, 0, nil, gui.PLAYBACK_LOOP_PINGPONG)
+				hint_shown = true
+				return
+			end
 		end
 	end
-	for i, nd in ipairs(operator_tile_nodes) do
-		if not tile_used["op_" .. i] and not expecting_number then
-			gui.animate(nd.box, gui.PROP_COLOR, vmath.vector4(1.0, 0.8, 0.3, 1), gui.EASING_INOUTSINE, 0.4, 0, nil, gui.PLAYBACK_LOOP_PINGPONG)
-			hint_shown = true
-			return
+
+	-- If we have a partial equation, suggest operator or next number
+	if expecting_number then
+		for i, nd in ipairs(number_tile_nodes) do
+			if not tile_used["num_" .. i] then
+				gui.animate(nd.box, gui.PROP_COLOR, vmath.vector4(0.5, 0.7, 1.0, 1), gui.EASING_INOUTSINE, 0.4, 0, nil, gui.PLAYBACK_LOOP_PINGPONG)
+				hint_shown = true
+				return
+			end
+		end
+	else
+		for i, nd in ipairs(operator_tile_nodes) do
+			if not tile_used["op_" .. i] then
+				gui.animate(nd.box, gui.PROP_COLOR, vmath.vector4(1.0, 0.8, 0.3, 1), gui.EASING_INOUTSINE, 0.4, 0, nil, gui.PLAYBACK_LOOP_PINGPONG)
+				hint_shown = true
+				return
+			end
 		end
 	end
 end
@@ -231,8 +246,16 @@ local function destroy_fill_blank()
 	fill_blank_mode = false
 end
 
+local function destroy_tile_nodes()
+	for _, node in ipairs(number_tile_nodes) do gui.delete_node(node.box); gui.delete_node(node.text) end
+	for _, node in ipairs(operator_tile_nodes) do gui.delete_node(node.box); gui.delete_node(node.text) end
+	number_tile_nodes = {}
+	operator_tile_nodes = {}
+end
+
 local function show_fill_blank_ui(display, options, blank_type)
 	destroy_fill_blank()
+	destroy_tile_nodes()
 	fill_blank_mode = true
 
 	-- Hide normal equation UI
@@ -393,12 +416,16 @@ end
 
 local function set_defend_mode(attack_number)
 	gui.set_color(banner_bg, C.banner_def)
-	gui.set_text(banner_text, "DEFEND!  Build this number:")
+	gui.set_text(banner_text, "DEFEND!  Solve to block!")
 	gui.set_color(banner_text, C.text_def)
 	gui.set_color(target_bg, vmath.vector4(0.48, 0.1, 0.1, 0.9))
 	gui.set_text(target_label, "BLOCK")
-	gui.set_color(target_label, vmath.vector4(1, 0.6, 0.5, 1))
-	gui.set_text(target_text, tostring(attack_number))
+	-- Hide the target number during fill-in-blank defense
+	if attack_number and attack_number > 0 then
+		gui.set_text(target_text, tostring(attack_number))
+	else
+		gui.set_text(target_text, "?")
+	end
 	gui.set_color(target_text, vmath.vector4(1, 0.92, 0.82, 1))
 	gui.set_text(gui.get_node("btn_strike_text"), "BLOCK!")
 	gui.set_color(gui.get_node("btn_strike"), C.btn_red)

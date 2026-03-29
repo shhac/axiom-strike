@@ -44,7 +44,7 @@ end
 
 local settings_holding = false
 local settings_hold_time = 0
-local SETTINGS_HOLD_DURATION = 2.0
+local SETTINGS_HOLD_DURATION = 1.5
 local settings_btn_color = vmath.vector4(0.267, 0.2, 0.333, 1)
 
 function update(self, dt)
