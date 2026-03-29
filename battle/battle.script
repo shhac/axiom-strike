@@ -4,6 +4,8 @@ local wave_data = require("modules.wave_data")
 local elo_module = require("modules.elo")
 local progress_module = require("modules.progress")
 local tutorial = require("modules.tutorial")
+local fill_blank = require("modules.fill_blank")
+local stars_module = require("modules.stars")
 local CONSTANTS = require("modules.constants")
 
 local GUI_URL = "#gui"
@@ -64,18 +66,34 @@ end
 
 local function start_attack_phase(self)
 	self.phase = CONSTANTS.PHASE_PLAYER_ATTACK
+	self.wrong_attempts = 0
 
 	next_alive_target(self)
 	local target = self.enemies[self.target_index]
-	local numbers, operators
-	if self.is_tutorial then
-		numbers, operators = tutorial.tutorial_tiles()
+
+	-- Choose fill-in-blank or equation construction based on difficulty
+	local use_fill_blank = self.difficulty <= 1 and not self.is_tutorial and math.random() > 0.4
+
+	if use_fill_blank then
+		local problem = fill_blank.generate(target.weakness, target.skill or "+", target.max_operand or 10, self.difficulty)
+		self.current_fill_blank = problem
+		send_gui("show_fill_blank", {
+			display = problem.display,
+			options = problem.options,
+			blank_type = problem.blank_type,
+		})
 	else
-		numbers, operators = tiles_module.deal_hand(target.weakness, target.skill or CONSTANTS.OP_ADD, target.max_operand)
+		self.current_fill_blank = nil
+		local numbers, operators
+		if self.is_tutorial then
+			numbers, operators = tutorial.tutorial_tiles()
+		else
+			numbers, operators = tiles_module.deal_hand(target.weakness, target.skill or CONSTANTS.OP_ADD, target.max_operand)
+		end
+		send_gui("deal_tiles", {numbers = numbers, operators = operators})
 	end
-	send_gui("deal_tiles", {numbers = numbers, operators = operators})
+
 	send_gui("set_phase", {
-		text = "ATTACK! Target weakness: " .. target.weakness,
 		mode = "attack",
 		weakness = target.weakness,
 		wave_text = "Wave " .. self.current_wave .. "/" .. #self.waves,
@@ -129,7 +147,9 @@ local function on_animation_complete(self)
 			-- Wave cleared
 			if self.current_wave >= #self.waves then
 				self.phase = CONSTANTS.PHASE_BATTLE_WON
-				send_gui("show_result", {title = "VICTORY!"})
+				local star_count = stars_module.calculate(self.hero_hp, self.hero_max_hp, self.total_wrong, self.total_attempts)
+			self.earned_stars = star_count
+			send_gui("show_result", {title = "VICTORY!", stars = star_count})
 			else
 				self.current_wave = self.current_wave + 1
 				-- Offer recovery between waves
@@ -179,6 +199,9 @@ function init(self)
 	self.animation_timer = 0
 	self.target_index = 1
 	self.enemy_attack_index = 0
+	self.total_attempts = 0
+	self.total_wrong = 0
+	self.wrong_attempts = 0
 	self.current_wave = 1
 	self.recovery_available = true
 	self.current_attack_number = 0
@@ -264,7 +287,9 @@ function on_message(self, message_id, message, sender)
 			local is_exact = (result == target.weakness)
 			target.hp = math.max(0, target.hp - dmg)
 
+			self.total_attempts = self.total_attempts + 1
 			local correct = math.abs(result - target.weakness) <= CONSTANTS.ELO_ATTACK_THRESHOLD
+			if not correct then self.total_wrong = self.total_wrong + 1 end
 			record_elo(self, correct, target.question_elo or (self.player_elo - 50), time_taken)
 
 			send_gui("disable_input")
@@ -313,6 +338,51 @@ function on_message(self, message_id, message, sender)
 			self.animation_timer = CONSTANTS.ANIMATION_DURATION
 		end
 
+	elseif message_id == hash("fill_blank_answer") then
+		local answer = message.answer
+		local time_taken = os.clock() - (self.turn_start_time or 0)
+
+		if self.phase == CONSTANTS.PHASE_PLAYER_ATTACK and self.current_fill_blank then
+			local problem = self.current_fill_blank
+			local is_correct = (answer == problem.correct)
+			local target = self.enemies[self.target_index]
+
+			if is_correct then
+				-- Full damage on correct fill-in-blank
+				local dmg = math.floor(CONSTANTS.BASE_DAMAGE * CONSTANTS.EXACT_MATCH_MULTIPLIER)
+				target.hp = math.max(0, target.hp - dmg)
+				record_elo(self, true, self.player_elo - 50, time_taken)
+
+				send_gui("disable_input")
+				sync_all_enemy_hp(self)
+				send_gui("enemy_hit", {index = self.target_index})
+				send_gui("show_damage", {text = "-" .. dmg .. " EXACT!", x = 600 + self.target_index * 80, y = 450})
+				send_gui("fill_blank_result", {correct = true, answer = answer})
+
+				self.phase = CONSTANTS.PHASE_ANIMATE_ATTACK
+				self.animation_timer = CONSTANTS.ANIMATION_DURATION
+			else
+				-- Wrong answer
+				self.wrong_attempts = (self.wrong_attempts or 0) + 1
+				record_elo(self, false, self.player_elo - 50, time_taken)
+
+				send_gui("fill_blank_result", {correct = false, answer = answer, correct_answer = problem.correct, attempts = self.wrong_attempts})
+
+				if self.wrong_attempts >= 3 then
+					-- Auto-solve: deal minimum damage and move on
+					local dmg = CONSTANTS.MIN_DAMAGE
+					target.hp = math.max(0, target.hp - dmg)
+					sync_all_enemy_hp(self)
+					send_gui("show_damage", {text = "-" .. dmg, x = 600 + self.target_index * 80, y = 450})
+					send_gui("disable_input")
+
+					self.phase = CONSTANTS.PHASE_ANIMATE_ATTACK
+					self.animation_timer = CONSTANTS.ANIMATION_DURATION + 0.5
+				end
+				-- Otherwise let them try again (input stays enabled)
+			end
+		end
+
 	elseif message_id == hash("skip_animation") then
 		if self.animation_timer > 0 then
 			self.animation_timer = 0
@@ -320,7 +390,7 @@ function on_message(self, message_id, message, sender)
 		end
 
 	elseif message_id == hash("continue_pressed") then
-		msg.post("main:/controller#script", "battle_complete")
+		msg.post("main:/controller#script", "battle_complete", {stars = self.earned_stars or 1})
 
 	elseif message_id == hash("next_wave_pressed") then
 		start_wave(self)
