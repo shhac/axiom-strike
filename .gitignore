@@ -5,3 +5,10 @@
 Thumbs.db
 # Raw Kenney asset downloads (extracted into assets/)
 assets/kenney/
+dist/android/*.apk
+dist/android/Axiom Strike/
+debug.keystore
+debug.keystore.pass.txt
+manifest.private.der
+manifest.public.der
+dist/
