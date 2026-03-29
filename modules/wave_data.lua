@@ -3,85 +3,29 @@ local M = {}
 local CONSTANTS = require("modules.constants")
 local question_gen = require("modules.question_gen")
 
---- Generate a level with 3 waves of enemies.
---- @param difficulty number 1-5 difficulty tier
---- @param skill string Operation type ("+", "-", "x", "/")
---- @param player_elo number|nil Optional player Elo for adaptive generation
---- @return table waves Array of wave tables, each containing enemy arrays
-function M.generate_level(difficulty, skill, player_elo)
-	difficulty = difficulty or 1
-	skill = skill or CONSTANTS.OP_ADD
+-- Lookup tables replacing if/elseif chains
+local WEAKNESS_RANGES = {
+	{3, 10}, {5, 15}, {8, 25}, {10, 40}, {15, 50},
+}
 
-	local waves = {}
-	local wave_count = difficulty <= 1 and 2 or 3
-	local is_boss_level = difficulty >= 3 and math.random() > 0.5
+local MAX_OPERANDS = {10, 15, 20, 30, 50}
 
-	for w = 1, wave_count do
-		local enemies = {}
-		local enemy_count
+local WAVE_ENEMY_CAPS = {2, 4, 5}
 
-		if is_boss_level and w == wave_count then
-			-- Boss wave
-			if player_elo then
-				enemies[1] = question_gen.generate_enemy(player_elo, skill, true, 1)
-			else
-				enemies[1] = M._make_enemy(difficulty, skill, true)
-			end
-			if difficulty >= 4 then
-				if player_elo then
-					enemies[2] = question_gen.generate_enemy(player_elo, skill, false, 2)
-					enemies[3] = question_gen.generate_enemy(player_elo, skill, false, 3)
-				else
-					enemies[2] = M._make_enemy(math.max(1, difficulty - 2), skill, false)
-					enemies[3] = M._make_enemy(math.max(1, difficulty - 2), skill, false)
-				end
-			end
-		else
-			if w == 1 then
-				enemy_count = math.min(2, 1 + math.floor(difficulty / 2))
-			elseif w == 2 then
-				enemy_count = math.min(4, 2 + math.floor(difficulty / 2))
-			else
-				enemy_count = math.min(5, 2 + math.floor(difficulty / 2))
-			end
-
-			for i = 1, enemy_count do
-				if player_elo then
-					enemies[i] = question_gen.generate_enemy(player_elo, skill, false, i)
-				else
-					enemies[i] = M._make_enemy(difficulty, skill, false)
-				end
-			end
-		end
-
-		waves[w] = enemies
-	end
-
-	return waves
+local function lookup(tbl, difficulty)
+	local idx = math.max(1, math.min(#tbl, difficulty))
+	return tbl[idx]
 end
 
---- Create a single enemy with stats based on difficulty.
---- @param difficulty number
---- @param skill string
---- @param is_boss boolean
---- @return table enemy {hp, max_hp, weakness, attack_power, is_boss}
-function M._make_enemy(difficulty, skill, is_boss)
-	local max_operand = M._max_operand_for_difficulty(difficulty)
-
-	-- Weakness number scales with difficulty
-	local weakness
-	if difficulty <= 1 then
-		weakness = math.random(3, 10)
-	elseif difficulty <= 2 then
-		weakness = math.random(5, 15)
-	elseif difficulty <= 3 then
-		weakness = math.random(8, 25)
-	elseif difficulty <= 4 then
-		weakness = math.random(10, 40)
-	else
-		weakness = math.random(15, 50)
+--- Create an enemy using either Elo-based or difficulty-based generation.
+local function create_enemy(player_elo, difficulty, skill, is_boss, position)
+	if player_elo then
+		return question_gen.generate_enemy(player_elo, skill, is_boss, position)
 	end
 
+	local range = lookup(WEAKNESS_RANGES, difficulty)
+	local weakness = math.random(range[1], range[2])
+	local max_operand = lookup(MAX_OPERANDS, difficulty)
 	local base_hp = is_boss and (CONSTANTS.ENEMY_BASE_HP * 3) or CONSTANTS.ENEMY_BASE_HP
 	local hp = base_hp + (difficulty - 1) * 10
 	local attack = is_boss and (CONSTANTS.ENEMY_BASE_ATTACK + difficulty * 3) or (math.random(3, 6) + difficulty * 2)
@@ -97,13 +41,50 @@ function M._make_enemy(difficulty, skill, is_boss)
 	}
 end
 
-function M._max_operand_for_difficulty(difficulty)
-	if difficulty <= 1 then return 10
-	elseif difficulty <= 2 then return 15
-	elseif difficulty <= 3 then return 20
-	elseif difficulty <= 4 then return 30
-	else return 50
+local function create_boss_wave(player_elo, difficulty, skill)
+	local enemies = {}
+	enemies[1] = create_enemy(player_elo, difficulty, skill, true, 1)
+	if difficulty >= 4 then
+		local minion_diff = math.max(1, difficulty - 2)
+		enemies[2] = create_enemy(player_elo, minion_diff, skill, false, 2)
+		enemies[3] = create_enemy(player_elo, minion_diff, skill, false, 3)
 	end
+	return enemies
+end
+
+local function create_normal_wave(player_elo, difficulty, skill, wave_index)
+	local cap = lookup(WAVE_ENEMY_CAPS, wave_index)
+	local enemy_count = math.min(cap, 1 + math.floor(difficulty / 2) + (wave_index - 1))
+
+	local enemies = {}
+	for i = 1, enemy_count do
+		enemies[i] = create_enemy(player_elo, difficulty, skill, false, i)
+	end
+	return enemies
+end
+
+--- Generate a level with 2-3 waves of enemies.
+--- @param difficulty number 1-5 difficulty tier
+--- @param skill string Operation type ("+", "-", "x", "/")
+--- @param player_elo number|nil Optional player Elo for adaptive generation
+--- @return table waves Array of wave tables
+function M.generate_level(difficulty, skill, player_elo)
+	difficulty = difficulty or 1
+	skill = skill or CONSTANTS.OP_ADD
+
+	local wave_count = difficulty <= 1 and 2 or 3
+	local is_boss_level = difficulty >= 3 and math.random() > 0.5
+
+	local waves = {}
+	for w = 1, wave_count do
+		if is_boss_level and w == wave_count then
+			waves[w] = create_boss_wave(player_elo, difficulty, skill)
+		else
+			waves[w] = create_normal_wave(player_elo, difficulty, skill, w)
+		end
+	end
+
+	return waves
 end
 
 return M
