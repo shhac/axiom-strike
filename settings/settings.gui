@@ -7,6 +7,10 @@ fonts {
   name: "system_font"
   font: "/builtins/fonts/default.font"
 }
+textures {
+  name: "ui"
+  texture: "/assets/images/ui/ui.atlas"
+}
 background_color {
   x: 0.06
   y: 0.02
@@ -145,6 +149,7 @@ nodes {
     w: 1.0
   }
   type: TYPE_BOX
+  texture: "ui/btn_brown"
   id: "btn_sound"
   pivot: PIVOT_CENTER
   size_mode: SIZE_MODE_MANUAL
@@ -281,6 +286,7 @@ nodes {
     w: 1.0
   }
   type: TYPE_BOX
+  texture: "ui/btn_brown"
   id: "btn_time_pressure"
   pivot: PIVOT_CENTER
   size_mode: SIZE_MODE_MANUAL
@@ -417,6 +423,7 @@ nodes {
     w: 1.0
   }
   type: TYPE_BOX
+  texture: "ui/btn_brown"
   id: "btn_tile_persist"
   pivot: PIVOT_CENTER
   size_mode: SIZE_MODE_MANUAL
@@ -553,6 +560,7 @@ nodes {
     w: 1.0
   }
   type: TYPE_BOX
+  texture: "ui/btn_brown"
   id: "btn_reading"
   pivot: PIVOT_CENTER
   size_mode: SIZE_MODE_MANUAL
@@ -639,6 +647,7 @@ nodes {
     w: 1.0
   }
   type: TYPE_BOX
+  texture: "ui/btn_dark"
   id: "btn_back"
   pivot: PIVOT_CENTER
   size_mode: SIZE_MODE_MANUAL

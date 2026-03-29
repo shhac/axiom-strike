@@ -7,6 +7,14 @@ fonts {
   name: "system_font"
   font: "/builtins/fonts/default.font"
 }
+textures {
+  name: "bg"
+  texture: "/assets/images/sprites/bg.atlas"
+}
+textures {
+  name: "ui"
+  texture: "/assets/images/ui/ui.atlas"
+}
 background_color {
   x: 0.04
   y: 0.04
@@ -145,6 +153,7 @@ nodes {
     w: 1.0
   }
   type: TYPE_BOX
+  texture: "ui/btn_dark"
   id: "btn_back"
   pivot: PIVOT_CENTER
   size_mode: SIZE_MODE_MANUAL

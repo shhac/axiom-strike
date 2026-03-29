@@ -1,4 +1,28 @@
 images {
   image: "/assets/images/ui/panel.png"
 }
+images {
+  image: "/assets/images/ui/btn_brown.png"
+}
+images {
+  image: "/assets/images/ui/btn_wood.png"
+}
+images {
+  image: "/assets/images/ui/btn_steel.png"
+}
+images {
+  image: "/assets/images/ui/btn_dark.png"
+}
+images {
+  image: "/assets/images/ui/btn_ornate.png"
+}
+images {
+  image: "/assets/images/ui/btn_frame.png"
+}
+images {
+  image: "/assets/images/ui/btn_blue.png"
+}
+images {
+  image: "/assets/images/ui/btn_orange.png"
+}
 margin: 1

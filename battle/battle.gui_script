@@ -26,7 +26,8 @@ local hint_shown = false
 local HINT_DELAY = 5.0
 local eq_feedback_node = nil
 local fill_blank_mode = false
-local fill_blank_nodes = {}
+local fill_blank_nodes = {}       -- array of raw gui nodes to delete on cleanup
+local fill_blank_options = {}     -- array of {box, text, value, index} for input handling
 local fill_blank_display_node = nil
 local current_target = 0  -- weakness or attack number to aim for
 
@@ -253,10 +254,16 @@ local function show_hint()
 	local hint_type, hint_index = find_best_hint()
 
 	if hint_type == "num" and number_tile_nodes[hint_index] then
-		gui.animate(number_tile_nodes[hint_index].box, gui.PROP_COLOR, vmath.vector4(0.5, 0.85, 1.0, 1), gui.EASING_INOUTSINE, 0.4, 0, nil, gui.PLAYBACK_LOOP_PINGPONG)
+		-- Swap to "focused" sprite to highlight
+		gui.play_flipbook(number_tile_nodes[hint_index].box, hash("btn_blue"))
+		gui.set_color(number_tile_nodes[hint_index].box, C.white)
+		-- Gentle pulse on scale
+		gui.animate(number_tile_nodes[hint_index].box, gui.PROP_SCALE, vmath.vector3(1.1, 1.1, 1), gui.EASING_INOUTSINE, 0.5, 0, nil, gui.PLAYBACK_LOOP_PINGPONG)
 		hint_shown = true
 	elseif hint_type == "op" and operator_tile_nodes[hint_index] then
-		gui.animate(operator_tile_nodes[hint_index].box, gui.PROP_COLOR, vmath.vector4(1.0, 0.85, 0.3, 1), gui.EASING_INOUTSINE, 0.4, 0, nil, gui.PLAYBACK_LOOP_PINGPONG)
+		gui.play_flipbook(operator_tile_nodes[hint_index].box, hash("btn_blue"))
+		gui.set_color(operator_tile_nodes[hint_index].box, vmath.vector4(1.0, 0.9, 0.5, 1))
+		gui.animate(operator_tile_nodes[hint_index].box, gui.PROP_SCALE, vmath.vector3(1.1, 1.1, 1), gui.EASING_INOUTSINE, 0.5, 0, nil, gui.PLAYBACK_LOOP_PINGPONG)
 		hint_shown = true
 	end
 end
@@ -264,19 +271,23 @@ end
 local function clear_hints()
 	if hint_shown then
 		for i, nd in ipairs(number_tile_nodes) do
-			gui.cancel_animation(nd.box, gui.PROP_COLOR)
+			gui.cancel_animation(nd.box, gui.PROP_SCALE)
+			gui.play_flipbook(nd.box, hash("btn_brown"))
+			gui.set_scale(nd.box, vmath.vector3(1, 1, 1))
 			if tile_used["num_" .. i] then
-				gui.set_color(nd.box, C.tile_used)
+				gui.set_color(nd.box, vmath.vector4(0.3, 0.3, 0.35, 0.4))
 			else
-				gui.set_color(nd.box, C.tile_num)
+				gui.set_color(nd.box, NUM_TINT)
 			end
 		end
 		for i, nd in ipairs(operator_tile_nodes) do
-			gui.cancel_animation(nd.box, gui.PROP_COLOR)
+			gui.cancel_animation(nd.box, gui.PROP_SCALE)
+			gui.play_flipbook(nd.box, hash("btn_brown"))
+			gui.set_scale(nd.box, vmath.vector3(1, 1, 1))
 			if tile_used["op_" .. i] then
-				gui.set_color(nd.box, C.tile_used)
+				gui.set_color(nd.box, vmath.vector4(0.3, 0.3, 0.35, 0.4))
 			else
-				gui.set_color(nd.box, C.tile_op)
+				gui.set_color(nd.box, OP_TINT)
 			end
 		end
 	end
@@ -336,9 +347,10 @@ end
 
 local function destroy_fill_blank()
 	for _, n in ipairs(fill_blank_nodes) do
-		if type(n) == "userdata" then gui.delete_node(n) end
+		gui.delete_node(n)
 	end
 	fill_blank_nodes = {}
+	fill_blank_options = {}
 	if fill_blank_display_node then gui.delete_node(fill_blank_display_node); fill_blank_display_node = nil end
 	fill_blank_mode = false
 end
@@ -371,11 +383,15 @@ local function show_fill_blank_ui(display, options, blank_type)
 	for i, opt in ipairs(options) do
 		local x = start_x + (i - 1) * gap
 		local box = gui.new_box_node(vmath.vector3(x, 55, 0), vmath.vector3(110, 55, 0))
+		gui.set_texture(box, "ui")
 		if blank_type == "operator" then
-			gui.set_color(box, vmath.vector4(0.92, 0.58, 0.15, 1))
+			gui.play_flipbook(box, hash("btn_orange"))
 		else
-			gui.set_color(box, vmath.vector4(0.2, 0.48, 0.9, 1))
+			gui.play_flipbook(box, hash("btn_blue"))
 		end
+		gui.set_size_mode(box, gui.SIZE_MODE_MANUAL)
+		gui.set_size(box, vmath.vector3(110, 55, 0))
+		gui.set_color(box, C.white)
 
 		local txt = gui.new_text_node(vmath.vector3(x, 55, 0), tostring(opt))
 		gui.set_font(txt, "game_font")
@@ -390,7 +406,90 @@ local function show_fill_blank_ui(display, options, blank_type)
 
 		fill_blank_nodes[#fill_blank_nodes + 1] = box
 		fill_blank_nodes[#fill_blank_nodes + 1] = txt
-		fill_blank_nodes[i] = {box = box, text = txt, value = opt, index = i}
+		fill_blank_options[i] = {box = box, text = txt, value = opt, index = i}
+	end
+end
+
+-- ============================================================
+-- Background decoration (sprite-based trees, bushes, rocks)
+-- ============================================================
+
+local bg_nodes = {}
+
+local function create_background()
+	for _, n in ipairs(bg_nodes) do gui.delete_node(n) end
+	bg_nodes = {}
+
+	-- Ground line is at y=220, ground fills below to y=195
+	-- Place decorations along and above the ground line
+
+	-- Background tree sprites (scaled up from 16px, placed behind characters)
+	local BG_TREES = {
+		{img = "tree_green",        x = 50,   y = 290, s = 4.5},
+		{img = "pine_small_teal",   x = 130,  y = 270, s = 3.5},
+		{img = "tree_autumn",       x = 380,  y = 300, s = 5.0},
+		{img = "big_pine_green",    x = 520,  y = 285, s = 4.0},
+		{img = "tree_teal",         x = 640,  y = 295, s = 4.5},
+		{img = "pine_small_autumn", x = 920,  y = 280, s = 3.5},
+		{img = "tree_green",        x = 1050, y = 290, s = 4.5},
+		{img = "big_tree_autumn",   x = 1180, y = 300, s = 5.0},
+		{img = "pine_small_green",  x = 1260, y = 270, s = 3.5},
+	}
+
+	-- Far background trees (smaller, more transparent — depth)
+	local FAR_TREES = {
+		{img = "tree_green",      x = 90,   y = 340, s = 3.0, a = 0.3},
+		{img = "big_pine_green",  x = 300,  y = 350, s = 3.5, a = 0.25},
+		{img = "tree_teal",       x = 480,  y = 345, s = 3.0, a = 0.3},
+		{img = "pine_small_teal", x = 700,  y = 340, s = 2.5, a = 0.25},
+		{img = "tree_autumn",     x = 850,  y = 348, s = 3.0, a = 0.3},
+		{img = "big_tree_green",  x = 1100, y = 342, s = 3.5, a = 0.25},
+		{img = "tree_green",      x = 1230, y = 345, s = 3.0, a = 0.3},
+	}
+
+	-- Ground-level bushes and rocks
+	local GROUND_DECOR = {
+		{img = "bush_green",    x = 20,   y = 225, s = 2.5},
+		{img = "rock1",         x = 160,  y = 215, s = 2.0},
+		{img = "hedge_green",   x = 350,  y = 222, s = 2.5},
+		{img = "bush_autumn",   x = 500,  y = 225, s = 2.0},
+		{img = "rock2",         x = 700,  y = 215, s = 2.0},
+		{img = "round_bush",    x = 880,  y = 222, s = 2.5},
+		{img = "bush_green",    x = 1000, y = 225, s = 2.0},
+		{img = "rock1",         x = 1150, y = 215, s = 2.0},
+		{img = "hedge_green",   x = 1260, y = 222, s = 2.5},
+	}
+
+	-- Far background (rendered first = behind everything)
+	for _, t in ipairs(FAR_TREES) do
+		local node = gui.new_box_node(vmath.vector3(t.x, t.y, 0), vmath.vector3(16, 16, 0))
+		gui.set_texture(node, "bg")
+		gui.play_flipbook(node, hash(t.img))
+		gui.set_scale(node, vmath.vector3(t.s, t.s, 1))
+		gui.set_alpha(node, t.a or 1)
+		gui.set_size_mode(node, gui.SIZE_MODE_AUTO)
+		bg_nodes[#bg_nodes + 1] = node
+	end
+
+	-- Mid trees (behind characters but in front of far trees)
+	for _, t in ipairs(BG_TREES) do
+		local node = gui.new_box_node(vmath.vector3(t.x, t.y, 0), vmath.vector3(16, 16, 0))
+		gui.set_texture(node, "bg")
+		gui.play_flipbook(node, hash(t.img))
+		gui.set_scale(node, vmath.vector3(t.s, t.s, 1))
+		gui.set_alpha(node, 0.7)
+		gui.set_size_mode(node, gui.SIZE_MODE_AUTO)
+		bg_nodes[#bg_nodes + 1] = node
+	end
+
+	-- Ground decorations
+	for _, d in ipairs(GROUND_DECOR) do
+		local node = gui.new_box_node(vmath.vector3(d.x, d.y, 0), vmath.vector3(16, 16, 0))
+		gui.set_texture(node, "bg")
+		gui.play_flipbook(node, hash(d.img))
+		gui.set_scale(node, vmath.vector3(d.s, d.s, 1))
+		gui.set_size_mode(node, gui.SIZE_MODE_AUTO)
+		bg_nodes[#bg_nodes + 1] = node
 	end
 end
 
@@ -444,17 +543,27 @@ end
 -- HUD (banner + enemy HP)
 -- ============================================================
 
+local pause_nodes = {}
+
 local function create_hud()
 	if banner_bg then return end
 
-	banner_bg = gui.new_box_node(vmath.vector3(640, 700, 0), vmath.vector3(550, 38, 0))
+	-- Banner (top center, y=706)
+	banner_bg = gui.new_box_node(vmath.vector3(640, 706, 0), vmath.vector3(500, 32, 0))
 	gui.set_color(banner_bg, C.banner_atk)
 
-	banner_text = gui.new_text_node(vmath.vector3(640, 700, 0), "")
+	banner_text = gui.new_text_node(vmath.vector3(640, 706, 0), "")
 	gui.set_font(banner_text, "game_font")
+	gui.set_scale(banner_text, vmath.vector3(0.85, 0.85, 1))
 	gui.set_color(banner_text, C.text_atk)
 
-	-- Target display
+	-- Wave text (below banner, right-center)
+	wave_text = gui.new_text_node(vmath.vector3(640, 680, 0), "")
+	gui.set_font(wave_text, "game_font")
+	gui.set_scale(wave_text, vmath.vector3(0.6, 0.6, 1))
+	gui.set_color(wave_text, vmath.vector4(0.5, 0.5, 0.65, 1))
+
+	-- Target display (mid-field, between hero and enemies)
 	target_bg = gui.new_box_node(vmath.vector3(480, 380, 0), vmath.vector3(110, 60, 0))
 	gui.set_color(target_bg, vmath.vector4(0.12, 0.2, 0.42, 0.9))
 
@@ -468,38 +577,36 @@ local function create_hud()
 	gui.set_scale(target_text, vmath.vector3(2.0, 2.0, 1))
 	gui.set_color(target_text, C.white)
 
-	wave_text = gui.new_text_node(vmath.vector3(1220, 700, 0), "")
-	gui.set_font(wave_text, "game_font")
-	gui.set_scale(wave_text, vmath.vector3(0.7, 0.7, 1))
-	gui.set_color(wave_text, vmath.vector4(0.5, 0.5, 0.65, 1))
-
-	-- Enemy HP bar (top-right, symmetric with hero HP)
-	enemy_hp_bg = gui.new_box_node(vmath.vector3(1040, 700, 0), vmath.vector3(200, 16, 0))
+	-- Enemy HP bar (top area, right of center)
+	enemy_hp_bg = gui.new_box_node(vmath.vector3(1040, 680, 0), vmath.vector3(180, 14, 0))
 	gui.set_color(enemy_hp_bg, vmath.vector4(0.15, 0.12, 0.25, 1))
 	gui.set_pivot(enemy_hp_bg, gui.PIVOT_E)
 
-	enemy_hp_fill = gui.new_box_node(vmath.vector3(1040, 700, 0), vmath.vector3(200, 14, 0))
+	enemy_hp_fill = gui.new_box_node(vmath.vector3(1040, 680, 0), vmath.vector3(180, 12, 0))
 	gui.set_color(enemy_hp_fill, vmath.vector4(1, 0.45, 0.25, 1))
 	gui.set_pivot(enemy_hp_fill, gui.PIVOT_E)
 
-	enemy_hp_text = gui.new_text_node(vmath.vector3(940, 700, 0), "")
+	enemy_hp_text = gui.new_text_node(vmath.vector3(1060, 680, 0), "")
 	gui.set_font(enemy_hp_text, "game_font")
-	gui.set_scale(enemy_hp_text, vmath.vector3(0.9, 0.9, 1))
+	gui.set_scale(enemy_hp_text, vmath.vector3(0.7, 0.7, 1))
 	gui.set_color(enemy_hp_text, C.white)
 
-	-- Pause/Menu button (top-left, small)
-	self_pause_btn = gui.new_box_node(vmath.vector3(30, 700, 0), vmath.vector3(40, 28, 0))
-	gui.set_color(self_pause_btn, vmath.vector4(0.2, 0.18, 0.3, 0.7))
-	local pause_text = gui.new_text_node(vmath.vector3(30, 700, 0), "II")
-	gui.set_font(pause_text, "game_font")
-	gui.set_scale(pause_text, vmath.vector3(0.6, 0.6, 1))
-	gui.set_color(pause_text, vmath.vector4(0.6, 0.6, 0.75, 1))
+	-- Pause button (top-right corner) — two vertical bars
+	local pause_x = 1248
+	local pause_y = 706
+	self_pause_btn = gui.new_box_node(vmath.vector3(pause_x, pause_y, 0), vmath.vector3(36, 28, 0))
+	gui.set_color(self_pause_btn, vmath.vector4(0.15, 0.13, 0.25, 0.6))
+	local bar1 = gui.new_box_node(vmath.vector3(pause_x - 6, pause_y, 0), vmath.vector3(5, 16, 0))
+	gui.set_color(bar1, vmath.vector4(0.7, 0.7, 0.85, 0.9))
+	local bar2 = gui.new_box_node(vmath.vector3(pause_x + 6, pause_y, 0), vmath.vector3(5, 16, 0))
+	gui.set_color(bar2, vmath.vector4(0.7, 0.7, 0.85, 0.9))
+	pause_nodes = {bar1, bar2}
 end
 
 local function update_enemy_hud(hp, max_hp)
 	if not enemy_hp_fill then return end
 	local ratio = hp / max_hp
-	gui.set_size(enemy_hp_fill, vmath.vector3(200 * ratio, 14, 0))
+	gui.set_size(enemy_hp_fill, vmath.vector3(180 * ratio, 12, 0))
 	gui.set_text(enemy_hp_text, tostring(hp))
 	local c = ratio > 0.5 and vmath.vector4(1, 0.5, 0.25, 1) or vmath.vector4(1, 0.25, 0.2, 1)
 	gui.set_color(enemy_hp_fill, c)
@@ -515,7 +622,7 @@ local function set_attack_mode(weakness)
 	gui.set_text(target_text, tostring(weakness))
 	gui.set_color(target_text, C.white)
 	gui.set_text(gui.get_node("btn_strike_text"), "STRIKE!")
-	gui.set_color(gui.get_node("btn_strike"), C.btn_green)
+	gui.set_color(gui.get_node("btn_strike"), vmath.vector4(0.4, 1.0, 0.5, 1))
 end
 
 local function set_defend_mode(attack_number)
@@ -532,7 +639,7 @@ local function set_defend_mode(attack_number)
 	end
 	gui.set_color(target_text, vmath.vector4(1, 0.92, 0.82, 1))
 	gui.set_text(gui.get_node("btn_strike_text"), "BLOCK!")
-	gui.set_color(gui.get_node("btn_strike"), C.btn_red)
+	gui.set_color(gui.get_node("btn_strike"), vmath.vector4(1.0, 0.4, 0.3, 1))
 end
 
 -- ============================================================
@@ -548,7 +655,11 @@ local function create_tile_nodes()
 	for i = 1, #number_tile_values do
 		local x = NUM_START_X + (i - 1) * (TILE_W + TILE_GAP)
 		local box = gui.new_box_node(vmath.vector3(x, NUM_Y, 0), vmath.vector3(TILE_W, TILE_H, 0))
-		gui.set_color(box, C.tile_num)
+		gui.set_texture(box, "ui")
+		gui.play_flipbook(box, hash("btn_brown"))
+		gui.set_size_mode(box, gui.SIZE_MODE_MANUAL)
+		gui.set_size(box, vmath.vector3(TILE_W, TILE_H, 0))
+		gui.set_color(box, vmath.vector4(0.6, 0.7, 1.0, 1))
 		local txt = gui.new_text_node(vmath.vector3(x, NUM_Y, 0), tostring(number_tile_values[i]))
 		gui.set_font(txt, "game_font")
 		gui.set_scale(txt, vmath.vector3(1.3, 1.3, 1))
@@ -564,7 +675,11 @@ local function create_tile_nodes()
 	for i = 1, #operator_tile_values do
 		local x = OP_START_X + (i - 1) * (TILE_W + TILE_GAP)
 		local box = gui.new_box_node(vmath.vector3(x, OP_Y, 0), vmath.vector3(TILE_W, TILE_H, 0))
-		gui.set_color(box, C.tile_op)
+		gui.set_texture(box, "ui")
+		gui.play_flipbook(box, hash("btn_brown"))
+		gui.set_size_mode(box, gui.SIZE_MODE_MANUAL)
+		gui.set_size(box, vmath.vector3(TILE_W, TILE_H, 0))
+		gui.set_color(box, vmath.vector4(1.0, 0.8, 0.4, 1))
 		local txt = gui.new_text_node(vmath.vector3(x, OP_Y, 0), operator_tile_values[i])
 		gui.set_font(txt, "game_font")
 		gui.set_scale(txt, vmath.vector3(1.4, 1.4, 1))
@@ -591,8 +706,11 @@ local function update_equation_display()
 	end
 end
 
-local function dim_tile(nd) gui.set_color(nd.box, C.tile_used); gui.set_color(nd.text, C.tile_used_t) end
-local function restore_tile(nd, is_num) gui.set_color(nd.box, is_num and C.tile_num or C.tile_op); gui.set_color(nd.text, C.tile_text) end
+local NUM_TINT = vmath.vector4(0.6, 0.7, 1.0, 1)
+local OP_TINT = vmath.vector4(1.0, 0.8, 0.4, 1)
+
+local function dim_tile(nd) gui.set_color(nd.box, vmath.vector4(0.3, 0.3, 0.35, 0.4)); gui.set_color(nd.text, C.tile_used_t) end
+local function restore_tile(nd, is_num) gui.set_color(nd.box, is_num and NUM_TINT or OP_TINT); gui.set_color(nd.text, C.tile_text) end
 
 local function clear_equation()
 	for key, _ in pairs(tile_used) do
@@ -754,7 +872,11 @@ local function show_between_waves_ui(data)
 
 	local btn_label = is_bonus and "SKIP" or "FIGHT!"
 	bw.btn = gui.new_box_node(vmath.vector3(640, 380, 0), vmath.vector3(200, 50, 0))
-	gui.set_color(bw.btn, is_bonus and vmath.vector4(0.25, 0.2, 0.35, 1) or C.btn_green)
+	gui.set_texture(bw.btn, "ui")
+	gui.play_flipbook(bw.btn, hash("btn_ornate"))
+	gui.set_size_mode(bw.btn, gui.SIZE_MODE_MANUAL)
+	gui.set_size(bw.btn, vmath.vector3(200, 50, 0))
+	gui.set_color(bw.btn, is_bonus and vmath.vector4(0.6, 0.5, 0.8, 1) or vmath.vector4(0.4, 1.0, 0.5, 1))
 	bw.btn_t = gui.new_text_node(vmath.vector3(640, 380, 0), btn_label)
 	gui.set_font(bw.btn_t, "game_font")
 	gui.set_scale(bw.btn_t, vmath.vector3(1.1, 1.1, 1))
@@ -762,7 +884,11 @@ local function show_between_waves_ui(data)
 
 	if data.recovery_available then
 		bw.rest = gui.new_box_node(vmath.vector3(640, 320, 0), vmath.vector3(200, 50, 0))
-		gui.set_color(bw.rest, vmath.vector4(0.12, 0.35, 0.2, 1))
+		gui.set_texture(bw.rest, "ui")
+		gui.play_flipbook(bw.rest, hash("btn_ornate"))
+		gui.set_size_mode(bw.rest, gui.SIZE_MODE_MANUAL)
+		gui.set_size(bw.rest, vmath.vector3(200, 50, 0))
+		gui.set_color(bw.rest, vmath.vector4(0.3, 0.8, 0.5, 1))
 		bw.rest_t = gui.new_text_node(vmath.vector3(640, 320, 0), "REST & READ")
 		gui.set_font(bw.rest_t, "game_font")
 		gui.set_color(bw.rest_t, vmath.vector4(0.35, 0.95, 0.55, 1))
@@ -783,6 +909,7 @@ function init(self)
 	msg.post(".", "acquire_input_focus")
 	input_enabled = false; battle_over = false; between_waves = false
 	equation_tokens = {}; expecting_number = true; tile_used = {}
+	create_background()
 	create_scene()
 	create_hud()
 
@@ -828,7 +955,7 @@ function on_message(self, message_id, message, sender)
 
 	elseif message_id == hash("update_hero_hp") then
 		local ratio = message.hp / message.max_hp
-		gui.set_size(gui.get_node("hero_hp_fill"), vmath.vector3(200 * ratio, 14, 0))
+		gui.set_size(gui.get_node("hero_hp_fill"), vmath.vector3(180 * ratio, 12, 0))
 		gui.set_text(gui.get_node("hero_hp_text"), tostring(message.hp))
 		pop_text(gui.get_node("hero_hp_text"))
 		local c = ratio > 0.5 and C.hp_green or (ratio > 0.25 and C.hp_yellow or C.hp_red)
@@ -883,7 +1010,7 @@ function on_message(self, message_id, message, sender)
 		if message.correct then
 			-- Flash all options green briefly
 			for i = 1, 4 do
-				local n = fill_blank_nodes[i]
+				local n = fill_blank_options[i]
 				if n and n.box then
 					gui.set_color(n.box, vmath.vector4(0.1, 0.5, 0.2, 1))
 				end
@@ -891,7 +1018,7 @@ function on_message(self, message_id, message, sender)
 		else
 			-- Highlight wrong answer red, show correct after 3 attempts
 			for i = 1, 4 do
-				local n = fill_blank_nodes[i]
+				local n = fill_blank_options[i]
 				if n then
 					if n.value == message.answer then
 						gui.set_color(n.box, vmath.vector4(0.5, 0.1, 0.1, 1))
@@ -960,7 +1087,11 @@ function on_message(self, message_id, message, sender)
 
 		-- Continue button (dynamic, renders on top)
 		local btn = gui.new_box_node(vmath.vector3(640, 340, 0), vmath.vector3(200, 55, 0))
-		gui.set_color(btn, vmath.vector4(0.15, 0.65, 0.3, 1))
+		gui.set_texture(btn, "ui")
+		gui.play_flipbook(btn, hash("btn_ornate"))
+		gui.set_size_mode(btn, gui.SIZE_MODE_MANUAL)
+		gui.set_size(btn, vmath.vector3(200, 55, 0))
+		gui.set_color(btn, vmath.vector4(0.4, 1.0, 0.5, 1))
 		local btn_text = gui.new_text_node(vmath.vector3(640, 340, 0), "CONTINUE")
 		gui.set_font(btn_text, "game_font")
 		gui.set_scale(btn_text, vmath.vector3(1.1, 1.1, 1))
@@ -1013,7 +1144,7 @@ function on_input(self, action_id, action)
 	-- Fill-in-blank option tapping
 	if fill_blank_mode then
 		for i = 1, 4 do
-			local n = fill_blank_nodes[i]
+			local n = fill_blank_options[i]
 			if n and n.box and gui.pick_node(n.box, action.x, action.y) then
 				sfx.play("tile_tap")
 				pop(n.box)

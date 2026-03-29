@@ -7,6 +7,10 @@ fonts {
   name: "system_font"
   font: "/builtins/fonts/default.font"
 }
+textures {
+  name: "ui"
+  texture: "/assets/images/ui/ui.atlas"
+}
 background_color {
   x: 0.06
   y: 0.04
@@ -48,8 +52,9 @@ nodes {
   rotation { x: 0.0 y: 0.0 z: 0.0 w: 1.0 }
   scale { x: 0.8 y: 0.8 z: 1.0 w: 1.0 }
   size { x: 100.0 y: 32.0 z: 0.0 w: 1.0 }
-  color { x: 0.25 y: 0.2 z: 0.35 w: 1.0 }
+  color { x: 0.7 y: 0.7 z: 0.9 w: 1.0 }
   type: TYPE_BOX
+  texture: "ui/btn_dark"
   id: "btn_back"
   pivot: PIVOT_CENTER
   size_mode: SIZE_MODE_MANUAL

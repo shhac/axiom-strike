@@ -7,6 +7,14 @@ fonts {
   name: "system_font"
   font: "/builtins/fonts/default.font"
 }
+textures {
+  name: "bg"
+  texture: "/assets/images/sprites/bg.atlas"
+}
+textures {
+  name: "ui"
+  texture: "/assets/images/ui/ui.atlas"
+}
 background_color {
   x: 0.05
   y: 0.03
@@ -145,6 +153,7 @@ nodes {
     w: 1.0
   }
   type: TYPE_BOX
+  texture: "ui/btn_ornate"
   id: "btn_play"
   pivot: PIVOT_CENTER
   size_mode: SIZE_MODE_MANUAL
@@ -281,6 +290,7 @@ nodes {
     w: 1.0
   }
   type: TYPE_BOX
+  texture: "ui/btn_dark"
   id: "btn_settings"
   pivot: PIVOT_CENTER
   size_mode: SIZE_MODE_MANUAL
@@ -336,22 +346,23 @@ nodes {
   inherit_alpha: true
 }
 nodes {
-  position { x: 1180.0 y: 40.0 z: 0.0 w: 1.0 }
+  position { x: 1150.0 y: 45.0 z: 0.0 w: 1.0 }
   rotation { x: 0.0 y: 0.0 z: 0.0 w: 1.0 }
-  scale { x: 0.8 y: 0.8 z: 1.0 w: 1.0 }
-  size { x: 140.0 y: 32.0 z: 0.0 w: 1.0 }
-  color { x: 0.35 y: 0.25 z: 0.12 w: 1.0 }
+  scale { x: 1.0 y: 1.0 z: 1.0 w: 1.0 }
+  size { x: 200.0 y: 45.0 z: 0.0 w: 1.0 }
+  color { x: 0.5 y: 0.4 z: 0.7 w: 1.0 }
   type: TYPE_BOX
+  texture: "ui/btn_dark"
   id: "btn_collection"
   pivot: PIVOT_CENTER
   size_mode: SIZE_MODE_MANUAL
 }
 nodes {
-  position { x: 1180.0 y: 40.0 z: 0.0 w: 1.0 }
+  position { x: 1150.0 y: 45.0 z: 0.0 w: 1.0 }
   rotation { x: 0.0 y: 0.0 z: 0.0 w: 1.0 }
-  scale { x: 0.65 y: 0.65 z: 1.0 w: 1.0 }
+  scale { x: 0.85 y: 0.85 z: 1.0 w: 1.0 }
   size { x: 300.0 y: 24.0 z: 0.0 w: 1.0 }
-  color { x: 1.0 y: 0.85 z: 0.2 w: 1.0 }
+  color { x: 1.0 y: 1.0 z: 1.0 w: 1.0 }
   type: TYPE_TEXT
   text: "COLLECTION"
   font: "game_font"

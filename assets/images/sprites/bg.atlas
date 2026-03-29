@@ -1,0 +1,121 @@
+images {
+  image: "/assets/images/sprites/bg/big_pine_autumn.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/big_pine_green.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/big_pine_teal.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/big_tree_autumn.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/big_tree_green.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/bush_autumn.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/bush_green.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/cactus.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/dead_tree.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/fruit_tree.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/hedge_green.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/hedge_long1.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/hedge_long2.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/hedge_long3.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/mountain1.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/mountain2.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/mountain3.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/mountain4.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/pine_small_autumn.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/pine_small_green.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/pine_small_teal.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/rock1.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/rock2.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/rock3.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/rock4.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/round_bush_red.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/round_bush.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/tree_autumn.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/tree_green.png"
+}
+
+images {
+  image: "/assets/images/sprites/bg/tree_teal.png"
+}
+
+margin: 1
