@@ -38,5 +38,17 @@ function on_message(self, message_id, message, sender)
 			unload_screen(self, current_screen)
 		end
 		load_screen(self, "#menu_proxy")
+
+	elseif message_id == hash("settings_pressed") then
+		if current_screen then
+			unload_screen(self, current_screen)
+		end
+		load_screen(self, "#settings_proxy")
+
+	elseif message_id == hash("back_to_menu") then
+		if current_screen then
+			unload_screen(self, current_screen)
+		end
+		load_screen(self, "#menu_proxy")
 	end
 end

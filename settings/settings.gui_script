@@ -1,0 +1,83 @@
+local READING_LEVELS = {"AUTO", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7"}
+
+local COLOR_ON = vmath.vector4(0.267, 0.8, 0.4, 1)
+local COLOR_OFF = vmath.vector4(0.267, 0.2, 0.333, 1)
+local TEXT_ON = vmath.vector4(1, 1, 1, 1)
+local TEXT_OFF = vmath.vector4(0.6, 0.533, 0.6, 1)
+
+local function update_toggle(btn_id, text_id, is_on)
+	gui.set_color(gui.get_node(btn_id), is_on and COLOR_ON or COLOR_OFF)
+	gui.set_text(gui.get_node(text_id), is_on and "ON" or "OFF")
+	gui.set_color(gui.get_node(text_id), is_on and TEXT_ON or TEXT_OFF)
+end
+
+local function update_reading_display(self)
+	local label = READING_LEVELS[self.reading_level_index]
+	gui.set_text(gui.get_node("btn_reading_text"), label)
+end
+
+function init(self)
+	msg.post(".", "acquire_input_focus")
+
+	-- Load settings or use defaults
+	local saved = sys.load(sys.get_save_file("axiom_strike", "settings"))
+	self.sound_on = saved.sound_on ~= false
+	self.time_pressure = saved.time_pressure or false
+	self.tile_persist = saved.tile_persist or false
+	self.reading_level_index = saved.reading_level_index or 1
+
+	update_toggle("btn_sound", "btn_sound_text", self.sound_on)
+	update_toggle("btn_time_pressure", "btn_time_pressure_text", self.time_pressure)
+	update_toggle("btn_tile_persist", "btn_tile_persist_text", self.tile_persist)
+	update_reading_display(self)
+end
+
+local function save_settings(self)
+	sys.save(sys.get_save_file("axiom_strike", "settings"), {
+		sound_on = self.sound_on,
+		time_pressure = self.time_pressure,
+		tile_persist = self.tile_persist,
+		reading_level_index = self.reading_level_index,
+	})
+end
+
+function on_input(self, action_id, action)
+	if action_id ~= hash("touch") or not action.pressed then
+		return false
+	end
+
+	if gui.pick_node(gui.get_node("btn_sound"), action.x, action.y) then
+		self.sound_on = not self.sound_on
+		update_toggle("btn_sound", "btn_sound_text", self.sound_on)
+		save_settings(self)
+		return true
+	end
+
+	if gui.pick_node(gui.get_node("btn_time_pressure"), action.x, action.y) then
+		self.time_pressure = not self.time_pressure
+		update_toggle("btn_time_pressure", "btn_time_pressure_text", self.time_pressure)
+		save_settings(self)
+		return true
+	end
+
+	if gui.pick_node(gui.get_node("btn_tile_persist"), action.x, action.y) then
+		self.tile_persist = not self.tile_persist
+		update_toggle("btn_tile_persist", "btn_tile_persist_text", self.tile_persist)
+		save_settings(self)
+		return true
+	end
+
+	if gui.pick_node(gui.get_node("btn_reading"), action.x, action.y) then
+		self.reading_level_index = (self.reading_level_index % #READING_LEVELS) + 1
+		update_reading_display(self)
+		save_settings(self)
+		return true
+	end
+
+	if gui.pick_node(gui.get_node("btn_back"), action.x, action.y) then
+		msg.post("main:/controller#script", "back_to_menu")
+		return true
+	end
+
+	return false
+end

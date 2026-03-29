@@ -1,0 +1,693 @@
+script: "/settings/settings.gui_script"
+fonts {
+  name: "system_font"
+  font: "/builtins/fonts/default.font"
+}
+background_color {
+  x: 0.06
+  y: 0.02
+  z: 0.12
+  w: 1.0
+}
+nodes {
+  position {
+    x: 640.0
+    y: 660.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.5
+    y: 1.5
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 300.0
+    y: 40.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1.0
+    y: 0.867
+    z: 0.267
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "SETTINGS"
+  font: "system_font"
+  id: "title"
+  pivot: PIVOT_CENTER
+  outline {
+    x: 0.3
+    y: 0.1
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 300.0
+    y: 560.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 300.0
+    y: 24.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.667
+    y: 0.667
+    z: 0.8
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "Sound"
+  font: "system_font"
+  id: "label_sound"
+  pivot: PIVOT_W
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 800.0
+    y: 560.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 100.0
+    y: 40.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.267
+    y: 0.8
+    z: 0.4
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "btn_sound"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+}
+nodes {
+  position {
+    x: 800.0
+    y: 560.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 0.9
+    y: 0.9
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 200.0
+    y: 24.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "ON"
+  font: "system_font"
+  id: "btn_sound_text"
+  pivot: PIVOT_CENTER
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 300.0
+    y: 490.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 300.0
+    y: 24.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.667
+    y: 0.667
+    z: 0.8
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "Time Pressure"
+  font: "system_font"
+  id: "label_time_pressure"
+  pivot: PIVOT_W
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 800.0
+    y: 490.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 100.0
+    y: 40.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.267
+    y: 0.2
+    z: 0.333
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "btn_time_pressure"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+}
+nodes {
+  position {
+    x: 800.0
+    y: 490.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 0.9
+    y: 0.9
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 200.0
+    y: 24.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.6
+    y: 0.533
+    z: 0.6
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "OFF"
+  font: "system_font"
+  id: "btn_time_pressure_text"
+  pivot: PIVOT_CENTER
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 300.0
+    y: 420.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 300.0
+    y: 24.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.667
+    y: 0.667
+    z: 0.8
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "Tile Persistence"
+  font: "system_font"
+  id: "label_tile_persist"
+  pivot: PIVOT_W
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 800.0
+    y: 420.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 100.0
+    y: 40.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.267
+    y: 0.2
+    z: 0.333
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "btn_tile_persist"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+}
+nodes {
+  position {
+    x: 800.0
+    y: 420.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 0.9
+    y: 0.9
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 200.0
+    y: 24.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.6
+    y: 0.533
+    z: 0.6
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "OFF"
+  font: "system_font"
+  id: "btn_tile_persist_text"
+  pivot: PIVOT_CENTER
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 300.0
+    y: 350.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 300.0
+    y: 24.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.667
+    y: 0.667
+    z: 0.8
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "Reading Level"
+  font: "system_font"
+  id: "label_reading"
+  pivot: PIVOT_W
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 800.0
+    y: 350.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 100.0
+    y: 40.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.15
+    y: 0.3
+    z: 0.5
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "btn_reading"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+}
+nodes {
+  position {
+    x: 800.0
+    y: 350.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 0.9
+    y: 0.9
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 200.0
+    y: 24.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.53
+    y: 0.8
+    z: 1.0
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "AUTO"
+  font: "system_font"
+  id: "btn_reading_text"
+  pivot: PIVOT_CENTER
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 640.0
+    y: 120.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 180.0
+    y: 50.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.267
+    y: 0.2
+    z: 0.333
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "btn_back"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+}
+nodes {
+  position {
+    x: 640.0
+    y: 120.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 200.0
+    y: 30.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.667
+    y: 0.667
+    z: 0.8
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "BACK"
+  font: "system_font"
+  id: "btn_back_text"
+  pivot: PIVOT_CENTER
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+}
+material: "/builtins/materials/gui.material"
+adjust_reference: ADJUST_REFERENCE_PARENT
