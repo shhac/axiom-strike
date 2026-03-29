@@ -60,18 +60,10 @@
     <circle cx="0" cy="5" r="3" fill="#440088"/>
 
     <!-- Floating crystal shards -->
-    <polygon points="-55,0 -60,15 -50,18" fill="#8855cc" opacity="0.7">
-      <animate attributeName="transform" type="translate" values="0,0;0,-5;0,0" dur="2s" repeatCount="indefinite"/>
-    </polygon>
-    <polygon points="55,10 62,0 58,20" fill="#8855cc" opacity="0.7">
-      <animate attributeName="transform" type="translate" values="0,0;0,5;0,0" dur="2.3s" repeatCount="indefinite"/>
-    </polygon>
-    <polygon points="-45,-15 -50,-5 -40,-3" fill="#aa77ee" opacity="0.5">
-      <animate attributeName="transform" type="translate" values="0,0;3,-3;0,0" dur="1.8s" repeatCount="indefinite"/>
-    </polygon>
-    <polygon points="45,-10 52,-15 48,-2" fill="#aa77ee" opacity="0.5">
-      <animate attributeName="transform" type="translate" values="0,0;-3,-3;0,0" dur="2.1s" repeatCount="indefinite"/>
-    </polygon>
+    <polygon points="-55,0 -60,15 -50,18" fill="#8855cc" opacity="0.7"/>
+    <polygon points="55,10 62,0 58,20" fill="#8855cc" opacity="0.7"/>
+    <polygon points="-45,-15 -50,-5 -40,-3" fill="#aa77ee" opacity="0.5"/>
+    <polygon points="45,-10 52,-15 48,-2" fill="#aa77ee" opacity="0.5"/>
 
     <!-- Crown -->
     <polygon points="-25,-18 -20,-40 -10,-22 0,-45 10,-22 20,-40 25,-18" fill="#ffcc33"/>
@@ -100,9 +92,7 @@
 
   <!-- Tap to continue indicator -->
   <text x="700" y="465" fill="#666688" font-family="monospace" font-size="10" text-anchor="middle">TAP TO CONTINUE</text>
-  <polygon points="700,468 695,475 705,475" fill="#666688">
-    <animate attributeName="transform" type="translate" values="0,0;0,3;0,0" dur="1s" repeatCount="indefinite"/>
-  </polygon>
+  <polygon points="700,468 695,475 705,475" fill="#666688"/>
 
   <!-- Screen effect - multiplication particles -->
   <text x="100" y="100" fill="#8855cc" font-family="monospace" font-size="16" opacity="0.2">x</text>
