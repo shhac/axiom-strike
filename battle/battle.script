@@ -68,7 +68,12 @@ local function start_attack_phase(self)
 	local target = self.enemies[self.target_index]
 	local numbers, operators = tiles_module.deal_hand(target.weakness, target.skill or CONSTANTS.OP_ADD, target.max_operand)
 	send_gui("deal_tiles", {numbers = numbers, operators = operators})
-	send_gui("set_phase", {text = "ATTACK! Target weakness: " .. target.weakness})
+	send_gui("set_phase", {
+		text = "ATTACK! Target weakness: " .. target.weakness,
+		mode = "attack",
+		weakness = target.weakness,
+		wave_text = "Wave " .. self.current_wave .. "/" .. #self.waves,
+	})
 	sync_all_enemy_hp(self)
 	send_gui("enable_input")
 	self.turn_start_time = os.clock()
@@ -93,7 +98,12 @@ local function start_enemy_attack(self, attacker_index)
 
 	local numbers, operators = tiles_module.deal_hand(self.current_attack_number, enemy.skill or CONSTANTS.OP_ADD, enemy.max_operand)
 	send_gui("deal_tiles", {numbers = numbers, operators = operators})
-	send_gui("set_phase", {text = "DEFEND! Enemy #" .. attacker_index .. " attacks: " .. self.current_attack_number})
+	send_gui("set_phase", {
+		text = "DEFEND! Match: " .. self.current_attack_number,
+		mode = "defend",
+		attack_number = self.current_attack_number,
+		wave_text = "Wave " .. self.current_wave .. "/" .. #self.waves,
+	})
 	send_gui("highlight_attacker", {index = attacker_index})
 	send_gui("enable_input")
 	self.turn_start_time = os.clock()

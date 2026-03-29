@@ -4,9 +4,9 @@ fonts {
   font: "/builtins/fonts/default.font"
 }
 background_color {
-  x: 0.04
-  y: 0.08
-  z: 0.04
+  x: 0.06
+  y: 0.09
+  z: 0.06
   w: 1.0
 }
 nodes {
@@ -35,9 +35,9 @@ nodes {
     w: 1.0
   }
   color {
-    x: 0.267
-    y: 0.8
-    z: 0.4
+    x: 0.3
+    y: 0.9
+    z: 0.5
     w: 1.0
   }
   type: TYPE_TEXT
@@ -46,9 +46,9 @@ nodes {
   id: "title"
   pivot: PIVOT_CENTER
   outline {
-    x: 0.0
-    y: 0.0
-    z: 0.0
+    x: 0.05
+    y: 0.15
+    z: 0.05
     w: 1.0
   }
   shadow {
@@ -85,13 +85,13 @@ nodes {
     w: 1.0
   }
   color {
-    x: 0.267
-    y: 0.8
-    z: 0.4
+    x: 0.3
+    y: 0.9
+    z: 0.5
     w: 1.0
   }
   type: TYPE_TEXT
-  text: "0:45"
+  text: "0:30"
   font: "system_font"
   id: "timer_text"
   pivot: PIVOT_CENTER
@@ -112,7 +112,7 @@ nodes {
 nodes {
   position {
     x: 1100.0
-    y: 675.0
+    y: 678.0
     z: 0.0
     w: 1.0
   }
@@ -136,7 +136,7 @@ nodes {
   }
   color {
     x: 0.1
-    y: 0.2
+    y: 0.15
     z: 0.1
     w: 1.0
   }
@@ -148,7 +148,7 @@ nodes {
 nodes {
   position {
     x: 1100.0
-    y: 675.0
+    y: 678.0
     z: 0.0
     w: 1.0
   }
@@ -171,9 +171,9 @@ nodes {
     w: 1.0
   }
   color {
-    x: 0.267
-    y: 0.8
-    z: 0.4
+    x: 0.3
+    y: 0.9
+    z: 0.5
     w: 1.0
   }
   type: TYPE_BOX
@@ -184,7 +184,7 @@ nodes {
 nodes {
   position {
     x: 120.0
-    y: 660.0
+    y: 695.0
     z: 0.0
     w: 1.0
   }
@@ -195,8 +195,8 @@ nodes {
     w: 1.0
   }
   scale {
-    x: 0.7
-    y: 0.7
+    x: 0.8
+    y: 0.8
     z: 1.0
     w: 1.0
   }
@@ -208,8 +208,8 @@ nodes {
   }
   color {
     x: 0.5
-    y: 0.5
-    z: 0.6
+    y: 0.7
+    z: 0.55
     w: 1.0
   }
   type: TYPE_TEXT
@@ -234,7 +234,7 @@ nodes {
 nodes {
   position {
     x: 640.0
-    y: 420.0
+    y: 430.0
     z: 0.0
     w: 1.0
   }
@@ -251,15 +251,15 @@ nodes {
     w: 1.0
   }
   size {
-    x: 900.0
-    y: 350.0
+    x: 1000.0
+    y: 380.0
     z: 0.0
     w: 1.0
   }
   color {
     x: 0.08
-    y: 0.08
-    z: 0.05
+    y: 0.1
+    z: 0.07
     w: 1.0
   }
   type: TYPE_BOX
@@ -270,7 +270,7 @@ nodes {
 nodes {
   position {
     x: 640.0
-    y: 420.0
+    y: 430.0
     z: 0.0
     w: 1.0
   }
@@ -281,21 +281,21 @@ nodes {
     w: 1.0
   }
   scale {
-    x: 0.85
-    y: 0.85
+    x: 0.9
+    y: 0.9
     z: 1.0
     w: 1.0
   }
   size {
-    x: 900.0
-    y: 350.0
+    x: 950.0
+    y: 370.0
     z: 0.0
     w: 1.0
   }
   color {
-    x: 0.8
-    y: 0.8
-    z: 0.667
+    x: 0.82
+    y: 0.82
+    z: 0.72
     w: 1.0
   }
   type: TYPE_TEXT
@@ -321,108 +321,7 @@ nodes {
 nodes {
   position {
     x: 640.0
-    y: 200.0
-    z: 0.0
-    w: 1.0
-  }
-  rotation {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
-  }
-  scale {
-    x: 0.85
-    y: 0.85
-    z: 1.0
-    w: 1.0
-  }
-  size {
-    x: 900.0
-    y: 30.0
-    z: 0.0
-    w: 1.0
-  }
-  color {
-    x: 0.867
-    y: 0.867
-    z: 0.933
-    w: 1.0
-  }
-  type: TYPE_TEXT
-  text: ""
-  font: "system_font"
-  id: "question_text"
-  pivot: PIVOT_CENTER
-  line_break: true
-  outline {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
-  }
-  shadow {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 0.0
-  }
-  inherit_alpha: true
-}
-nodes {
-  position {
-    x: 640.0
-    y: 100.0
-    z: 0.0
-    w: 1.0
-  }
-  rotation {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
-  }
-  scale {
-    x: 0.9
-    y: 0.9
-    z: 1.0
-    w: 1.0
-  }
-  size {
-    x: 600.0
-    y: 24.0
-    z: 0.0
-    w: 1.0
-  }
-  color {
-    x: 0.4
-    y: 0.6
-    z: 0.4
-    w: 1.0
-  }
-  type: TYPE_TEXT
-  text: "Read carefully... A question will appear when the timer ends."
-  font: "system_font"
-  id: "hint_text"
-  pivot: PIVOT_CENTER
-  outline {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 0.0
-  }
-  shadow {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 0.0
-  }
-  inherit_alpha: true
-}
-nodes {
-  position {
-    x: 640.0
-    y: 420.0
+    y: 620.0
     z: 0.0
     w: 1.0
   }
@@ -439,15 +338,66 @@ nodes {
     w: 1.0
   }
   size {
-    x: 600.0
+    x: 1000.0
     y: 40.0
     z: 0.0
     w: 1.0
   }
   color {
-    x: 0.267
-    y: 0.8
-    z: 0.4
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: ""
+  font: "system_font"
+  id: "question_text"
+  pivot: PIVOT_CENTER
+  line_break: true
+  outline {
+    x: 0.05
+    y: 0.05
+    z: 0.12
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 640.0
+    y: 560.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.1
+    y: 1.1
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 800.0
+    y: 30.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.3
+    y: 1.0
+    z: 0.5
     w: 1.0
   }
   type: TYPE_TEXT
@@ -469,6 +419,56 @@ nodes {
   }
   inherit_alpha: true
   alpha: 0.0
+}
+nodes {
+  position {
+    x: 640.0
+    y: 60.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 0.8
+    y: 0.8
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 600.0
+    y: 24.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.4
+    y: 0.55
+    z: 0.42
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "Read carefully... A question will appear when the timer ends."
+  font: "system_font"
+  id: "hint_text"
+  pivot: PIVOT_CENTER
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
 }
 material: "/builtins/materials/gui.material"
 adjust_reference: ADJUST_REFERENCE_PARENT

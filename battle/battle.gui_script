@@ -19,21 +19,115 @@ local input_enabled = false
 local battle_over = false
 local between_waves = false
 
+-- Phase banner nodes (created once)
+local banner_bg = nil
+local banner_text = nil
+local target_bg = nil
+local target_text = nil
+local target_label = nil
+local wave_text = nil
+
 -- Layout constants
-local TILE_W = 64
-local TILE_H = 48
-local TILE_GAP = 12
-local NUM_START_X = 150
+local TILE_W = 68
+local TILE_H = 52
+local TILE_GAP = 10
+local NUM_START_X = 140
 local NUM_Y = 100
-local OP_START_X = 620
+local OP_START_X = 660
 local OP_Y = 100
-local ENEMY_START_X = 550
-local ENEMY_GAP = 120
-local ENEMY_Y = 450
+local ENEMY_START_X = 560
+local ENEMY_GAP = 110
+local ENEMY_Y = 460
 local ENEMY_W = 70
 local ENEMY_H = 90
 
 local SCRIPT_URL = "/battle_controller#script"
+
+-- Color palette
+local C_ATTACK_BANNER  = vmath.vector4(0.12, 0.2, 0.4, 0.95)
+local C_DEFEND_BANNER  = vmath.vector4(0.4, 0.1, 0.1, 0.95)
+local C_ATTACK_TEXT    = vmath.vector4(0.4, 0.7, 1.0, 1)
+local C_DEFEND_TEXT    = vmath.vector4(1.0, 0.5, 0.4, 1)
+local C_TARGET_BG      = vmath.vector4(0.15, 0.25, 0.45, 1)
+local C_TARGET_DEFEND  = vmath.vector4(0.45, 0.12, 0.12, 1)
+local C_NUM_TILE       = vmath.vector4(0.1, 0.22, 0.38, 1)
+local C_NUM_TEXT       = vmath.vector4(0.5, 0.82, 1.0, 1)
+local C_OP_TILE        = vmath.vector4(0.3, 0.22, 0.12, 1)
+local C_OP_TEXT        = vmath.vector4(1.0, 0.82, 0.4, 1)
+local C_TILE_USED_BG   = vmath.vector4(0.08, 0.08, 0.12, 0.4)
+local C_TILE_USED_TEXT  = vmath.vector4(0.25, 0.25, 0.3, 0.4)
+local C_ENEMY_ALIVE    = vmath.vector4(0.2, 0.65, 0.35, 1)
+local C_ENEMY_DEAD     = vmath.vector4(0.12, 0.12, 0.16, 0.4)
+local C_ENEMY_TARGETED = vmath.vector4(1.0, 0.87, 0.27, 1)
+local C_ENEMY_ATTACKING = vmath.vector4(1.0, 0.3, 0.25, 1)
+
+-- ============================================================
+-- Phase banner (persistent, created once)
+-- ============================================================
+
+local function create_banner_nodes()
+	if banner_bg then return end
+
+	banner_bg = gui.new_box_node(vmath.vector3(640, 645, 0), vmath.vector3(500, 40, 0))
+	gui.set_color(banner_bg, C_ATTACK_BANNER)
+
+	banner_text = gui.new_text_node(vmath.vector3(640, 645, 0), "")
+	gui.set_font(banner_text, "system_font")
+	gui.set_scale(banner_text, vmath.vector3(1.1, 1.1, 1))
+	gui.set_color(banner_text, C_ATTACK_TEXT)
+
+	-- Target number display (big, centered)
+	target_bg = gui.new_box_node(vmath.vector3(500, 340, 0), vmath.vector3(160, 70, 0))
+	gui.set_color(target_bg, C_TARGET_BG)
+
+	target_label = gui.new_text_node(vmath.vector3(500, 360, 0), "TARGET")
+	gui.set_font(target_label, "system_font")
+	gui.set_scale(target_label, vmath.vector3(0.65, 0.65, 1))
+	gui.set_color(target_label, vmath.vector4(0.6, 0.7, 0.9, 1))
+
+	target_text = gui.new_text_node(vmath.vector3(500, 330, 0), "")
+	gui.set_font(target_text, "system_font")
+	gui.set_scale(target_text, vmath.vector3(2.0, 2.0, 1))
+	gui.set_color(target_text, vmath.vector4(1, 1, 1, 1))
+
+	-- Wave counter
+	wave_text = gui.new_text_node(vmath.vector3(1200, 645, 0), "")
+	gui.set_font(wave_text, "system_font")
+	gui.set_scale(wave_text, vmath.vector3(0.8, 0.8, 1))
+	gui.set_color(wave_text, vmath.vector4(0.5, 0.5, 0.65, 1))
+end
+
+local function set_attack_mode(weakness)
+	if not banner_bg then return end
+	gui.set_color(banner_bg, C_ATTACK_BANNER)
+	gui.set_text(banner_text, "YOUR TURN  --  ATTACK!")
+	gui.set_color(banner_text, C_ATTACK_TEXT)
+
+	gui.set_color(target_bg, C_TARGET_BG)
+	gui.set_text(target_label, "WEAKNESS")
+	gui.set_color(target_label, vmath.vector4(0.5, 0.7, 1.0, 1))
+	gui.set_text(target_text, tostring(weakness))
+	gui.set_color(target_text, vmath.vector4(1, 1, 1, 1))
+
+	gui.set_text(gui.get_node("btn_strike_text"), "STRIKE!")
+	gui.set_color(gui.get_node("btn_strike"), vmath.vector4(0.15, 0.5, 0.3, 1))
+end
+
+local function set_defend_mode(attack_number)
+	if not banner_bg then return end
+	gui.set_color(banner_bg, C_DEFEND_BANNER)
+	gui.set_text(banner_text, "DEFEND!  Match this number:")
+	gui.set_color(banner_text, C_DEFEND_TEXT)
+
+	gui.set_color(target_bg, C_TARGET_DEFEND)
+	gui.set_text(target_label, "BLOCK")
+	gui.set_color(target_label, vmath.vector4(1.0, 0.6, 0.5, 1))
+	gui.set_text(target_text, tostring(attack_number))
+	gui.set_color(target_text, vmath.vector4(1, 0.9, 0.8, 1))
+
+	gui.set_text(gui.get_node("btn_strike_text"), "BLOCK!")
+	gui.set_color(gui.get_node("btn_strike"), vmath.vector4(0.5, 0.15, 0.15, 1))
+end
 
 -- ============================================================
 -- Tile management
@@ -54,20 +148,22 @@ local function create_tile_nodes()
 	for i = 1, #number_tile_values do
 		local x = NUM_START_X + (i - 1) * (TILE_W + TILE_GAP)
 		local box = gui.new_box_node(vmath.vector3(x, NUM_Y, 0), vmath.vector3(TILE_W, TILE_H, 0))
-		gui.set_color(box, util.vec4(CONSTANTS.COLOR_NUMBER_TILE))
+		gui.set_color(box, C_NUM_TILE)
 		local txt = gui.new_text_node(vmath.vector3(x, NUM_Y, 0), tostring(number_tile_values[i]))
 		gui.set_font(txt, "system_font")
-		gui.set_color(txt, util.vec4(CONSTANTS.COLOR_TILE_BORDER_NUM))
+		gui.set_scale(txt, vmath.vector3(1.1, 1.1, 1))
+		gui.set_color(txt, C_NUM_TEXT)
 		number_tile_nodes[i] = {box = box, text = txt}
 	end
 
 	for i = 1, #operator_tile_values do
-		local x = OP_START_X + (i - 1) * (TILE_W - 10 + TILE_GAP)
-		local box = gui.new_box_node(vmath.vector3(x, OP_Y, 0), vmath.vector3(TILE_W - 10, TILE_H, 0))
-		gui.set_color(box, util.vec4(CONSTANTS.COLOR_OPERATOR_TILE))
+		local x = OP_START_X + (i - 1) * (TILE_W + TILE_GAP)
+		local box = gui.new_box_node(vmath.vector3(x, OP_Y, 0), vmath.vector3(TILE_W, TILE_H, 0))
+		gui.set_color(box, C_OP_TILE)
 		local txt = gui.new_text_node(vmath.vector3(x, OP_Y, 0), operator_tile_values[i])
 		gui.set_font(txt, "system_font")
-		gui.set_color(txt, util.vec4(CONSTANTS.COLOR_TILE_BORDER_OP))
+		gui.set_scale(txt, vmath.vector3(1.1, 1.1, 1))
+		gui.set_color(txt, C_OP_TEXT)
 		operator_tile_nodes[i] = {box = box, text = txt}
 	end
 end
@@ -87,18 +183,13 @@ local function update_equation_display()
 end
 
 local function dim_tile(node_data)
-	gui.set_color(node_data.box, vmath.vector4(CONSTANTS.COLOR_TILE_USED[1], CONSTANTS.COLOR_TILE_USED[2], CONSTANTS.COLOR_TILE_USED[3], 0.5))
-	gui.set_color(node_data.text, vmath.vector4(0.3, 0.3, 0.35, 0.5))
+	gui.set_color(node_data.box, C_TILE_USED_BG)
+	gui.set_color(node_data.text, C_TILE_USED_TEXT)
 end
 
 local function restore_tile(node_data, is_number)
-	if is_number then
-		gui.set_color(node_data.box, util.vec4(CONSTANTS.COLOR_NUMBER_TILE))
-		gui.set_color(node_data.text, util.vec4(CONSTANTS.COLOR_TILE_BORDER_NUM))
-	else
-		gui.set_color(node_data.box, util.vec4(CONSTANTS.COLOR_OPERATOR_TILE))
-		gui.set_color(node_data.text, util.vec4(CONSTANTS.COLOR_TILE_BORDER_OP))
-	end
+	gui.set_color(node_data.box, is_number and C_NUM_TILE or C_OP_TILE)
+	gui.set_color(node_data.text, is_number and C_NUM_TEXT or C_OP_TEXT)
 end
 
 local function clear_equation()
@@ -170,44 +261,36 @@ local function create_enemy_nodes(enemies, target_index)
 		local x = ENEMY_START_X + (i - 1) * ENEMY_GAP
 		local w = e.is_boss and (ENEMY_W * 1.4) or ENEMY_W
 		local h = e.is_boss and (ENEMY_H * 1.3) or ENEMY_H
-		local color = e.alive and vmath.vector4(0.2, 0.733, 0.4, 1) or vmath.vector4(0.15, 0.15, 0.2, 0.4)
 
+		local body_color = e.alive and C_ENEMY_ALIVE or C_ENEMY_DEAD
 		local box = gui.new_box_node(vmath.vector3(x, ENEMY_Y, 0), vmath.vector3(w, h, 0))
-		gui.set_color(box, color)
+		gui.set_color(box, body_color)
 
 		-- Weakness badge
-		local badge = gui.new_box_node(vmath.vector3(x, ENEMY_Y + h/2 + 20, 0), vmath.vector3(36, 22, 0))
-		gui.set_color(badge, vmath.vector4(1, 0.267, 0.267, 1))
+		local badge_color = (i == target_index and e.alive) and C_ENEMY_TARGETED or vmath.vector4(0.8, 0.2, 0.2, 1)
+		if not e.alive then badge_color = vmath.vector4(0.15, 0.1, 0.1, 0.3) end
+		local badge = gui.new_box_node(vmath.vector3(x, ENEMY_Y + h/2 + 20, 0), vmath.vector3(40, 24, 0))
+		gui.set_color(badge, badge_color)
 
 		local wtext = gui.new_text_node(vmath.vector3(x, ENEMY_Y + h/2 + 20, 0), tostring(e.weakness))
 		gui.set_font(wtext, "system_font")
-		gui.set_color(wtext, vmath.vector4(1, 1, 1, 1))
+		gui.set_color(wtext, e.alive and vmath.vector4(1, 1, 1, 1) or vmath.vector4(0.3, 0.3, 0.35, 0.3))
 
 		-- HP bar
 		local hp_bg = gui.new_box_node(vmath.vector3(x, ENEMY_Y - h/2 - 12, 0), vmath.vector3(w + 10, 8, 0))
-		gui.set_color(hp_bg, vmath.vector4(0.2, 0.133, 0.267, 1))
+		gui.set_color(hp_bg, vmath.vector4(0.15, 0.1, 0.2, 1))
 
 		local ratio = e.hp / e.max_hp
 		local hp_fill = gui.new_box_node(vmath.vector3(x - (w+10)/2, ENEMY_Y - h/2 - 12, 0), vmath.vector3((w + 10) * ratio, 6, 0))
 		gui.set_pivot(hp_fill, gui.PIVOT_W)
-		gui.set_color(hp_fill, vmath.vector4(1, 0.4, 0.267, 1))
+		local hp_color = ratio > 0.5 and vmath.vector4(1.0, 0.5, 0.25, 1) or vmath.vector4(1.0, 0.25, 0.2, 1)
+		if not e.alive then hp_color = vmath.vector4(0.15, 0.15, 0.18, 0.3) end
+		gui.set_color(hp_fill, hp_color)
 
 		local hp_text = gui.new_text_node(vmath.vector3(x, ENEMY_Y - h/2 - 26, 0), e.hp .. "/" .. e.max_hp)
 		gui.set_font(hp_text, "system_font")
-		gui.set_scale(hp_text, vmath.vector3(0.6, 0.6, 1))
-		gui.set_color(hp_text, vmath.vector4(0.667, 0.667, 0.8, 1))
-
-		-- Target highlight
-		if i == target_index and e.alive then
-			gui.set_color(badge, vmath.vector4(1, 0.867, 0.267, 1))
-		end
-
-		-- Dim dead enemies
-		if not e.alive then
-			gui.set_color(badge, vmath.vector4(0.2, 0.1, 0.1, 0.3))
-			gui.set_color(wtext, vmath.vector4(0.4, 0.4, 0.4, 0.3))
-			gui.set_color(hp_fill, vmath.vector4(0.2, 0.2, 0.2, 0.3))
-		end
+		gui.set_scale(hp_text, vmath.vector3(0.55, 0.55, 1))
+		gui.set_color(hp_text, vmath.vector4(0.6, 0.6, 0.7, 1))
 
 		enemy_nodes[i] = {
 			box = box, badge = badge, weakness_text = wtext,
@@ -226,33 +309,33 @@ local between_waves_nodes = {}
 local function show_between_waves_ui(data)
 	between_waves = true
 
-	local overlay = gui.new_box_node(vmath.vector3(640, 400, 0), vmath.vector3(500, 300, 0))
-	gui.set_color(overlay, vmath.vector4(0.05, 0.05, 0.1, 0.92))
+	local overlay = gui.new_box_node(vmath.vector3(640, 400, 0), vmath.vector3(500, 320, 0))
+	gui.set_color(overlay, vmath.vector4(0.06, 0.06, 0.12, 0.95))
 
-	local title = gui.new_text_node(vmath.vector3(640, 500, 0), "WAVE " .. data.wave .. " / " .. data.total_waves)
+	local title = gui.new_text_node(vmath.vector3(640, 520, 0), "WAVE " .. data.wave .. " / " .. data.total_waves)
 	gui.set_font(title, "system_font")
 	gui.set_scale(title, vmath.vector3(1.3, 1.3, 1))
-	gui.set_color(title, vmath.vector4(1, 0.867, 0.267, 1))
+	gui.set_color(title, vmath.vector4(1, 0.87, 0.27, 1))
 
-	local hp_label = gui.new_text_node(vmath.vector3(640, 440, 0), "HP: " .. data.hero_hp .. " / " .. data.hero_max_hp)
+	local hp_label = gui.new_text_node(vmath.vector3(640, 460, 0), "HP: " .. data.hero_hp .. " / " .. data.hero_max_hp)
 	gui.set_font(hp_label, "system_font")
-	gui.set_color(hp_label, vmath.vector4(0.667, 0.667, 0.8, 1))
+	gui.set_color(hp_label, vmath.vector4(0.6, 0.8, 0.65, 1))
 
-	local btn_next = gui.new_box_node(vmath.vector3(640, 360, 0), vmath.vector3(180, 50, 0))
-	gui.set_color(btn_next, vmath.vector4(0.267, 0.8, 0.4, 1))
-	local btn_next_text = gui.new_text_node(vmath.vector3(640, 360, 0), "NEXT WAVE")
+	local btn_next = gui.new_box_node(vmath.vector3(640, 380, 0), vmath.vector3(200, 55, 0))
+	gui.set_color(btn_next, vmath.vector4(0.15, 0.5, 0.3, 1))
+	local btn_next_text = gui.new_text_node(vmath.vector3(640, 380, 0), "NEXT WAVE")
 	gui.set_font(btn_next_text, "system_font")
+	gui.set_scale(btn_next_text, vmath.vector3(1.05, 1.05, 1))
 	gui.set_color(btn_next_text, vmath.vector4(1, 1, 1, 1))
 
 	between_waves_nodes = {overlay = overlay, title = title, hp_label = hp_label, btn_next = btn_next, btn_next_text = btn_next_text}
 
-	-- Recovery button if available
 	if data.recovery_available then
-		local btn_rest = gui.new_box_node(vmath.vector3(640, 300, 0), vmath.vector3(180, 50, 0))
-		gui.set_color(btn_rest, vmath.vector4(0.133, 0.333, 0.2, 1))
-		local btn_rest_text = gui.new_text_node(vmath.vector3(640, 300, 0), "REST & READ")
+		local btn_rest = gui.new_box_node(vmath.vector3(640, 310, 0), vmath.vector3(200, 55, 0))
+		gui.set_color(btn_rest, vmath.vector4(0.12, 0.3, 0.18, 1))
+		local btn_rest_text = gui.new_text_node(vmath.vector3(640, 310, 0), "REST & READ")
 		gui.set_font(btn_rest_text, "system_font")
-		gui.set_color(btn_rest_text, vmath.vector4(0.267, 0.8, 0.4, 1))
+		gui.set_color(btn_rest_text, vmath.vector4(0.3, 0.9, 0.5, 1))
 		between_waves_nodes.btn_rest = btn_rest
 		between_waves_nodes.btn_rest_text = btn_rest_text
 	end
@@ -278,6 +361,7 @@ function init(self)
 	equation_tokens = {}
 	expecting_number = true
 	tile_used = {}
+	create_banner_nodes()
 end
 
 function on_message(self, message_id, message, sender)
@@ -294,20 +378,37 @@ function on_message(self, message_id, message, sender)
 
 	elseif message_id == hash("set_phase") then
 		gui.set_text(gui.get_node("phase_label"), message.text or "")
+		-- Update banner based on phase
+		if message.mode == "attack" then
+			set_attack_mode(message.weakness or 0)
+		elseif message.mode == "defend" then
+			set_defend_mode(message.attack_number or 0)
+		end
+		if message.wave_text then
+			gui.set_text(wave_text, message.wave_text)
+		end
 
 	elseif message_id == hash("update_hero_hp") then
 		local ratio = message.hp / message.max_hp
 		gui.set_size(gui.get_node("hero_hp_fill"), vmath.vector3(200 * ratio, 14, 0))
 		gui.set_text(gui.get_node("hero_hp_text"), message.hp .. "/" .. message.max_hp)
+		-- Color HP bar based on health
+		if ratio > 0.5 then
+			gui.set_color(gui.get_node("hero_hp_fill"), vmath.vector4(0.25, 0.8, 0.4, 1))
+		elseif ratio > 0.25 then
+			gui.set_color(gui.get_node("hero_hp_fill"), vmath.vector4(1.0, 0.7, 0.2, 1))
+		else
+			gui.set_color(gui.get_node("hero_hp_fill"), vmath.vector4(1.0, 0.3, 0.2, 1))
+		end
 
 	elseif message_id == hash("sync_enemies") then
 		create_enemy_nodes(message.enemies, message.target)
 
 	elseif message_id == hash("highlight_attacker") then
-		-- Flash the attacker's body
 		local idx = message.index
 		if enemy_nodes[idx] then
-			gui.set_color(enemy_nodes[idx].box, vmath.vector4(1, 0.3, 0.3, 1))
+			gui.set_color(enemy_nodes[idx].box, C_ENEMY_ATTACKING)
+			gui.set_color(enemy_nodes[idx].badge, C_ENEMY_ATTACKING)
 		end
 
 	elseif message_id == hash("show_damage") then
@@ -317,8 +418,8 @@ function on_message(self, message_id, message, sender)
 		gui.cancel_animation(popup, "position.y")
 		gui.cancel_animation(popup, "color.w")
 		gui.set_alpha(popup, 1.0)
-		gui.animate(popup, "position.y", (message.y or 500) + 50, gui.EASING_OUTQUAD, 0.7)
-		gui.animate(popup, "color.w", 0, gui.EASING_OUTQUAD, 0.7, 0.2)
+		gui.animate(popup, "position.y", (message.y or 500) + 60, gui.EASING_OUTQUAD, 0.8)
+		gui.animate(popup, "color.w", 0, gui.EASING_OUTQUAD, 0.8, 0.3)
 
 	elseif message_id == hash("disable_input") then
 		input_enabled = false
@@ -346,7 +447,6 @@ function on_input(self, action_id, action)
 		return false
 	end
 
-	-- Between-waves overlay
 	if between_waves then
 		if between_waves_nodes.btn_next and gui.pick_node(between_waves_nodes.btn_next, action.x, action.y) then
 			hide_between_waves_ui()
@@ -361,7 +461,6 @@ function on_input(self, action_id, action)
 		return true
 	end
 
-	-- Battle-over overlay
 	if battle_over then
 		if gui.pick_node(gui.get_node("btn_continue"), action.x, action.y) then
 			msg.post(SCRIPT_URL, "continue_pressed")
@@ -379,7 +478,7 @@ function on_input(self, action_id, action)
 		end
 	end
 
-	-- Strike button
+	-- Strike/Block button
 	if gui.pick_node(gui.get_node("btn_strike"), action.x, action.y) then
 		local result, err = equation.evaluate(equation_tokens)
 		if result and not err then
@@ -389,19 +488,17 @@ function on_input(self, action_id, action)
 		return true
 	end
 
-	-- Undo
 	if gui.pick_node(gui.get_node("btn_undo"), action.x, action.y) then
 		undo_last()
 		return true
 	end
 
-	-- Clear
 	if gui.pick_node(gui.get_node("btn_clear"), action.x, action.y) then
 		clear_equation()
 		return true
 	end
 
-	-- Number tiles
+	-- Number tiles (when expecting a number)
 	if expecting_number then
 		for i, nd in ipairs(number_tile_nodes) do
 			local key = "num_" .. i
@@ -415,6 +512,7 @@ function on_input(self, action_id, action)
 			end
 		end
 	else
+		-- Operator tiles
 		for i, nd in ipairs(operator_tile_nodes) do
 			local key = "op_" .. i
 			if not tile_used[key] and gui.pick_node(nd.box, action.x, action.y) then

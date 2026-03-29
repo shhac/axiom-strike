@@ -4,9 +4,9 @@ fonts {
   font: "/builtins/fonts/default.font"
 }
 background_color {
-  x: 0.102
-  y: 0.039
-  z: 0.2
+  x: 0.07
+  y: 0.05
+  z: 0.14
   w: 1.0
 }
 nodes {
@@ -567,15 +567,15 @@ nodes {
     w: 1.0
   }
   size {
-    x: 600.0
-    y: 50.0
+    x: 700.0
+    y: 55.0
     z: 0.0
     w: 1.0
   }
   color {
-    x: 0.102
-    y: 0.102
-    z: 0.2
+    x: 0.08
+    y: 0.07
+    z: 0.16
     w: 1.0
   }
   type: TYPE_BOX

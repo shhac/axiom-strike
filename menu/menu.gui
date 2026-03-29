@@ -4,9 +4,9 @@ fonts {
   font: "/builtins/fonts/default.font"
 }
 background_color {
-  x: 0.06
-  y: 0.02
-  z: 0.12
+  x: 0.05
+  y: 0.03
+  z: 0.1
   w: 1.0
 }
 nodes {
