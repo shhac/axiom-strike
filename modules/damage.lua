@@ -37,6 +37,10 @@ end
 --- @param enemy_attack_power number Base damage the enemy deals
 --- @return number damage_taken, string block_label
 function M.calculate_block(result, attack_number, enemy_attack_power)
+	if attack_number == 0 then
+		return enemy_attack_power, "Missed block!"
+	end
+
 	local distance = math.abs(result - attack_number)
 
 	if distance == 0 then

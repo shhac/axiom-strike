@@ -10,6 +10,7 @@ local answer_nodes = {}
 local hero_hp = 0
 local hero_max_hp = 100
 local streak_count = 0
+local healed_amount = 0
 
 local function destroy_answer_nodes()
 	for _, n in ipairs(answer_nodes) do
@@ -80,7 +81,7 @@ local function show_result(answer_quality)
 	gui.set_text(gui.get_node("question_text"), "")
 
 	-- Store healed amount for when player taps to continue
-	self_healed = healed
+	healed_amount = healed
 end
 
 function init(self)
@@ -90,7 +91,7 @@ function init(self)
 	phase = "reading"
 	timer_remaining = READING_TIME
 	streak_count = 0
-	self_healed = 0
+	healed_amount = 0
 end
 
 function on_message(self, message_id, message, sender)
@@ -148,7 +149,7 @@ function on_input(self, action_id, action)
 	elseif phase == "result" then
 		-- Tap to continue — send recovery result back
 		destroy_answer_nodes()
-		msg.post("main:/controller#script", "recovery_done", {healed = self_healed or 0})
+		msg.post("main:/controller#script", "recovery_done", {healed = healed_amount or 0})
 		return true
 	end
 
