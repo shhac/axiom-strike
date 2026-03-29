@@ -97,3 +97,25 @@ describe("elo.cold_start", function()
 		assert.are.equal(1200, elo.cold_start(20))
 	end)
 end)
+
+describe("elo.transfer_prior", function()
+	it("subtracts 200 from known elo", function()
+		assert.are.equal(800, elo.transfer_prior(1000))
+	end)
+
+	it("clamps to floor of 400 when elo=600", function()
+		assert.are.equal(400, elo.transfer_prior(600))
+	end)
+
+	it("clamps to floor of 400 when elo=500", function()
+		assert.are.equal(400, elo.transfer_prior(500))
+	end)
+
+	it("returns 400 for very low elo", function()
+		assert.are.equal(400, elo.transfer_prior(200))
+	end)
+
+	it("works for high elo", function()
+		assert.are.equal(1800, elo.transfer_prior(2000))
+	end)
+end)

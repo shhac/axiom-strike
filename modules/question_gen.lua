@@ -41,14 +41,7 @@ function M.generate_weakness(player_elo, skill)
 	if skill == "x" then
 		local attempts = 0
 		while attempts < 20 do
-			local has_factors = false
-			for i = 2, math.min(params.max_operand, weakness) do
-				if weakness % i == 0 and weakness / i <= params.max_operand then
-					has_factors = true
-					break
-				end
-			end
-			if has_factors then break end
+			if util.has_factor_pair(weakness, params.max_operand) then break end
 			weakness = math.random(params.min_target, params.max_target)
 			attempts = attempts + 1
 		end

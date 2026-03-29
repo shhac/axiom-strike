@@ -254,6 +254,121 @@ function update(self, dt)
 	end
 end
 
+local function process_equation_attack(self, result, time_taken)
+	local target = self.enemies[self.target_index]
+	local dmg, label = damage_module.calculate_attack(result, target.weakness)
+	local is_exact = (result == target.weakness)
+	target.hp = math.max(0, target.hp - dmg)
+
+	self.total_attempts = self.total_attempts + 1
+	local correct = math.abs(result - target.weakness) <= CONSTANTS.ELO_ATTACK_THRESHOLD
+	if not correct then
+		self.total_wrong = self.total_wrong + 1
+		self.wrong_attempts = (self.wrong_attempts or 0) + 1
+	else
+		self.wrong_attempts = 0
+	end
+	record_elo(self, correct, target.question_elo or (self.player_elo - 50), time_taken)
+
+	send_gui("disable_input")
+	sync_all_enemy_hp(self)
+	send_gui("enemy_hit", {index = self.target_index})
+	send_gui("show_damage", {text = "-" .. dmg .. " " .. label, x = 600 + self.target_index * 80, y = 450})
+
+	if not is_exact then
+		send_gui("show_equation_feedback", {
+			result = result, target = target.weakness, mode = "attack", wrong_attempts = self.wrong_attempts,
+		})
+	end
+
+	self.phase = CONSTANTS.PHASE_ANIMATE_ATTACK
+	self.animation_timer = CONSTANTS.ANIMATION_DURATION
+end
+
+local function process_equation_defend(self, result, time_taken)
+	local dmg_taken, label = damage_module.calculate_block(result, self.current_attack_number, self.current_attacker_power)
+	local correct = (dmg_taken == 0) or math.abs(result - self.current_attack_number) <= CONSTANTS.ELO_DEFEND_THRESHOLD
+	self.hero_hp = math.max(0, self.hero_hp - dmg_taken)
+
+	record_elo(self, correct, self.player_elo - 30, time_taken)
+
+	send_gui("disable_input")
+	send_gui("update_hero_hp", {hp = self.hero_hp, max_hp = self.hero_max_hp})
+	if dmg_taken > 0 then send_gui("hero_hit") end
+
+	local dmg_text = dmg_taken > 0 and ("-" .. dmg_taken .. " " .. label) or label
+	send_gui("show_damage", {text = dmg_text, x = 220, y = 450})
+
+	if dmg_taken > 0 then
+		send_gui("show_equation_feedback", {result = result, target = self.current_attack_number, mode = "defend"})
+	end
+
+	self.phase = CONSTANTS.PHASE_ANIMATE_DEFEND
+	self.animation_timer = CONSTANTS.ANIMATION_DURATION
+end
+
+local function process_fill_blank_attack(self, answer, time_taken)
+	local problem = self.current_fill_blank
+	local target = self.enemies[self.target_index]
+
+	if answer == problem.correct then
+		local dmg = math.floor(CONSTANTS.BASE_DAMAGE * CONSTANTS.EXACT_MATCH_MULTIPLIER)
+		target.hp = math.max(0, target.hp - dmg)
+		record_elo(self, true, self.player_elo - 50, time_taken)
+
+		send_gui("disable_input")
+		sync_all_enemy_hp(self)
+		send_gui("enemy_hit", {index = self.target_index})
+		send_gui("show_damage", {text = "-" .. dmg .. " EXACT!", x = 600 + self.target_index * 80, y = 450})
+		send_gui("fill_blank_result", {correct = true, answer = answer})
+
+		self.phase = CONSTANTS.PHASE_ANIMATE_ATTACK
+		self.animation_timer = CONSTANTS.ANIMATION_DURATION
+	else
+		self.wrong_attempts = (self.wrong_attempts or 0) + 1
+		record_elo(self, false, self.player_elo - 50, time_taken)
+		send_gui("fill_blank_result", {correct = false, answer = answer, correct_answer = problem.correct, attempts = self.wrong_attempts})
+
+		if self.wrong_attempts >= 3 then
+			local dmg = CONSTANTS.MIN_DAMAGE
+			target.hp = math.max(0, target.hp - dmg)
+			sync_all_enemy_hp(self)
+			send_gui("show_damage", {text = "-" .. dmg, x = 600 + self.target_index * 80, y = 450})
+			send_gui("disable_input")
+			self.phase = CONSTANTS.PHASE_ANIMATE_ATTACK
+			self.animation_timer = CONSTANTS.ANIMATION_DURATION + 0.5
+		end
+	end
+end
+
+local function process_fill_blank_defend(self, answer, time_taken)
+	local problem = self.current_fill_blank
+
+	if answer == problem.correct then
+		record_elo(self, true, self.player_elo - 30, time_taken)
+		send_gui("disable_input")
+		send_gui("show_damage", {text = "PERFECT BLOCK!", x = 220, y = 450})
+		send_gui("fill_blank_result", {correct = true, answer = answer})
+		self.phase = CONSTANTS.PHASE_ANIMATE_DEFEND
+		self.animation_timer = CONSTANTS.ANIMATION_DURATION
+	else
+		self.wrong_attempts = (self.wrong_attempts or 0) + 1
+		record_elo(self, false, self.player_elo - 30, time_taken)
+		send_gui("fill_blank_result", {correct = false, answer = answer, correct_answer = problem.correct, attempts = self.wrong_attempts})
+
+		if self.wrong_attempts >= 3 then
+			local dmg = self.current_attacker_power
+			self.hero_hp = math.max(0, self.hero_hp - dmg)
+			send_gui("update_hero_hp", {hp = self.hero_hp, max_hp = self.hero_max_hp})
+			send_gui("hero_hit")
+			send_gui("show_damage", {text = "-" .. dmg .. " Ouch!", x = 220, y = 450})
+			send_gui("disable_input")
+			self.phase = CONSTANTS.PHASE_ANIMATE_DEFEND
+			self.animation_timer = CONSTANTS.ANIMATION_DURATION + 0.5
+		end
+	end
+end
+
 function on_message(self, message_id, message, sender)
 	if message_id == hash("set_level") then
 		self.difficulty = message.difficulty or 1
@@ -299,144 +414,19 @@ function on_message(self, message_id, message, sender)
 		end
 
 	elseif message_id == hash("equation_submitted") then
-		local result = message.result
-
 		local time_taken = os.clock() - (self.turn_start_time or 0)
-
 		if self.phase == CONSTANTS.PHASE_PLAYER_ATTACK then
-			local target = self.enemies[self.target_index]
-			local dmg, label = damage_module.calculate_attack(result, target.weakness)
-			local is_exact = (result == target.weakness)
-			target.hp = math.max(0, target.hp - dmg)
-
-			self.total_attempts = self.total_attempts + 1
-			local correct = math.abs(result - target.weakness) <= CONSTANTS.ELO_ATTACK_THRESHOLD
-			if not correct then
-				self.total_wrong = self.total_wrong + 1
-				self.wrong_attempts = (self.wrong_attempts or 0) + 1
-			else
-				self.wrong_attempts = 0
-			end
-			record_elo(self, correct, target.question_elo or (self.player_elo - 50), time_taken)
-
-			send_gui("disable_input")
-			sync_all_enemy_hp(self)
-			send_gui("enemy_hit", {index = self.target_index})
-			send_gui("show_damage", {text = "-" .. dmg .. " " .. label, x = 600 + self.target_index * 80, y = 450})
-
-			-- Teaching feedback: show what equation equals vs target
-			if not is_exact then
-				send_gui("show_equation_feedback", {
-					result = result,
-					target = target.weakness,
-					mode = "attack",
-					wrong_attempts = self.wrong_attempts,
-				})
-			end
-
-			self.phase = CONSTANTS.PHASE_ANIMATE_ATTACK
-			self.animation_timer = CONSTANTS.ANIMATION_DURATION
-
+			process_equation_attack(self, message.result, time_taken)
 		elseif self.phase == CONSTANTS.PHASE_PLAYER_DEFEND then
-			local dmg_taken, label = damage_module.calculate_block(result, self.current_attack_number, self.current_attacker_power)
-			local correct = (dmg_taken == 0) or math.abs(result - self.current_attack_number) <= CONSTANTS.ELO_DEFEND_THRESHOLD
-			self.hero_hp = math.max(0, self.hero_hp - dmg_taken)
-
-			record_elo(self, correct, self.player_elo - 30, time_taken)
-
-			send_gui("disable_input")
-			send_gui("update_hero_hp", {hp = self.hero_hp, max_hp = self.hero_max_hp})
-			if dmg_taken > 0 then
-				send_gui("hero_hit")
-			end
-
-			local dmg_text = dmg_taken > 0 and ("-" .. dmg_taken .. " " .. label) or label
-			send_gui("show_damage", {text = dmg_text, x = 220, y = 450})
-
-			-- Teaching feedback for defense
-			if dmg_taken > 0 then
-				send_gui("show_equation_feedback", {
-					result = result,
-					target = self.current_attack_number,
-					mode = "defend",
-				})
-			end
-
-			self.phase = CONSTANTS.PHASE_ANIMATE_DEFEND
-			self.animation_timer = CONSTANTS.ANIMATION_DURATION
+			process_equation_defend(self, message.result, time_taken)
 		end
 
 	elseif message_id == hash("fill_blank_answer") then
-		local answer = message.answer
 		local time_taken = os.clock() - (self.turn_start_time or 0)
-
 		if self.phase == CONSTANTS.PHASE_PLAYER_ATTACK and self.current_fill_blank then
-			local problem = self.current_fill_blank
-			local is_correct = (answer == problem.correct)
-			local target = self.enemies[self.target_index]
-
-			if is_correct then
-				-- Full damage on correct fill-in-blank
-				local dmg = math.floor(CONSTANTS.BASE_DAMAGE * CONSTANTS.EXACT_MATCH_MULTIPLIER)
-				target.hp = math.max(0, target.hp - dmg)
-				record_elo(self, true, self.player_elo - 50, time_taken)
-
-				send_gui("disable_input")
-				sync_all_enemy_hp(self)
-				send_gui("enemy_hit", {index = self.target_index})
-				send_gui("show_damage", {text = "-" .. dmg .. " EXACT!", x = 600 + self.target_index * 80, y = 450})
-				send_gui("fill_blank_result", {correct = true, answer = answer})
-
-				self.phase = CONSTANTS.PHASE_ANIMATE_ATTACK
-				self.animation_timer = CONSTANTS.ANIMATION_DURATION
-			else
-				-- Wrong answer
-				self.wrong_attempts = (self.wrong_attempts or 0) + 1
-				record_elo(self, false, self.player_elo - 50, time_taken)
-
-				send_gui("fill_blank_result", {correct = false, answer = answer, correct_answer = problem.correct, attempts = self.wrong_attempts})
-
-				if self.wrong_attempts >= 3 then
-					-- Auto-solve: deal minimum damage and move on
-					local dmg = CONSTANTS.MIN_DAMAGE
-					target.hp = math.max(0, target.hp - dmg)
-					sync_all_enemy_hp(self)
-					send_gui("show_damage", {text = "-" .. dmg, x = 600 + self.target_index * 80, y = 450})
-					send_gui("disable_input")
-
-					self.phase = CONSTANTS.PHASE_ANIMATE_ATTACK
-					self.animation_timer = CONSTANTS.ANIMATION_DURATION + 0.5
-				end
-				-- Otherwise let them try again (input stays enabled)
-			end
-
+			process_fill_blank_attack(self, message.answer, time_taken)
 		elseif self.phase == CONSTANTS.PHASE_PLAYER_DEFEND and self.current_fill_blank then
-			local problem = self.current_fill_blank
-			local is_correct = (answer == problem.correct)
-
-			if is_correct then
-				record_elo(self, true, self.player_elo - 30, time_taken)
-				send_gui("disable_input")
-				send_gui("show_damage", {text = "PERFECT BLOCK!", x = 220, y = 450})
-				send_gui("fill_blank_result", {correct = true, answer = answer})
-				self.phase = CONSTANTS.PHASE_ANIMATE_DEFEND
-				self.animation_timer = CONSTANTS.ANIMATION_DURATION
-			else
-				self.wrong_attempts = (self.wrong_attempts or 0) + 1
-				record_elo(self, false, self.player_elo - 30, time_taken)
-				send_gui("fill_blank_result", {correct = false, answer = answer, correct_answer = problem.correct, attempts = self.wrong_attempts})
-
-				if self.wrong_attempts >= 3 then
-					local dmg = self.current_attacker_power
-					self.hero_hp = math.max(0, self.hero_hp - dmg)
-					send_gui("update_hero_hp", {hp = self.hero_hp, max_hp = self.hero_max_hp})
-					send_gui("hero_hit")
-					send_gui("show_damage", {text = "-" .. dmg .. " Ouch!", x = 220, y = 450})
-					send_gui("disable_input")
-					self.phase = CONSTANTS.PHASE_ANIMATE_DEFEND
-					self.animation_timer = CONSTANTS.ANIMATION_DURATION + 0.5
-				end
-			end
+			process_fill_blank_defend(self, message.answer, time_taken)
 		end
 
 	elseif message_id == hash("skip_animation") then

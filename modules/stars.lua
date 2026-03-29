@@ -7,6 +7,7 @@ local M = {}
 --- @param total_attempts number Total attempts
 --- @return number stars (1-3)
 function M.calculate(hero_hp, hero_max_hp, total_wrong, total_attempts)
+	if hero_max_hp <= 0 then return 1 end
 	local hp_ratio = hero_hp / hero_max_hp
 	local accuracy = total_attempts > 0 and (1 - total_wrong / total_attempts) or 1
 

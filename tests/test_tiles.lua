@@ -112,8 +112,7 @@ describe("tiles solvability integration", function()
 				end
 				if found then break end
 			end
-			-- Note: we only check that solvable tiles exist, not all combos
-			-- The hand always includes the solution tiles from _build_solution
+			assert.is_true(found, "no solvable equation found for target " .. target)
 		end
 	end)
 end)

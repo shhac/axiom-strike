@@ -73,12 +73,7 @@ local SOLUTION_BUILDERS = {
 	end,
 
 	["x"] = function(target, max_operand)
-		local factors = {}
-		for i = 2, math.min(max_operand, target) do
-			if target % i == 0 and target / i <= max_operand then
-				factors[#factors + 1] = {i, target / i}
-			end
-		end
+		local factors = util.find_factor_pairs(target, max_operand)
 		if #factors > 0 then
 			local pair = factors[math.random(1, #factors)]
 			return {pair[1], pair[2]}, {"x"}

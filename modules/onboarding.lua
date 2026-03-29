@@ -25,25 +25,24 @@ M.MESSAGES = {
 	},
 }
 
+local PHASE_MAP = {
+	attack = "attack",
+	defend = "defend",
+	between_waves = "between_waves",
+	attack_multi = "attack",
+}
+
 --- Get the onboarding message for the current state, if any.
 --- @param completed_count number How many battles the player has completed
 --- @param phase string Current game phase
 --- @return string|nil message to show, or nil if no onboarding needed
 function M.get_message(completed_count, phase)
-	-- Only show onboarding for the first few battles
 	if completed_count > 3 then return nil end
 
 	local step = M.MESSAGES[completed_count]
 	if not step then return nil end
 
-	-- Match phase
-	if step.phase == "attack" and phase == "attack" then
-		return step.text
-	elseif step.phase == "defend" and phase == "defend" then
-		return step.text
-	elseif step.phase == "between_waves" and phase == "between_waves" then
-		return step.text
-	elseif step.phase == "attack_multi" and phase == "attack" then
+	if PHASE_MAP[step.phase] == phase then
 		return step.text
 	end
 

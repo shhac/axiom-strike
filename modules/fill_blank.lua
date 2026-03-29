@@ -22,18 +22,14 @@ function M.generate(target, op, max_operand, difficulty)
 	difficulty = difficulty or 1
 
 	-- Pick blank type based on difficulty
-	local blank_type
-	if difficulty <= 1 then
-		blank_type = "result"  -- easiest: a + b = ?
-	elseif difficulty <= 2 then
-		local choices = {"result", "operand2"}
-		blank_type = choices[math.random(1, #choices)]
-	elseif difficulty <= 3 then
-		local choices = {"result", "operand1", "operand2"}
-		blank_type = choices[math.random(1, #choices)]
-	else
-		blank_type = TYPES[math.random(1, #TYPES)]
-	end
+	local TYPE_POOLS = {
+		[1] = {"result"},
+		[2] = {"result", "operand2"},
+		[3] = {"result", "operand1", "operand2"},
+	}
+	local pool = TYPE_POOLS[math.min(difficulty, 3)]
+	if difficulty >= 4 then pool = TYPES end
+	local blank_type = pool[math.random(1, #pool)]
 
 	-- Generate the full equation
 	local a, b, result
@@ -47,13 +43,7 @@ function M.generate(target, op, max_operand, difficulty)
 		b = a - target
 		result = target
 	elseif op == "x" then
-		-- Find a factor pair
-		local factors = {}
-		for i = 2, math.min(max_operand, target) do
-			if target % i == 0 and target / i <= max_operand then
-				factors[#factors + 1] = {i, target / i}
-			end
-		end
+		local factors = util.find_factor_pairs(target, max_operand)
 		if #factors > 0 then
 			local pair = factors[math.random(1, #factors)]
 			a, b = pair[1], pair[2]
@@ -125,13 +115,15 @@ function M._generate_number_options(correct, max_operand)
 		end
 	end
 
-	-- Fill remaining with random
-	while #opts < 4 do
+	-- Fill remaining with random (guard against exhausting the value space)
+	local safety = 0
+	while #opts < 4 and safety < 40 do
 		local v = math.random(1, max_operand)
 		if not used[v] then
 			opts[#opts + 1] = v
 			used[v] = true
 		end
+		safety = safety + 1
 	end
 
 	util.shuffle(opts)
