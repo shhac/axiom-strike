@@ -39,17 +39,17 @@ M.PHASE_BATTLE_LOST = "battle_lost"
 M.ANIMATION_DURATION = 0.8
 M.BETWEEN_WAVE_DELAY = 1.5
 
--- Colors (as hex for gui node tinting)
-M.COLOR_NUMBER_TILE = vmath.vector4(0.13, 0.27, 0.40, 1)     -- #224466
-M.COLOR_OPERATOR_TILE = vmath.vector4(0.27, 0.20, 0.13, 1)   -- #443322
-M.COLOR_TILE_USED = vmath.vector4(0.10, 0.10, 0.17, 1)       -- #1a1a2a
-M.COLOR_TILE_BORDER_NUM = vmath.vector4(0.20, 0.53, 0.80, 1) -- #3388cc
-M.COLOR_TILE_BORDER_OP = vmath.vector4(0.80, 0.53, 0.20, 1)  -- #cc8833
-M.COLOR_HP_HERO = vmath.vector4(0.27, 0.80, 0.40, 1)         -- #44cc66
-M.COLOR_HP_ENEMY = vmath.vector4(1.0, 0.40, 0.27, 1)         -- #ff6644
-M.COLOR_WEAKNESS = vmath.vector4(1.0, 0.27, 0.27, 1)         -- #ff4444
-M.COLOR_EXACT_MATCH = vmath.vector4(0.27, 0.80, 0.40, 1)     -- #44cc66
-M.COLOR_CLOSE = vmath.vector4(1.0, 0.87, 0.27, 1)            -- #ffdd44
-M.COLOR_FAR = vmath.vector4(1.0, 0.40, 0.27, 1)              -- #ff6644
+-- Colors as {r, g, b, a} tables (converted to vmath.vector4 at use site)
+M.COLOR_NUMBER_TILE = {0.13, 0.27, 0.40, 1}
+M.COLOR_OPERATOR_TILE = {0.27, 0.20, 0.13, 1}
+M.COLOR_TILE_USED = {0.10, 0.10, 0.17, 1}
+M.COLOR_TILE_BORDER_NUM = {0.20, 0.53, 0.80, 1}
+M.COLOR_TILE_BORDER_OP = {0.80, 0.53, 0.20, 1}
+M.COLOR_HP_HERO = {0.27, 0.80, 0.40, 1}
+M.COLOR_HP_ENEMY = {1.0, 0.40, 0.27, 1}
+M.COLOR_WEAKNESS = {1.0, 0.27, 0.27, 1}
+M.COLOR_EXACT_MATCH = {0.27, 0.80, 0.40, 1}
+M.COLOR_CLOSE = {1.0, 0.87, 0.27, 1}
+M.COLOR_FAR = {1.0, 0.40, 0.27, 1}
 
 return M

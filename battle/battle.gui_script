@@ -45,13 +45,13 @@ local function create_tile_nodes(self)
 		local x = NUM_START_X + (i - 1) * (TILE_W + TILE_GAP)
 		local box = gui.new_box_node(vmath.vector3(x, NUM_Y, 0), vmath.vector3(TILE_W, TILE_H, 0))
 		gui.set_color(box, vmath.vector4(0.13, 0.27, 0.40, 1))
-		gui.set_parent(box, gui.get_node("bg"))
+		-- no parent needed, root-level node
 		gui.set_id(box, make_tile_id("num", i))
 
 		local txt = gui.new_text_node(vmath.vector3(x, NUM_Y, 0), tostring(number_tile_values[i]))
 		gui.set_font(txt, "system_font")
 		gui.set_color(txt, vmath.vector4(0.53, 0.80, 1.0, 1))
-		gui.set_parent(txt, gui.get_node("bg"))
+		-- no parent needed, root-level node
 		gui.set_id(txt, make_tile_id("num_t", i))
 
 		number_tile_nodes[i] = {box = box, text = txt, index = i}
@@ -62,13 +62,13 @@ local function create_tile_nodes(self)
 		local x = OP_START_X + (i - 1) * (TILE_W - 10 + TILE_GAP)
 		local box = gui.new_box_node(vmath.vector3(x, OP_Y, 0), vmath.vector3(TILE_W - 10, TILE_H, 0))
 		gui.set_color(box, vmath.vector4(0.27, 0.20, 0.13, 1))
-		gui.set_parent(box, gui.get_node("bg"))
+		-- no parent needed, root-level node
 		gui.set_id(box, make_tile_id("op", i))
 
 		local txt = gui.new_text_node(vmath.vector3(x, OP_Y, 0), operator_tile_values[i])
 		gui.set_font(txt, "system_font")
 		gui.set_color(txt, vmath.vector4(1.0, 0.80, 0.40, 1))
-		gui.set_parent(txt, gui.get_node("bg"))
+		-- no parent needed, root-level node
 		gui.set_id(txt, make_tile_id("op_t", i))
 
 		operator_tile_nodes[i] = {box = box, text = txt, index = i}

@@ -4,48 +4,10 @@ fonts {
   font: "/builtins/fonts/default.font"
 }
 background_color {
-  x: 0.0
-  y: 0.0
-  z: 0.0
-  w: 0.0
-}
-nodes {
-  position {
-    x: 640.0
-    y: 360.0
-    z: 0.0
-    w: 1.0
-  }
-  rotation {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
-  }
-  scale {
-    x: 1.0
-    y: 1.0
-    z: 1.0
-    w: 1.0
-  }
-  size {
-    x: 1280.0
-    y: 720.0
-    z: 0.0
-    w: 1.0
-  }
-  color {
-    x: 0.102
-    y: 0.039
-    z: 0.2
-    w: 1.0
-  }
-  type: TYPE_BOX
-  id: "bg"
-  pivot: PIVOT_CENTER
-  size_mode: SIZE_MODE_MANUAL
-  layer: ""
-  inherit_alpha: true
+  x: 0.102
+  y: 0.039
+  z: 0.2
+  w: 1.0
 }
 nodes {
   position {
@@ -96,85 +58,6 @@ nodes {
     w: 0.0
   }
   inherit_alpha: true
-  parent: "bg"
-}
-nodes {
-  position {
-    x: 120.0
-    y: 670.0
-    z: 0.0
-    w: 1.0
-  }
-  rotation {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
-  }
-  scale {
-    x: 1.0
-    y: 1.0
-    z: 1.0
-    w: 1.0
-  }
-  size {
-    x: 200.0
-    y: 16.0
-    z: 0.0
-    w: 1.0
-  }
-  color {
-    x: 0.2
-    y: 0.133
-    z: 0.267
-    w: 1.0
-  }
-  type: TYPE_BOX
-  id: "hero_hp_bg"
-  pivot: PIVOT_W
-  size_mode: SIZE_MODE_MANUAL
-  layer: ""
-  inherit_alpha: true
-  parent: "bg"
-}
-nodes {
-  position {
-    x: 120.0
-    y: 670.0
-    z: 0.0
-    w: 1.0
-  }
-  rotation {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
-  }
-  scale {
-    x: 1.0
-    y: 1.0
-    z: 1.0
-    w: 1.0
-  }
-  size {
-    x: 200.0
-    y: 14.0
-    z: 0.0
-    w: 1.0
-  }
-  color {
-    x: 0.267
-    y: 0.8
-    z: 0.4
-    w: 1.0
-  }
-  type: TYPE_BOX
-  id: "hero_hp_fill"
-  pivot: PIVOT_W
-  size_mode: SIZE_MODE_MANUAL
-  layer: ""
-  inherit_alpha: true
-  parent: "bg"
 }
 nodes {
   position {
@@ -225,7 +108,78 @@ nodes {
     w: 0.0
   }
   inherit_alpha: true
-  parent: "bg"
+}
+nodes {
+  position {
+    x: 120.0
+    y: 670.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 200.0
+    y: 16.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.2
+    y: 0.133
+    z: 0.267
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "hero_hp_bg"
+  pivot: PIVOT_W
+  size_mode: SIZE_MODE_MANUAL
+}
+nodes {
+  position {
+    x: 120.0
+    y: 670.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 200.0
+    y: 14.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.267
+    y: 0.8
+    z: 0.4
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "hero_hp_fill"
+  pivot: PIVOT_W
+  size_mode: SIZE_MODE_MANUAL
 }
 nodes {
   position {
@@ -276,7 +230,6 @@ nodes {
     w: 0.0
   }
   inherit_alpha: true
-  parent: "bg"
 }
 nodes {
   position {
@@ -313,9 +266,6 @@ nodes {
   id: "hero_body"
   pivot: PIVOT_CENTER
   size_mode: SIZE_MODE_MANUAL
-  layer: ""
-  inherit_alpha: true
-  parent: "bg"
 }
 nodes {
   position {
@@ -352,9 +302,6 @@ nodes {
   id: "hero_head"
   pivot: PIVOT_CENTER
   size_mode: SIZE_MODE_MANUAL
-  layer: ""
-  inherit_alpha: true
-  parent: "bg"
 }
 nodes {
   position {
@@ -391,9 +338,6 @@ nodes {
   id: "enemy_body"
   pivot: PIVOT_CENTER
   size_mode: SIZE_MODE_MANUAL
-  layer: ""
-  inherit_alpha: true
-  parent: "bg"
 }
 nodes {
   position {
@@ -415,7 +359,7 @@ nodes {
     w: 1.0
   }
   size {
-    x: 40.0
+    x: 50.0
     y: 30.0
     z: 0.0
     w: 1.0
@@ -430,9 +374,6 @@ nodes {
   id: "enemy_weakness_badge"
   pivot: PIVOT_CENTER
   size_mode: SIZE_MODE_MANUAL
-  layer: ""
-  inherit_alpha: true
-  parent: "bg"
 }
 nodes {
   position {
@@ -483,7 +424,6 @@ nodes {
     w: 0.0
   }
   inherit_alpha: true
-  parent: "bg"
 }
 nodes {
   position {
@@ -520,9 +460,6 @@ nodes {
   id: "enemy_hp_bg"
   pivot: PIVOT_W
   size_mode: SIZE_MODE_MANUAL
-  layer: ""
-  inherit_alpha: true
-  parent: "bg"
 }
 nodes {
   position {
@@ -559,9 +496,6 @@ nodes {
   id: "enemy_hp_fill"
   pivot: PIVOT_W
   size_mode: SIZE_MODE_MANUAL
-  layer: ""
-  inherit_alpha: true
-  parent: "bg"
 }
 nodes {
   position {
@@ -612,7 +546,6 @@ nodes {
     w: 0.0
   }
   inherit_alpha: true
-  parent: "bg"
 }
 nodes {
   position {
@@ -649,13 +582,10 @@ nodes {
   id: "equation_bg"
   pivot: PIVOT_CENTER
   size_mode: SIZE_MODE_MANUAL
-  layer: ""
-  inherit_alpha: true
-  parent: "bg"
 }
 nodes {
   position {
-    x: 200.0
+    x: 130.0
     y: 265.0
     z: 0.0
     w: 1.0
@@ -702,11 +632,10 @@ nodes {
     w: 0.0
   }
   inherit_alpha: true
-  parent: "bg"
 }
 nodes {
   position {
-    x: 340.0
+    x: 280.0
     y: 255.0
     z: 0.0
     w: 1.0
@@ -753,11 +682,10 @@ nodes {
     w: 0.0
   }
   inherit_alpha: true
-  parent: "bg"
 }
 nodes {
   position {
-    x: 570.0
+    x: 520.0
     y: 255.0
     z: 0.0
     w: 1.0
@@ -804,7 +732,6 @@ nodes {
     w: 0.0
   }
   inherit_alpha: true
-  parent: "bg"
 }
 nodes {
   position {
@@ -855,7 +782,6 @@ nodes {
     w: 0.0
   }
   inherit_alpha: true
-  parent: "bg"
 }
 nodes {
   position {
@@ -892,9 +818,6 @@ nodes {
   id: "btn_strike"
   pivot: PIVOT_CENTER
   size_mode: SIZE_MODE_MANUAL
-  layer: ""
-  inherit_alpha: true
-  parent: "bg"
 }
 nodes {
   position {
@@ -945,7 +868,6 @@ nodes {
     w: 0.0
   }
   inherit_alpha: true
-  parent: "bg"
 }
 nodes {
   position {
@@ -982,9 +904,6 @@ nodes {
   id: "btn_undo"
   pivot: PIVOT_CENTER
   size_mode: SIZE_MODE_MANUAL
-  layer: ""
-  inherit_alpha: true
-  parent: "bg"
 }
 nodes {
   position {
@@ -1035,7 +954,6 @@ nodes {
     w: 0.0
   }
   inherit_alpha: true
-  parent: "bg"
 }
 nodes {
   position {
@@ -1072,9 +990,6 @@ nodes {
   id: "btn_clear"
   pivot: PIVOT_CENTER
   size_mode: SIZE_MODE_MANUAL
-  layer: ""
-  inherit_alpha: true
-  parent: "bg"
 }
 nodes {
   position {
@@ -1125,12 +1040,11 @@ nodes {
     w: 0.0
   }
   inherit_alpha: true
-  parent: "bg"
 }
 nodes {
   position {
     x: 640.0
-    y: 420.0
+    y: 500.0
     z: 0.0
     w: 1.0
   }
@@ -1141,8 +1055,8 @@ nodes {
     w: 1.0
   }
   scale {
-    x: 2.0
-    y: 2.0
+    x: 1.5
+    y: 1.5
     z: 1.0
     w: 1.0
   }
@@ -1177,12 +1091,11 @@ nodes {
   }
   inherit_alpha: true
   alpha: 0.0
-  parent: "bg"
 }
 nodes {
   position {
     x: 640.0
-    y: 420.0
+    y: 400.0
     z: 0.0
     w: 1.0
   }
@@ -1214,15 +1127,12 @@ nodes {
   id: "result_overlay"
   pivot: PIVOT_CENTER
   size_mode: SIZE_MODE_MANUAL
-  layer: ""
-  inherit_alpha: true
   alpha: 0.0
-  parent: "bg"
 }
 nodes {
   position {
     x: 640.0
-    y: 450.0
+    y: 430.0
     z: 0.0
     w: 1.0
   }
@@ -1269,12 +1179,11 @@ nodes {
   }
   inherit_alpha: true
   alpha: 0.0
-  parent: "bg"
 }
 nodes {
   position {
     x: 640.0
-    y: 380.0
+    y: 360.0
     z: 0.0
     w: 1.0
   }
@@ -1306,15 +1215,12 @@ nodes {
   id: "btn_continue"
   pivot: PIVOT_CENTER
   size_mode: SIZE_MODE_MANUAL
-  layer: ""
-  inherit_alpha: true
   alpha: 0.0
-  parent: "bg"
 }
 nodes {
   position {
     x: 640.0
-    y: 380.0
+    y: 360.0
     z: 0.0
     w: 1.0
   }
@@ -1361,11 +1267,10 @@ nodes {
   }
   inherit_alpha: true
   alpha: 0.0
-  parent: "bg"
 }
 nodes {
   position {
-    x: 150.0
+    x: 80.0
     y: 140.0
     z: 0.0
     w: 1.0
@@ -1412,7 +1317,6 @@ nodes {
     w: 0.0
   }
   inherit_alpha: true
-  parent: "bg"
 }
 material: "/builtins/materials/gui.material"
 adjust_reference: ADJUST_REFERENCE_PARENT
