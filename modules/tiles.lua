@@ -1,14 +1,8 @@
 local M = {}
 
 local CONSTANTS = require("modules.constants")
-
-local function shuffle(t)
-	for i = #t, 2, -1 do
-		local j = math.random(1, i)
-		t[i], t[j] = t[j], t[i]
-	end
-	return t
-end
+local util = require("modules.util")
+local shuffle = util.shuffle
 
 --- Generate a solvable tile hand for a given target number.
 --- Builds the solution first, then adds distractor tiles.

@@ -2,6 +2,7 @@ local M = {}
 
 local elo_module = require("modules.elo")
 local CONSTANTS = require("modules.constants")
+local util = require("modules.util")
 
 --- Map an Elo rating to concrete question parameters.
 --- @param elo number Player's Elo for this skill
@@ -27,13 +28,14 @@ end
 --- @param skill string Operation type
 --- @return number weakness, number question_elo, table params
 function M.generate_weakness(player_elo, skill)
+	skill = util.normalize_op(skill)
 	local target_elo = elo_module.select_difficulty(player_elo)
 	local params = M.elo_to_params(target_elo)
 
 	local weakness = math.random(params.min_target, params.max_target)
 
 	-- For multiplication, ensure the weakness has factors within max_operand
-	if skill == CONSTANTS.OP_MUL or skill == "x" or skill == "*" then
+	if skill == "x" then
 		local attempts = 0
 		while attempts < 20 do
 			local has_factors = false
@@ -50,7 +52,7 @@ function M.generate_weakness(player_elo, skill)
 	end
 
 	-- For division, ensure the weakness is achievable
-	if skill == CONSTANTS.OP_DIV or skill == "/" then
+	if skill == "/" then
 		-- Make weakness such that weakness * small_number <= max_operand
 		local divisor = math.random(2, math.min(10, params.max_operand))
 		weakness = math.random(1, math.floor(params.max_operand / divisor))

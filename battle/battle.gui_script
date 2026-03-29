@@ -1,4 +1,6 @@
 local equation = require("modules.equation")
+local CONSTANTS = require("modules.constants")
+local util = require("modules.util")
 
 -- Dynamic nodes
 local number_tile_nodes = {}
@@ -52,20 +54,20 @@ local function create_tile_nodes()
 	for i = 1, #number_tile_values do
 		local x = NUM_START_X + (i - 1) * (TILE_W + TILE_GAP)
 		local box = gui.new_box_node(vmath.vector3(x, NUM_Y, 0), vmath.vector3(TILE_W, TILE_H, 0))
-		gui.set_color(box, vmath.vector4(0.13, 0.27, 0.40, 1))
+		gui.set_color(box, util.vec4(CONSTANTS.COLOR_NUMBER_TILE))
 		local txt = gui.new_text_node(vmath.vector3(x, NUM_Y, 0), tostring(number_tile_values[i]))
 		gui.set_font(txt, "system_font")
-		gui.set_color(txt, vmath.vector4(0.53, 0.80, 1.0, 1))
+		gui.set_color(txt, util.vec4(CONSTANTS.COLOR_TILE_BORDER_NUM))
 		number_tile_nodes[i] = {box = box, text = txt}
 	end
 
 	for i = 1, #operator_tile_values do
 		local x = OP_START_X + (i - 1) * (TILE_W - 10 + TILE_GAP)
 		local box = gui.new_box_node(vmath.vector3(x, OP_Y, 0), vmath.vector3(TILE_W - 10, TILE_H, 0))
-		gui.set_color(box, vmath.vector4(0.27, 0.20, 0.13, 1))
+		gui.set_color(box, util.vec4(CONSTANTS.COLOR_OPERATOR_TILE))
 		local txt = gui.new_text_node(vmath.vector3(x, OP_Y, 0), operator_tile_values[i])
 		gui.set_font(txt, "system_font")
-		gui.set_color(txt, vmath.vector4(1.0, 0.80, 0.40, 1))
+		gui.set_color(txt, util.vec4(CONSTANTS.COLOR_TILE_BORDER_OP))
 		operator_tile_nodes[i] = {box = box, text = txt}
 	end
 end
@@ -85,17 +87,17 @@ local function update_equation_display()
 end
 
 local function dim_tile(node_data)
-	gui.set_color(node_data.box, vmath.vector4(0.10, 0.10, 0.17, 0.5))
+	gui.set_color(node_data.box, vmath.vector4(CONSTANTS.COLOR_TILE_USED[1], CONSTANTS.COLOR_TILE_USED[2], CONSTANTS.COLOR_TILE_USED[3], 0.5))
 	gui.set_color(node_data.text, vmath.vector4(0.3, 0.3, 0.35, 0.5))
 end
 
 local function restore_tile(node_data, is_number)
 	if is_number then
-		gui.set_color(node_data.box, vmath.vector4(0.13, 0.27, 0.40, 1))
-		gui.set_color(node_data.text, vmath.vector4(0.53, 0.80, 1.0, 1))
+		gui.set_color(node_data.box, util.vec4(CONSTANTS.COLOR_NUMBER_TILE))
+		gui.set_color(node_data.text, util.vec4(CONSTANTS.COLOR_TILE_BORDER_NUM))
 	else
-		gui.set_color(node_data.box, vmath.vector4(0.27, 0.20, 0.13, 1))
-		gui.set_color(node_data.text, vmath.vector4(1.0, 0.80, 0.40, 1))
+		gui.set_color(node_data.box, util.vec4(CONSTANTS.COLOR_OPERATOR_TILE))
+		gui.set_color(node_data.text, util.vec4(CONSTANTS.COLOR_TILE_BORDER_OP))
 	end
 end
 

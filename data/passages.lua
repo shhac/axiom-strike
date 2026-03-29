@@ -2,6 +2,8 @@
 -- In production, these would be sourced from the public domain corpus pipeline.
 -- Each entry has: text, question, correct, almost_right, reasonable, wrong (2 entries)
 
+local util = require("modules.util")
+
 local M = {}
 
 M.passages = {
@@ -140,11 +142,7 @@ function M.build_answers(passage)
 		{text = passage.wrong[2], quality = "wrong"},
 	}
 
-	-- Shuffle
-	for i = #answers, 2, -1 do
-		local j = math.random(1, i)
-		answers[i], answers[j] = answers[j], answers[i]
-	end
+	util.shuffle(answers)
 
 	local correct_index = 0
 	for i, a in ipairs(answers) do

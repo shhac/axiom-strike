@@ -1,5 +1,7 @@
 local M = {}
 
+local util = require("modules.util")
+
 --- Evaluate a token array left-to-right (no operator precedence).
 --- Tokens alternate: number, operator, number, operator, number...
 --- @param tokens table Array of numbers and operator strings
@@ -27,11 +29,12 @@ function M.evaluate(tokens)
 			return nil, "expected number at position " .. (i + 1)
 		end
 
+		op = util.normalize_op(op)
 		if op == "+" then
 			result = result + operand
 		elseif op == "-" then
 			result = result - operand
-		elseif op == "x" or op == "*" then
+		elseif op == "x" then
 			result = result * operand
 		elseif op == "/" then
 			if operand == 0 then
