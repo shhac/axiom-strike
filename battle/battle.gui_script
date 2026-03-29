@@ -1119,7 +1119,7 @@ function on_input(self, action_id, action)
 	-- Pause button
 	if self_pause_btn and gui.pick_node(self_pause_btn, action.x, action.y) then
 		sfx.play("button_press")
-		msg.post(SCRIPT_URL, "continue_pressed")
+		msg.post(SCRIPT_URL, "pause_pressed")
 		return true
 	end
 

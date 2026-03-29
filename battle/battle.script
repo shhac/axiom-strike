@@ -438,6 +438,9 @@ function on_message(self, message_id, message, sender)
 	elseif message_id == hash("continue_pressed") then
 		msg.post("main:/controller#script", "battle_complete", {stars = self.earned_stars or 1})
 
+	elseif message_id == hash("pause_pressed") then
+		msg.post("main:/controller#script", "back_to_menu")
+
 	elseif message_id == hash("next_wave_pressed") then
 		if self.phase == "victory_quiz_offer" then
 			-- Skip quiz, show victory
