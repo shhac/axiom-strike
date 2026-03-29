@@ -101,25 +101,10 @@ local function create_scene()
 	for _, n in ipairs(scene_nodes) do gui.delete_node(n) end
 	scene_nodes = {}
 
-	-- Ground plane
-	local ground = gui.new_box_node(vmath.vector3(640, 180, 0), vmath.vector3(1280, 360, 0))
-	gui.set_color(ground, C.ground)
-	scene_nodes[#scene_nodes + 1] = ground
-
-	local ground_line = gui.new_box_node(vmath.vector3(640, 362, 0), vmath.vector3(1280, 4, 0))
-	gui.set_color(ground_line, C.ground_line)
-	scene_nodes[#scene_nodes + 1] = ground_line
-
-	-- Stars in the sky
-	local star_positions = {{100, 620}, {300, 590}, {500, 640}, {800, 610}, {1050, 630}, {1200, 595}, {150, 580}, {700, 650}}
-	for _, pos in ipairs(star_positions) do
-		local star = gui.new_box_node(vmath.vector3(pos[1], pos[2], 0), vmath.vector3(3, 3, 0))
-		gui.set_color(star, vmath.vector4(1, 1, 0.8, 0.5))
-		scene_nodes[#scene_nodes + 1] = star
-	end
+	-- Ground and grass line are static .gui nodes (render behind everything)
+	-- Stars are static .gui nodes too (added below)
 
 	-- Hero character (left side)
-	-- Body
 	local body = gui.new_box_node(vmath.vector3(160, 420, 0), vmath.vector3(60, 80, 0))
 	gui.set_color(body, C.hero_body)
 	scene_nodes[#scene_nodes + 1] = body

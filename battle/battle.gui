@@ -12,6 +12,149 @@ background_color {
 nodes {
   position {
     x: 640.0
+    y: 180.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 1280.0
+    y: 360.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.14
+    y: 0.22
+    z: 0.12
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "ground"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+}
+nodes {
+  position {
+    x: 640.0
+    y: 362.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 1280.0
+    y: 4.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.25
+    y: 0.45
+    z: 0.2
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "ground_line"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+}
+nodes {
+  position {
+    x: 120.0
+    y: 620.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation { x: 0.0 y: 0.0 z: 0.0 w: 1.0 }
+  scale { x: 1.0 y: 1.0 z: 1.0 w: 1.0 }
+  size { x: 4.0 y: 4.0 z: 0.0 w: 1.0 }
+  color { x: 1.0 y: 1.0 z: 0.8 w: 0.5 }
+  type: TYPE_BOX
+  id: "star1"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+}
+nodes {
+  position { x: 340.0 y: 590.0 z: 0.0 w: 1.0 }
+  rotation { x: 0.0 y: 0.0 z: 0.0 w: 1.0 }
+  scale { x: 1.0 y: 1.0 z: 1.0 w: 1.0 }
+  size { x: 3.0 y: 3.0 z: 0.0 w: 1.0 }
+  color { x: 1.0 y: 1.0 z: 0.85 w: 0.4 }
+  type: TYPE_BOX
+  id: "star2"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+}
+nodes {
+  position { x: 550.0 y: 640.0 z: 0.0 w: 1.0 }
+  rotation { x: 0.0 y: 0.0 z: 0.0 w: 1.0 }
+  scale { x: 1.0 y: 1.0 z: 1.0 w: 1.0 }
+  size { x: 3.0 y: 3.0 z: 0.0 w: 1.0 }
+  color { x: 1.0 y: 1.0 z: 0.8 w: 0.45 }
+  type: TYPE_BOX
+  id: "star3"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+}
+nodes {
+  position { x: 800.0 y: 610.0 z: 0.0 w: 1.0 }
+  rotation { x: 0.0 y: 0.0 z: 0.0 w: 1.0 }
+  scale { x: 1.0 y: 1.0 z: 1.0 w: 1.0 }
+  size { x: 3.0 y: 3.0 z: 0.0 w: 1.0 }
+  color { x: 1.0 y: 1.0 z: 0.85 w: 0.35 }
+  type: TYPE_BOX
+  id: "star4"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+}
+nodes {
+  position { x: 1060.0 y: 630.0 z: 0.0 w: 1.0 }
+  rotation { x: 0.0 y: 0.0 z: 0.0 w: 1.0 }
+  scale { x: 1.0 y: 1.0 z: 1.0 w: 1.0 }
+  size { x: 4.0 y: 4.0 z: 0.0 w: 1.0 }
+  color { x: 1.0 y: 1.0 z: 0.8 w: 0.5 }
+  type: TYPE_BOX
+  id: "star5"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+}
+nodes {
+  position { x: 1220.0 y: 595.0 z: 0.0 w: 1.0 }
+  rotation { x: 0.0 y: 0.0 z: 0.0 w: 1.0 }
+  scale { x: 1.0 y: 1.0 z: 1.0 w: 1.0 }
+  size { x: 3.0 y: 3.0 z: 0.0 w: 1.0 }
+  color { x: 1.0 y: 1.0 z: 0.85 w: 0.4 }
+  type: TYPE_BOX
+  id: "star6"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+}
+nodes {
+  position {
+    x: 640.0
     y: 688.0
     z: 0.0
     w: 1.0
@@ -41,9 +184,10 @@ nodes {
     w: 1.0
   }
   type: TYPE_TEXT
-  text: "YOUR TURN - ATTACK"
+  text: ""
   font: "system_font"
   id: "phase_label"
+  alpha: 0.0
   pivot: PIVOT_CENTER
   outline {
     x: 0.0
