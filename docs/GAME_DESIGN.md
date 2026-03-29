@@ -121,11 +121,21 @@ Trains focus and reading comprehension. Framed as HP recovery.
 - All math content is reachable without unlocks — no pay-to-progress.
 - Content gated by operation type is structured for future DLC but fully unlocked in v1.
 
-## Open Questions
+## Research & Deep Dives
 
-1. **Exact wave/level structure** — how many waves per level? Needs playtesting.
-2. **Art direction details** — manga + pixel art is the vibe, but specific references and character concepts TBD.
-3. **Reading corpus pipeline** — how to source, chunk, and tag public domain text by reading level across UK/CAN/AU/USA. Significant content work.
-4. **Adaptive difficulty algorithm** — how does "auto" mode decide when to scale up or down? What signals does it use (accuracy, speed, consecutive successes)?
-5. **Aesthetic for older players** — will the visual style appeal to both 6yo and 12yo? May need the aesthetic to mature subtly with difficulty.
-6. **Recovery generosity** — a kid who struggles with reading gets punished with lower HP. Consider whether partial credit should be generous to avoid frustration.
+Each of these areas has been researched and documented in dedicated files:
+
+- [Wave / Level Structure](WAVE_STRUCTURE.md) — session pacing, enemy counts per wave, timing, boss encounters. Key takeaway: 3 waves per level at ~5 minutes, 15 nodes per region, 60 levels / ~5 hours of content in v1.
+- [Adaptive Difficulty](ADAPTIVE_DIFFICULTY.md) — Elo-based algorithm with per-skill dimensions, targeting ~70% success rate. Cold start via age priors, cross-session decay, math-to-reading grade mapping.
+- [Reading Corpus Pipeline](READING_CORPUS_PIPELINE.md) — public domain sources (Gutenberg, US gov), legal safety (author died before 1955), Flesch-Kincaid + Dale-Chall scoring, LLM-assisted question generation. ~3-4 weeks to build, ~2K-5K passages target.
+- [Art Direction](ART_DIRECTION_RESEARCH.md) — manga + pixel art hybrid (Scott Pilgrim as closest reference), operation-specific color palettes, "design for the 10yo, accommodate the 6yo through UX", tonal escalation within a fixed style.
+- [Recovery Balance](RECOVERY_BALANCE.md) — effort-based reward (30% base for reading + 70% comprehension bonus), 40 HP floor even on wrong answers, adaptive timer, positive failure framing.
+
+## Remaining Open Questions
+
+1. **Exact enemy HP/damage numbers** — depends on playtesting with the wave structure.
+2. **Reading corpus curation** — pipeline is designed but needs to be built and content reviewed.
+3. **Specific character designs** — art direction principles are set but individual enemy/hero concepts need artist work.
+4. **Sound design** — no research done yet. Music, SFX, and accessibility (hearing-impaired players) need thought.
+5. **Accessibility** — colorblind modes (important given color-coded enemy classes), screen reader support, motor accessibility for tile selection.
+6. **Analytics / telemetry** — what to track for the adaptive difficulty system, privacy considerations for children (COPPA, GDPR-K).

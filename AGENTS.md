@@ -12,6 +12,11 @@ Educational math fighting game for tablets/phones (Android + iOS), targeting age
 ## Key Documents
 
 - [Game Design Document](docs/GAME_DESIGN.md) — full mechanics, progression, open questions
+- [Wave Structure](docs/WAVE_STRUCTURE.md) — session pacing, enemy counts, timing
+- [Adaptive Difficulty](docs/ADAPTIVE_DIFFICULTY.md) — Elo-based algorithm, cold start, signals
+- [Reading Corpus Pipeline](docs/READING_CORPUS_PIPELINE.md) — PD sources, chunking, question generation
+- [Art Direction](docs/ART_DIRECTION_RESEARCH.md) — visual style, color palettes, age-spanning design
+- [Recovery Balance](docs/RECOVERY_BALANCE.md) — effort-based HP recovery formula, failure framing
 
 ## Core Mechanics Summary
 
