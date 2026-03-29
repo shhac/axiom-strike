@@ -23,11 +23,11 @@ local animating = false
 local idle_timer = 0
 local hint_shown = false
 local HINT_DELAY = 5.0
-local HINT_STRONG_DELAY = 10.0
 local eq_feedback_node = nil
 local fill_blank_mode = false
 local fill_blank_nodes = {}
 local fill_blank_display_node = nil
+local current_target = 0  -- weakness or attack number to aim for
 
 -- Banner/HUD nodes
 local banner_bg, banner_text, target_bg, target_text, target_label, wave_text
@@ -142,37 +142,81 @@ end
 -- Hint system
 -- ============================================================
 
+local function find_best_hint()
+	-- Try to find the best next tile to get closest to current_target
+	if current_target <= 0 then return nil, nil end
+
+	-- Get current equation value
+	local current_val = nil
+	if #equation_tokens > 0 then
+		current_val = equation.evaluate(equation_tokens)
+	end
+
+	if expecting_number then
+		-- Find which unused number tile gets us closest to target
+		local best_i, best_dist = nil, math.huge
+
+		for i = 1, #number_tile_values do
+			if not tile_used["num_" .. i] then
+				-- Try appending this number
+				local test = {}
+				for _, t in ipairs(equation_tokens) do test[#test + 1] = t end
+				test[#test + 1] = number_tile_values[i]
+				local result = equation.evaluate(test)
+				if result then
+					local dist = math.abs(result - current_target)
+					if dist < best_dist then
+						best_dist = dist
+						best_i = i
+					end
+				end
+			end
+		end
+
+		if best_i then return "num", best_i end
+	else
+		-- Find which unused operator tile, combined with the best remaining number, gets closest
+		local best_i, best_dist = nil, math.huge
+
+		for i = 1, #operator_tile_values do
+			if not tile_used["op_" .. i] then
+				-- Try each operator with each unused number
+				for j = 1, #number_tile_values do
+					if not tile_used["num_" .. j] then
+						local test = {}
+						for _, t in ipairs(equation_tokens) do test[#test + 1] = t end
+						test[#test + 1] = operator_tile_values[i]
+						test[#test + 1] = number_tile_values[j]
+						local result = equation.evaluate(test)
+						if result then
+							local dist = math.abs(result - current_target)
+							if dist < best_dist then
+								best_dist = dist
+								best_i = i
+							end
+						end
+					end
+				end
+			end
+		end
+
+		if best_i then return "op", best_i end
+	end
+
+	return nil, nil
+end
+
 local function show_hint()
 	if hint_shown or fill_blank_mode then return end
 
-	-- If no tokens placed yet, highlight the first unused number tile
-	if #equation_tokens == 0 and expecting_number then
-		for i, nd in ipairs(number_tile_nodes) do
-			if not tile_used["num_" .. i] then
-				gui.animate(nd.box, gui.PROP_COLOR, vmath.vector4(0.5, 0.7, 1.0, 1), gui.EASING_INOUTSINE, 0.4, 0, nil, gui.PLAYBACK_LOOP_PINGPONG)
-				hint_shown = true
-				return
-			end
-		end
-	end
+	local hint_type, hint_index = find_best_hint()
 
-	-- If we have a partial equation, suggest operator or next number
-	if expecting_number then
-		for i, nd in ipairs(number_tile_nodes) do
-			if not tile_used["num_" .. i] then
-				gui.animate(nd.box, gui.PROP_COLOR, vmath.vector4(0.5, 0.7, 1.0, 1), gui.EASING_INOUTSINE, 0.4, 0, nil, gui.PLAYBACK_LOOP_PINGPONG)
-				hint_shown = true
-				return
-			end
-		end
-	else
-		for i, nd in ipairs(operator_tile_nodes) do
-			if not tile_used["op_" .. i] then
-				gui.animate(nd.box, gui.PROP_COLOR, vmath.vector4(1.0, 0.8, 0.3, 1), gui.EASING_INOUTSINE, 0.4, 0, nil, gui.PLAYBACK_LOOP_PINGPONG)
-				hint_shown = true
-				return
-			end
-		end
+	if hint_type == "num" and number_tile_nodes[hint_index] then
+		gui.animate(number_tile_nodes[hint_index].box, gui.PROP_COLOR, vmath.vector4(0.5, 0.85, 1.0, 1), gui.EASING_INOUTSINE, 0.4, 0, nil, gui.PLAYBACK_LOOP_PINGPONG)
+		hint_shown = true
+	elseif hint_type == "op" and operator_tile_nodes[hint_index] then
+		gui.animate(operator_tile_nodes[hint_index].box, gui.PROP_COLOR, vmath.vector4(1.0, 0.85, 0.3, 1), gui.EASING_INOUTSINE, 0.4, 0, nil, gui.PLAYBACK_LOOP_PINGPONG)
+		hint_shown = true
 	end
 end
 
@@ -696,8 +740,13 @@ function on_message(self, message_id, message, sender)
 		input_enabled = true
 
 	elseif message_id == hash("set_phase") then
-		if message.mode == "attack" then set_attack_mode(message.weakness or 0)
-		elseif message.mode == "defend" then set_defend_mode(message.attack_number or 0) end
+		if message.mode == "attack" then
+			current_target = message.weakness or 0
+			set_attack_mode(current_target)
+		elseif message.mode == "defend" then
+			current_target = message.attack_number or 0
+			set_defend_mode(current_target)
+		end
 		if message.wave_text and wave_text then gui.set_text(wave_text, message.wave_text) end
 
 	elseif message_id == hash("update_hero_hp") then

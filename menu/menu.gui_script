@@ -44,7 +44,7 @@ end
 
 local settings_holding = false
 local settings_hold_time = 0
-local SETTINGS_HOLD_DURATION = 1.5
+local SETTINGS_HOLD_DURATION = 1.0
 local settings_btn_color = vmath.vector4(0.267, 0.2, 0.333, 1)
 
 function update(self, dt)
@@ -85,7 +85,7 @@ function on_input(self, action_id, action)
 			settings_holding = false
 			gui.set_color(gui.get_node("btn_settings"), settings_btn_color)
 			if settings_hold_time < SETTINGS_HOLD_DURATION then
-				gui.set_text(gui.get_node("btn_settings_text"), "HOLD 2s")
+				gui.set_text(gui.get_node("btn_settings_text"), "HOLD 1s")
 				timer.delay(1.5, false, function()
 					gui.set_text(gui.get_node("btn_settings_text"), "SETTINGS")
 				end)
