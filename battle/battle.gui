@@ -7,10 +7,6 @@ fonts {
   name: "game_font"
   font: "/assets/fonts/kenney_pixel.font"
 }
-textures {
-  name: "characters"
-  texture: "/assets/images/sprites/characters.atlas"
-}
 background_color {
   x: 0.1
   y: 0.1

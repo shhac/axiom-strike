@@ -402,12 +402,37 @@ local function create_scene()
 	for _, n in ipairs(scene_nodes) do gui.delete_node(n) end
 	scene_nodes = {}
 
-	-- Hero sprite from Kenney roguelike pack
-	local hero_size = 96
-	local hero = gui.new_box_node(vmath.vector3(HERO_X, HERO_Y + 20, 0), vmath.vector3(hero_size, hero_size, 0))
-	gui.set_texture(hero, "characters")
-	gui.play_flipbook(hero, "hero_knight")
-	scene_nodes[#scene_nodes + 1] = hero
+	-- Hero character (pixel art style with colored boxes)
+	local body = gui.new_box_node(vmath.vector3(HERO_X, HERO_Y, 0), vmath.vector3(70, 90, 0))
+	gui.set_color(body, C.hero_body)
+	scene_nodes[#scene_nodes + 1] = body
+
+	local head = gui.new_box_node(vmath.vector3(HERO_X, HERO_Y + 60, 0), vmath.vector3(52, 52, 0))
+	gui.set_color(head, C.hero_head)
+	scene_nodes[#scene_nodes + 1] = head
+
+	local hair = gui.new_box_node(vmath.vector3(HERO_X, HERO_Y + 84, 0), vmath.vector3(56, 18, 0))
+	gui.set_color(hair, C.hero_hair)
+	scene_nodes[#scene_nodes + 1] = hair
+
+	-- Eyes
+	local el = gui.new_box_node(vmath.vector3(HERO_X - 11, HERO_Y + 63, 0), vmath.vector3(11, 13, 0))
+	gui.set_color(el, C.eye_white)
+	scene_nodes[#scene_nodes + 1] = el
+	local pl = gui.new_box_node(vmath.vector3(HERO_X - 9, HERO_Y + 61, 0), vmath.vector3(6, 7, 0))
+	gui.set_color(pl, C.eye_dark)
+	scene_nodes[#scene_nodes + 1] = pl
+	local er = gui.new_box_node(vmath.vector3(HERO_X + 11, HERO_Y + 63, 0), vmath.vector3(11, 13, 0))
+	gui.set_color(er, C.eye_white)
+	scene_nodes[#scene_nodes + 1] = er
+	local pr = gui.new_box_node(vmath.vector3(HERO_X + 13, HERO_Y + 61, 0), vmath.vector3(6, 7, 0))
+	gui.set_color(pr, C.eye_dark)
+	scene_nodes[#scene_nodes + 1] = pr
+
+	-- Mouth
+	local mouth = gui.new_box_node(vmath.vector3(HERO_X, HERO_Y + 48, 0), vmath.vector3(14, 4, 0))
+	gui.set_color(mouth, vmath.vector4(0.75, 0.4, 0.35, 1))
+	scene_nodes[#scene_nodes + 1] = mouth
 
 	-- Idle bob on body parts
 	for _, n in ipairs(scene_nodes) do
@@ -461,6 +486,14 @@ local function create_hud()
 	gui.set_font(enemy_hp_text, "game_font")
 	gui.set_scale(enemy_hp_text, vmath.vector3(0.9, 0.9, 1))
 	gui.set_color(enemy_hp_text, C.white)
+
+	-- Pause/Menu button (top-left, small)
+	self_pause_btn = gui.new_box_node(vmath.vector3(30, 700, 0), vmath.vector3(40, 28, 0))
+	gui.set_color(self_pause_btn, vmath.vector4(0.2, 0.18, 0.3, 0.7))
+	local pause_text = gui.new_text_node(vmath.vector3(30, 700, 0), "II")
+	gui.set_font(pause_text, "game_font")
+	gui.set_scale(pause_text, vmath.vector3(0.6, 0.6, 1))
+	gui.set_color(pause_text, vmath.vector4(0.6, 0.6, 0.75, 1))
 end
 
 local function update_enemy_hud(hp, max_hp)
@@ -614,28 +647,45 @@ local function create_enemy_nodes(enemies, target_index)
 		local alive = e.alive
 		local is_target = (i == target_index and alive)
 
-		-- Enemy sprite from Kenney roguelike pack
-		local sprite_size = e.is_boss and 96 or 80
-		local body = gui.new_box_node(vmath.vector3(x, ENEMY_Y, 0), vmath.vector3(sprite_size, sprite_size, 0))
-		gui.set_texture(body, "characters")
+		-- Enemy with color per operation type
+		local w = e.is_boss and 90 or 72
+		local h = e.is_boss and 100 or 82
 
-		-- Pick sprite based on skill type
-		local sprite_name = "enemy_slime_green"  -- default
-		local skill = e.skill or "+"
-		if skill == "+" then
-			sprite_name = e.is_boss and "enemy_goblin_green" or "enemy_slime_green"
-		elseif skill == "-" then
-			sprite_name = e.is_boss and "enemy_dragon_red" or "enemy_demon_red"
-		elseif skill == "x" then
-			sprite_name = e.is_boss and "enemy_mage_purple" or "enemy_ghost_purple"
-		elseif skill == "/" then
-			sprite_name = e.is_boss and "enemy_water_blue" or "enemy_ice_blue"
-		end
-		gui.play_flipbook(body, sprite_name)
+		-- Operation-specific colors
+		local ENEMY_COLORS = {
+			["+"] = {body = vmath.vector4(0.2, 0.75, 0.4, 1), dark = vmath.vector4(0.12, 0.5, 0.25, 1)},
+			["-"] = {body = vmath.vector4(0.85, 0.3, 0.2, 1), dark = vmath.vector4(0.6, 0.18, 0.12, 1)},
+			["x"] = {body = vmath.vector4(0.6, 0.3, 0.85, 1), dark = vmath.vector4(0.4, 0.18, 0.6, 1)},
+			["/"] = {body = vmath.vector4(0.25, 0.55, 0.9, 1), dark = vmath.vector4(0.15, 0.35, 0.65, 1)},
+		}
+		local ec = ENEMY_COLORS[e.skill or "+"] or ENEMY_COLORS["+"]
 
-		if not alive then
-			gui.set_color(body, vmath.vector4(0.3, 0.3, 0.35, 0.35))
-		end
+		local body = gui.new_box_node(vmath.vector3(x, ENEMY_Y, 0), vmath.vector3(w, h, 0))
+		gui.set_color(body, alive and ec.body or C.enemy_dead)
+
+		local belly = gui.new_box_node(vmath.vector3(x, ENEMY_Y - 8, 0), vmath.vector3(w - 12, h * 0.4, 0))
+		gui.set_color(belly, alive and ec.dark or C.enemy_dead)
+
+		-- Eyes
+		local ew, eh = e.is_boss and 14 or 11, e.is_boss and 16 or 12
+		local el = gui.new_box_node(vmath.vector3(x - w * 0.2, ENEMY_Y + h * 0.14, 0), vmath.vector3(ew, eh, 0))
+		gui.set_color(el, alive and C.enemy_eye or C.enemy_dead)
+		local pl = gui.new_box_node(vmath.vector3(x - w * 0.2 + 1, ENEMY_Y + h * 0.11, 0), vmath.vector3(ew * 0.55, eh * 0.6, 0))
+		gui.set_color(pl, alive and C.enemy_pupil or C.enemy_dead)
+		local er = gui.new_box_node(vmath.vector3(x + w * 0.2, ENEMY_Y + h * 0.14, 0), vmath.vector3(ew, eh, 0))
+		gui.set_color(er, alive and C.enemy_eye or C.enemy_dead)
+		local pr = gui.new_box_node(vmath.vector3(x + w * 0.2 + 1, ENEMY_Y + h * 0.11, 0), vmath.vector3(ew * 0.55, eh * 0.6, 0))
+		gui.set_color(pr, alive and C.enemy_pupil or C.enemy_dead)
+
+		-- Mouth + fangs for boss
+		local mouth = gui.new_box_node(vmath.vector3(x, ENEMY_Y - h * 0.08, 0), vmath.vector3(e.is_boss and 28 or 18, 5, 0))
+		gui.set_color(mouth, alive and vmath.vector4(ec.dark.x * 0.5, ec.dark.y * 0.5, ec.dark.z * 0.5, 1) or C.enemy_dead)
+
+		-- Operation symbol on belly
+		local op_sym = gui.new_text_node(vmath.vector3(x, ENEMY_Y - 14, 0), e.skill or "+")
+		gui.set_font(op_sym, "game_font")
+		gui.set_scale(op_sym, vmath.vector3(0.8, 0.8, 1))
+		gui.set_color(op_sym, alive and vmath.vector4(1, 1, 1, 0.5) or C.enemy_dead)
 
 		-- Weakness badge on enemy body
 		local badge = gui.new_box_node(vmath.vector3(x, ENEMY_Y + h/2 + 16, 0), vmath.vector3(38, 22, 0))
@@ -664,9 +714,17 @@ local function create_enemy_nodes(enemies, target_index)
 		end
 
 		enemy_nodes[i] = {
-			body = body, badge = badge, wtext = wtext, arrow = arrow,
+			body = body, belly = belly, el = el, pl = pl, er = er, pr = pr,
+			mouth = mouth, op_sym = op_sym, badge = badge, wtext = wtext, arrow = arrow,
 			alive = alive,
 		}
+
+		if alive then
+			local all_parts = {body, belly, el, pl, er, pr, mouth, op_sym, badge, wtext}
+			for _, n in ipairs(all_parts) do
+				bob(n, gui.get_position(n).y, 3, 1.5 + i * 0.3)
+			end
+		end
 	end
 end
 
@@ -930,6 +988,13 @@ function on_input(self, action_id, action)
 			pop(self.victory_btn)
 			msg.post(SCRIPT_URL, "continue_pressed")
 		end
+		return true
+	end
+
+	-- Pause button
+	if self_pause_btn and gui.pick_node(self_pause_btn, action.x, action.y) then
+		sfx.play("button_press")
+		msg.post(SCRIPT_URL, "continue_pressed")
 		return true
 	end
 
