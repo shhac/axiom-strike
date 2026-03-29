@@ -3,6 +3,7 @@ local damage_module = require("modules.damage")
 local wave_data = require("modules.wave_data")
 local elo_module = require("modules.elo")
 local progress_module = require("modules.progress")
+local tutorial = require("modules.tutorial")
 local CONSTANTS = require("modules.constants")
 
 local GUI_URL = "#gui"
@@ -66,7 +67,12 @@ local function start_attack_phase(self)
 
 	next_alive_target(self)
 	local target = self.enemies[self.target_index]
-	local numbers, operators = tiles_module.deal_hand(target.weakness, target.skill or CONSTANTS.OP_ADD, target.max_operand)
+	local numbers, operators
+	if self.is_tutorial then
+		numbers, operators = tutorial.tutorial_tiles()
+	else
+		numbers, operators = tiles_module.deal_hand(target.weakness, target.skill or CONSTANTS.OP_ADD, target.max_operand)
+	end
 	send_gui("deal_tiles", {numbers = numbers, operators = operators})
 	send_gui("set_phase", {
 		text = "ATTACK! Target weakness: " .. target.weakness,
@@ -229,7 +235,14 @@ function on_message(self, message_id, message, sender)
 			end
 		end
 
-		self.waves = wave_data.generate_level(self.difficulty, self.skill, self.player_elo)
+		-- Check if this is the tutorial
+		self.is_tutorial = tutorial.is_first_battle(self.save_data)
+		if self.is_tutorial then
+			self.waves = tutorial.generate_tutorial_level()
+		else
+			self.waves = wave_data.generate_level(self.difficulty, self.skill, self.player_elo)
+		end
+
 		send_gui("update_hero_hp", {hp = self.hero_hp, max_hp = self.hero_max_hp})
 		start_wave(self)
 
@@ -258,7 +271,15 @@ function on_message(self, message_id, message, sender)
 			sync_all_enemy_hp(self)
 			send_gui("enemy_hit", {index = self.target_index})
 			send_gui("show_damage", {text = "-" .. dmg .. " " .. label, x = 600 + self.target_index * 80, y = 450})
-			send_gui("set_phase", {text = label .. " (-" .. dmg .. " HP)"})
+
+			-- Teaching feedback: show what equation equals vs target
+			if not is_exact then
+				send_gui("show_equation_feedback", {
+					result = result,
+					target = target.weakness,
+					mode = "attack",
+				})
+			end
 
 			self.phase = CONSTANTS.PHASE_ANIMATE_ATTACK
 			self.animation_timer = CONSTANTS.ANIMATION_DURATION
@@ -278,10 +299,24 @@ function on_message(self, message_id, message, sender)
 
 			local dmg_text = dmg_taken > 0 and ("-" .. dmg_taken .. " " .. label) or label
 			send_gui("show_damage", {text = dmg_text, x = 220, y = 450})
-			send_gui("set_phase", {text = label})
+
+			-- Teaching feedback for defense
+			if dmg_taken > 0 then
+				send_gui("show_equation_feedback", {
+					result = result,
+					target = self.current_attack_number,
+					mode = "defend",
+				})
+			end
 
 			self.phase = CONSTANTS.PHASE_ANIMATE_DEFEND
 			self.animation_timer = CONSTANTS.ANIMATION_DURATION
+		end
+
+	elseif message_id == hash("skip_animation") then
+		if self.animation_timer > 0 then
+			self.animation_timer = 0
+			on_animation_complete(self)
 		end
 
 	elseif message_id == hash("continue_pressed") then

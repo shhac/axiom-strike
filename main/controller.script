@@ -4,6 +4,14 @@ local current_screen = nil
 local pending_level = nil
 local battle_state_backup = nil
 
+-- Auto-save on app focus loss
+local function on_window_event(self, event)
+	if event == window.WINDOW_EVENT_FOCUS_LOST or event == window.WINDOW_EVENT_ICONIFIED then
+		local save_data = progress.load()
+		progress.save(save_data)
+	end
+end
+
 local function load_screen(self, proxy)
 	msg.post(proxy, "load")
 	self.loading_proxy = proxy
@@ -26,6 +34,12 @@ function init(self)
 	msg.post(".", "acquire_input_focus")
 	self.loading_proxy = nil
 	self.pending_recovery_healed = nil
+
+	-- Listen for window focus events (auto-save)
+	if window and window.set_listener then
+		window.set_listener(on_window_event)
+	end
+
 	load_screen(self, "#menu_proxy")
 end
 

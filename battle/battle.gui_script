@@ -19,6 +19,12 @@ local expecting_number = true
 local input_enabled = false
 local battle_over = false
 local between_waves = false
+local animating = false
+local idle_timer = 0
+local hint_shown = false
+local HINT_DELAY = 5.0
+local HINT_STRONG_DELAY = 10.0
+local eq_feedback_node = nil
 
 -- Banner/HUD nodes
 local banner_bg, banner_text, target_bg, target_text, target_label, wave_text
@@ -128,6 +134,67 @@ local function slide_in(node, from_x, target_x, delay)
 end
 
 -- wiggle removed: GUI rotation.z causes scaling artifacts in Defold
+
+-- ============================================================
+-- Hint system
+-- ============================================================
+
+local function show_hint()
+	if hint_shown then return end
+	-- Glow the first unused tile by pulsing its alpha
+	for i, nd in ipairs(number_tile_nodes) do
+		if not tile_used["num_" .. i] and expecting_number then
+			gui.animate(nd.box, gui.PROP_COLOR, vmath.vector4(0.5, 0.7, 1.0, 1), gui.EASING_INOUTSINE, 0.4, 0, nil, gui.PLAYBACK_LOOP_PINGPONG)
+			hint_shown = true
+			return
+		end
+	end
+	for i, nd in ipairs(operator_tile_nodes) do
+		if not tile_used["op_" .. i] and not expecting_number then
+			gui.animate(nd.box, gui.PROP_COLOR, vmath.vector4(1.0, 0.8, 0.3, 1), gui.EASING_INOUTSINE, 0.4, 0, nil, gui.PLAYBACK_LOOP_PINGPONG)
+			hint_shown = true
+			return
+		end
+	end
+end
+
+local function clear_hints()
+	hint_shown = false
+	idle_timer = 0
+end
+
+local function show_equation_feedback(result, target, mode)
+	if eq_feedback_node then
+		gui.delete_node(eq_feedback_node)
+		eq_feedback_node = nil
+	end
+
+	local msg
+	if mode == "attack" then
+		msg = "= " .. result .. "  (weakness is " .. target .. ")"
+	else
+		msg = "= " .. result .. "  (needed " .. target .. ")"
+	end
+
+	eq_feedback_node = gui.new_text_node(vmath.vector3(400, 185, 0), msg)
+	gui.set_font(eq_feedback_node, "system_font")
+	gui.set_scale(eq_feedback_node, vmath.vector3(0.75, 0.75, 1))
+	gui.set_color(eq_feedback_node, vmath.vector4(1, 0.7, 0.4, 1))
+	gui.set_alpha(eq_feedback_node, 0)
+	gui.animate(eq_feedback_node, "color.w", 1, gui.EASING_OUTQUAD, 0.3)
+
+	-- Fade out after 2 seconds
+	timer.delay(2.0, false, function()
+		if eq_feedback_node then
+			gui.animate(eq_feedback_node, "color.w", 0, gui.EASING_OUTQUAD, 0.5, 0, function()
+				if eq_feedback_node then
+					gui.delete_node(eq_feedback_node)
+					eq_feedback_node = nil
+				end
+			end)
+		end
+	end)
+end
 
 -- ============================================================
 -- Scene (hero character)
@@ -499,6 +566,16 @@ function init(self)
 	end
 end
 
+function update(self, dt)
+	-- Hint system: if input enabled and no tiles placed recently, show hint
+	if input_enabled and not hint_shown then
+		idle_timer = idle_timer + dt
+		if idle_timer >= HINT_DELAY then
+			show_hint()
+		end
+	end
+end
+
 function on_message(self, message_id, message, sender)
 	if message_id == hash("deal_tiles") then
 		number_tile_values = message.numbers or {}
@@ -558,8 +635,18 @@ function on_message(self, message_id, message, sender)
 		gui.animate(popup, "position.y", (message.y or 450) + 70, gui.EASING_OUTQUAD, 0.9)
 		gui.animate(popup, "color.w", 0, gui.EASING_OUTQUAD, 0.9, 0.3)
 
-	elseif message_id == hash("disable_input") then input_enabled = false
-	elseif message_id == hash("enable_input") then input_enabled = true
+	elseif message_id == hash("show_equation_feedback") then
+		show_equation_feedback(message.result, message.target, message.mode)
+
+	elseif message_id == hash("disable_input") then
+		input_enabled = false
+		animating = true
+
+	elseif message_id == hash("enable_input") then
+		input_enabled = true
+		animating = false
+		idle_timer = 0
+		clear_hints()
 
 	elseif message_id == hash("show_result") then
 		battle_over = true; input_enabled = false
@@ -588,7 +675,17 @@ function on_input(self, action_id, action)
 		return true
 	end
 
+	-- Tap-to-skip during animations
+	if animating and not battle_over and not between_waves then
+		msg.post(SCRIPT_URL, "skip_animation")
+		return true
+	end
+
 	if not input_enabled then return false end
+
+	-- Reset idle timer on any interaction
+	idle_timer = 0
+	clear_hints()
 
 	for i, en in ipairs(enemy_nodes) do
 		if en.alive and gui.pick_node(en.body, action.x, action.y) then msg.post(SCRIPT_URL, "select_target", {index = i}); return true end
