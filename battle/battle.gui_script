@@ -287,14 +287,20 @@ local function clear_hints()
 	hint_path_step = 0
 end
 
-local function show_equation_feedback(result, target, mode)
+local function show_equation_feedback(result, target, mode, wrong_attempts)
 	if eq_feedback_node then
 		gui.delete_node(eq_feedback_node)
 		eq_feedback_node = nil
 	end
 
 	local msg
-	if mode == "attack" then
+	wrong_attempts = wrong_attempts or 0
+
+	if wrong_attempts >= 3 then
+		msg = "Try the hint! Look for the glowing tile"
+	elseif wrong_attempts >= 2 then
+		msg = "= " .. result .. "  (need " .. target .. ") - try using the hint!"
+	elseif mode == "attack" then
 		msg = "= " .. result .. "  (weakness is " .. target .. ")"
 	else
 		msg = "= " .. result .. "  (needed " .. target .. ")"
@@ -302,13 +308,17 @@ local function show_equation_feedback(result, target, mode)
 
 	eq_feedback_node = gui.new_text_node(vmath.vector3(400, 185, 0), msg)
 	gui.set_font(eq_feedback_node, "game_font")
-	gui.set_scale(eq_feedback_node, vmath.vector3(0.75, 0.75, 1))
-	gui.set_color(eq_feedback_node, vmath.vector4(1, 0.7, 0.4, 1))
+	gui.set_scale(eq_feedback_node, vmath.vector3(0.7, 0.7, 1))
+	gui.set_color(eq_feedback_node, wrong_attempts >= 2 and vmath.vector4(1, 0.5, 0.3, 1) or vmath.vector4(1, 0.7, 0.4, 1))
 	gui.set_alpha(eq_feedback_node, 0)
 	gui.animate(eq_feedback_node, "color.w", 1, gui.EASING_OUTQUAD, 0.3)
 
-	-- Fade out after 2 seconds
-	timer.delay(2.0, false, function()
+	-- After 2+ wrong attempts, auto-trigger hint
+	if wrong_attempts >= 2 then
+		idle_timer = HINT_DELAY
+	end
+
+	timer.delay(2.5, false, function()
 		if eq_feedback_node then
 			gui.animate(eq_feedback_node, "color.w", 0, gui.EASING_OUTQUAD, 0.5, 0, function()
 				if eq_feedback_node then
@@ -874,7 +884,7 @@ function on_message(self, message_id, message, sender)
 		end
 
 	elseif message_id == hash("show_equation_feedback") then
-		show_equation_feedback(message.result, message.target, message.mode)
+		show_equation_feedback(message.result, message.target, message.mode, message.wrong_attempts)
 
 	elseif message_id == hash("disable_input") then
 		input_enabled = false

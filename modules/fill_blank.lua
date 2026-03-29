@@ -42,7 +42,8 @@ function M.generate(target, op, max_operand, difficulty)
 		b = target - a
 		result = target
 	elseif op == "-" then
-		a = math.random(target + 1, math.min(max_operand, target + max_operand))
+		local max_a = math.min(max_operand, target + max_operand)
+		a = math.random(target + 1, math.max(target + 1, max_a))
 		b = a - target
 		result = target
 	elseif op == "x" then

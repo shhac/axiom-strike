@@ -61,7 +61,8 @@ local SOLUTION_BUILDERS = {
 	end,
 
 	["-"] = function(target, max_operand)
-		local b = math.random(1, math.min(max_operand, max_operand - target))
+		local max_b = math.max(1, max_operand - target)
+		local b = math.random(1, max_b)
 		local a = target + b
 		if a > max_operand then
 			a = max_operand

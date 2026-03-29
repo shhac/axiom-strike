@@ -298,7 +298,12 @@ function on_message(self, message_id, message, sender)
 
 			self.total_attempts = self.total_attempts + 1
 			local correct = math.abs(result - target.weakness) <= CONSTANTS.ELO_ATTACK_THRESHOLD
-			if not correct then self.total_wrong = self.total_wrong + 1 end
+			if not correct then
+				self.total_wrong = self.total_wrong + 1
+				self.wrong_attempts = (self.wrong_attempts or 0) + 1
+			else
+				self.wrong_attempts = 0
+			end
 			record_elo(self, correct, target.question_elo or (self.player_elo - 50), time_taken)
 
 			send_gui("disable_input")
@@ -312,6 +317,7 @@ function on_message(self, message_id, message, sender)
 					result = result,
 					target = target.weakness,
 					mode = "attack",
+					wrong_attempts = self.wrong_attempts,
 				})
 			end
 
