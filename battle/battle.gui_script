@@ -1,0 +1,300 @@
+local equation = require("modules.equation")
+
+-- Tile node data: created dynamically, tracked here
+local number_tile_nodes = {}
+local operator_tile_nodes = {}
+local number_tile_values = {}
+local operator_tile_values = {}
+local tile_used = {}
+
+-- Current equation being built
+local equation_tokens = {}
+local expecting_number = true
+
+-- State
+local input_enabled = false
+local battle_over = false
+
+local TILE_W = 64
+local TILE_H = 48
+local TILE_GAP = 12
+local NUM_START_X = 150
+local NUM_Y = 100
+local OP_START_X = 620
+local OP_Y = 100
+
+local function make_tile_id(prefix, index)
+	return prefix .. "_" .. index
+end
+
+local function create_tile_nodes(self)
+	-- Clean up any existing dynamic nodes
+	for _, node in ipairs(number_tile_nodes) do
+		gui.delete_node(node.box)
+		gui.delete_node(node.text)
+	end
+	for _, node in ipairs(operator_tile_nodes) do
+		gui.delete_node(node.box)
+		gui.delete_node(node.text)
+	end
+	number_tile_nodes = {}
+	operator_tile_nodes = {}
+
+	-- Create number tiles
+	for i = 1, #number_tile_values do
+		local x = NUM_START_X + (i - 1) * (TILE_W + TILE_GAP)
+		local box = gui.new_box_node(vmath.vector3(x, NUM_Y, 0), vmath.vector3(TILE_W, TILE_H, 0))
+		gui.set_color(box, vmath.vector4(0.13, 0.27, 0.40, 1))
+		gui.set_parent(box, gui.get_node("bg"))
+		gui.set_id(box, make_tile_id("num", i))
+
+		local txt = gui.new_text_node(vmath.vector3(x, NUM_Y, 0), tostring(number_tile_values[i]))
+		gui.set_font(txt, "system_font")
+		gui.set_color(txt, vmath.vector4(0.53, 0.80, 1.0, 1))
+		gui.set_parent(txt, gui.get_node("bg"))
+		gui.set_id(txt, make_tile_id("num_t", i))
+
+		number_tile_nodes[i] = {box = box, text = txt, index = i}
+	end
+
+	-- Create operator tiles
+	for i = 1, #operator_tile_values do
+		local x = OP_START_X + (i - 1) * (TILE_W - 10 + TILE_GAP)
+		local box = gui.new_box_node(vmath.vector3(x, OP_Y, 0), vmath.vector3(TILE_W - 10, TILE_H, 0))
+		gui.set_color(box, vmath.vector4(0.27, 0.20, 0.13, 1))
+		gui.set_parent(box, gui.get_node("bg"))
+		gui.set_id(box, make_tile_id("op", i))
+
+		local txt = gui.new_text_node(vmath.vector3(x, OP_Y, 0), operator_tile_values[i])
+		gui.set_font(txt, "system_font")
+		gui.set_color(txt, vmath.vector4(1.0, 0.80, 0.40, 1))
+		gui.set_parent(txt, gui.get_node("bg"))
+		gui.set_id(txt, make_tile_id("op_t", i))
+
+		operator_tile_nodes[i] = {box = box, text = txt, index = i}
+	end
+end
+
+local function update_equation_display()
+	local eq_str = equation.to_string(equation_tokens)
+	gui.set_text(gui.get_node("equation_text"), eq_str)
+
+	local result, err = equation.evaluate(equation_tokens)
+	if result and not err then
+		gui.set_text(gui.get_node("equation_result"), "= " .. tostring(math.floor(result)))
+	elseif #equation_tokens > 0 then
+		gui.set_text(gui.get_node("equation_result"), "= ?")
+	else
+		gui.set_text(gui.get_node("equation_result"), "")
+	end
+end
+
+local function dim_tile(node_data)
+	gui.set_color(node_data.box, vmath.vector4(0.10, 0.10, 0.17, 0.5))
+	gui.set_color(node_data.text, vmath.vector4(0.3, 0.3, 0.35, 0.5))
+end
+
+local function restore_tile_color(node_data, is_number)
+	if is_number then
+		gui.set_color(node_data.box, vmath.vector4(0.13, 0.27, 0.40, 1))
+		gui.set_color(node_data.text, vmath.vector4(0.53, 0.80, 1.0, 1))
+	else
+		gui.set_color(node_data.box, vmath.vector4(0.27, 0.20, 0.13, 1))
+		gui.set_color(node_data.text, vmath.vector4(1.0, 0.80, 0.40, 1))
+	end
+end
+
+local function clear_equation()
+	-- Restore all used tiles
+	for key, _ in pairs(tile_used) do
+		local prefix, idx = key:match("(%a+)_(%d+)")
+		idx = tonumber(idx)
+		if prefix == "num" and number_tile_nodes[idx] then
+			restore_tile_color(number_tile_nodes[idx], true)
+		elseif prefix == "op" and operator_tile_nodes[idx] then
+			restore_tile_color(operator_tile_nodes[idx], false)
+		end
+	end
+	tile_used = {}
+	equation_tokens = {}
+	expecting_number = true
+	update_equation_display()
+	gui.set_text(gui.get_node("closeness_label"), "")
+end
+
+local function undo_last()
+	if #equation_tokens == 0 then return end
+
+	-- Find and restore the last used tile
+	local last_token = equation_tokens[#equation_tokens]
+	-- Remove last token
+	table.remove(equation_tokens)
+
+	-- Find which tile this was and restore it
+	-- We track tile usage by marking them, so find the most recently used one
+	-- Simple approach: iterate tile_used in reverse order of addition
+	-- Actually, we need to track order. For now, just restore all and re-dim used ones.
+	-- Simpler: toggle expecting and restore based on type
+	if type(last_token) == "number" then
+		-- Find this number tile that was used
+		for i = #number_tile_nodes, 1, -1 do
+			local key = "num_" .. i
+			if tile_used[key] and number_tile_values[i] == last_token then
+				tile_used[key] = nil
+				restore_tile_color(number_tile_nodes[i], true)
+				break
+			end
+		end
+		expecting_number = true
+	else
+		for i = #operator_tile_nodes, 1, -1 do
+			local key = "op_" .. i
+			if tile_used[key] and operator_tile_values[i] == last_token then
+				tile_used[key] = nil
+				restore_tile_color(operator_tile_nodes[i], false)
+				break
+			end
+		end
+		expecting_number = false
+	end
+
+	update_equation_display()
+	gui.set_text(gui.get_node("closeness_label"), "")
+end
+
+function init(self)
+	msg.post(".", "acquire_input_focus")
+	input_enabled = false
+	battle_over = false
+	equation_tokens = {}
+	expecting_number = true
+	tile_used = {}
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("deal_tiles") then
+		number_tile_values = message.numbers or {}
+		operator_tile_values = message.operators or {}
+		tile_used = {}
+		equation_tokens = {}
+		expecting_number = true
+		create_tile_nodes(self)
+		update_equation_display()
+		gui.set_text(gui.get_node("closeness_label"), "")
+		input_enabled = true
+
+	elseif message_id == hash("set_phase") then
+		gui.set_text(gui.get_node("phase_label"), message.text or "")
+
+	elseif message_id == hash("update_hero_hp") then
+		local ratio = message.hp / message.max_hp
+		local fill = gui.get_node("hero_hp_fill")
+		gui.set_size(fill, vmath.vector3(200 * ratio, 14, 0))
+		gui.set_text(gui.get_node("hero_hp_text"), message.hp .. "/" .. message.max_hp)
+
+	elseif message_id == hash("update_enemy_hp") then
+		local ratio = message.hp / message.max_hp
+		local fill = gui.get_node("enemy_hp_fill")
+		gui.set_size(fill, vmath.vector3(100 * ratio, 8, 0))
+		gui.set_text(gui.get_node("enemy_hp_text"), message.hp .. "/" .. message.max_hp)
+
+	elseif message_id == hash("set_enemy_weakness") then
+		gui.set_text(gui.get_node("enemy_weakness_text"), tostring(message.weakness))
+
+	elseif message_id == hash("show_damage") then
+		local popup = gui.get_node("damage_popup")
+		gui.set_text(popup, message.text or "")
+		gui.set_position(popup, vmath.vector3(message.x or 640, message.y or 420, 0))
+		gui.set_alpha(popup, 1.0)
+		gui.animate(popup, "position.y", (message.y or 420) + 40, gui.EASING_OUTQUAD, 0.6)
+		gui.animate(popup, "color.w", 0, gui.EASING_OUTQUAD, 0.6, 0.3)
+
+	elseif message_id == hash("disable_input") then
+		input_enabled = false
+
+	elseif message_id == hash("enable_input") then
+		input_enabled = true
+
+	elseif message_id == hash("show_result") then
+		battle_over = true
+		input_enabled = false
+		gui.set_alpha(gui.get_node("result_overlay"), 1.0)
+		gui.set_alpha(gui.get_node("result_title"), 1.0)
+		gui.set_text(gui.get_node("result_title"), message.title or "VICTORY!")
+		gui.set_alpha(gui.get_node("btn_continue"), 1.0)
+		gui.set_alpha(gui.get_node("btn_continue_text"), 1.0)
+	end
+end
+
+function on_input(self, action_id, action)
+	if action_id ~= hash("touch") or not action.pressed then
+		return false
+	end
+
+	-- Check continue button (when battle is over)
+	if battle_over then
+		if gui.pick_node(gui.get_node("btn_continue"), action.x, action.y) then
+			msg.post("/battle_controller#script", "continue_pressed")
+		end
+		return true
+	end
+
+	if not input_enabled then
+		return false
+	end
+
+	-- Check Strike button
+	if gui.pick_node(gui.get_node("btn_strike"), action.x, action.y) then
+		local result, err = equation.evaluate(equation_tokens)
+		if result and not err then
+			input_enabled = false
+			msg.post("/battle_controller#script", "equation_submitted", {
+				result = math.floor(result),
+				tokens = equation_tokens
+			})
+		end
+		return true
+	end
+
+	-- Check Undo button
+	if gui.pick_node(gui.get_node("btn_undo"), action.x, action.y) then
+		undo_last()
+		return true
+	end
+
+	-- Check Clear button
+	if gui.pick_node(gui.get_node("btn_clear"), action.x, action.y) then
+		clear_equation()
+		return true
+	end
+
+	-- Check number tiles
+	if expecting_number then
+		for i, node_data in ipairs(number_tile_nodes) do
+			local key = "num_" .. i
+			if not tile_used[key] and gui.pick_node(node_data.box, action.x, action.y) then
+				tile_used[key] = true
+				dim_tile(node_data)
+				equation_tokens[#equation_tokens + 1] = number_tile_values[i]
+				expecting_number = false
+				update_equation_display()
+				return true
+			end
+		end
+	else
+		-- Check operator tiles
+		for i, node_data in ipairs(operator_tile_nodes) do
+			local key = "op_" .. i
+			if not tile_used[key] and gui.pick_node(node_data.box, action.x, action.y) then
+				tile_used[key] = true
+				dim_tile(node_data)
+				equation_tokens[#equation_tokens + 1] = operator_tile_values[i]
+				expecting_number = true
+				update_equation_display()
+				return true
+			end
+		end
+	end
+
+	return false
+end

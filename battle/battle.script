@@ -1,0 +1,136 @@
+local tiles_module = require("modules.tiles")
+local damage_module = require("modules.damage")
+local CONSTANTS = require("modules.constants")
+
+local GUI_URL = "#gui"
+
+function init(self)
+	math.randomseed(os.time())
+
+	self.hero_hp = CONSTANTS.HERO_START_HP
+	self.hero_max_hp = CONSTANTS.HERO_MAX_HP
+
+	self.enemy_hp = CONSTANTS.ENEMY_BASE_HP
+	self.enemy_max_hp = CONSTANTS.ENEMY_BASE_HP
+	self.enemy_weakness = 0
+	self.enemy_attack_power = CONSTANTS.ENEMY_BASE_ATTACK
+
+	self.phase = CONSTANTS.PHASE_PLAYER_ATTACK
+	self.animation_timer = 0
+
+	-- Generate first enemy
+	self:setup_enemy()
+	self:start_attack_phase()
+end
+
+function setup_enemy(self)
+	-- Generate a weakness number appropriate for addition, Phase 1
+	self.enemy_weakness = math.random(5, 20)
+	self.enemy_hp = CONSTANTS.ENEMY_BASE_HP
+	self.enemy_max_hp = CONSTANTS.ENEMY_BASE_HP
+	self.enemy_attack_power = math.random(5, 12)
+
+	msg.post(GUI_URL, "update_enemy_hp", {hp = self.enemy_hp, max_hp = self.enemy_max_hp})
+	msg.post(GUI_URL, "set_enemy_weakness", {weakness = self.enemy_weakness})
+	msg.post(GUI_URL, "update_hero_hp", {hp = self.hero_hp, max_hp = self.hero_max_hp})
+end
+
+function start_attack_phase(self)
+	self.phase = CONSTANTS.PHASE_PLAYER_ATTACK
+
+	-- Deal tiles for the enemy weakness
+	local numbers, operators = tiles_module.deal_hand(self.enemy_weakness, CONSTANTS.OP_ADD)
+	msg.post(GUI_URL, "deal_tiles", {numbers = numbers, operators = operators})
+	msg.post(GUI_URL, "set_phase", {text = "YOUR TURN - ATTACK!"})
+	msg.post(GUI_URL, "set_enemy_weakness", {weakness = self.enemy_weakness})
+	msg.post(GUI_URL, "enable_input")
+end
+
+function start_defend_phase(self)
+	self.phase = CONSTANTS.PHASE_PLAYER_DEFEND
+
+	-- Enemy generates an attack number
+	self.enemy_attack_number = math.random(3, 15)
+
+	-- Deal tiles for the defense
+	local numbers, operators = tiles_module.deal_hand(self.enemy_attack_number, CONSTANTS.OP_ADD)
+	msg.post(GUI_URL, "deal_tiles", {numbers = numbers, operators = operators})
+	msg.post(GUI_URL, "set_phase", {text = "DEFEND! Match: " .. self.enemy_attack_number})
+	msg.post(GUI_URL, "set_enemy_weakness", {weakness = self.enemy_attack_number})
+	msg.post(GUI_URL, "enable_input")
+end
+
+function update(self, dt)
+	if self.animation_timer > 0 then
+		self.animation_timer = self.animation_timer - dt
+		if self.animation_timer <= 0 then
+			self.animation_timer = 0
+			self:on_animation_complete()
+		end
+	end
+end
+
+function on_animation_complete(self)
+	if self.phase == CONSTANTS.PHASE_ANIMATE_ATTACK then
+		if self.enemy_hp <= 0 then
+			-- Enemy defeated
+			self.phase = CONSTANTS.PHASE_BATTLE_WON
+			msg.post(GUI_URL, "show_result", {title = "VICTORY!"})
+		else
+			-- Enemy attacks back
+			self:start_defend_phase()
+		end
+
+	elseif self.phase == CONSTANTS.PHASE_ANIMATE_DEFEND then
+		if self.hero_hp <= 0 then
+			-- Hero defeated
+			self.phase = CONSTANTS.PHASE_BATTLE_LOST
+			msg.post(GUI_URL, "show_result", {title = "DEFEATED..."})
+		else
+			-- Next attack turn
+			self:start_attack_phase()
+		end
+	end
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("equation_submitted") then
+		local result = message.result
+
+		if self.phase == CONSTANTS.PHASE_PLAYER_ATTACK then
+			-- Calculate attack damage
+			local dmg, label = damage_module.calculate_attack(result, self.enemy_weakness)
+			self.enemy_hp = math.max(0, self.enemy_hp - dmg)
+
+			msg.post(GUI_URL, "disable_input")
+			msg.post(GUI_URL, "update_enemy_hp", {hp = self.enemy_hp, max_hp = self.enemy_max_hp})
+			msg.post(GUI_URL, "show_damage", {text = "-" .. dmg .. " " .. label, x = 850, y = 500})
+			msg.post(GUI_URL, "set_phase", {text = label .. " (-" .. dmg .. " HP)"})
+
+			self.phase = CONSTANTS.PHASE_ANIMATE_ATTACK
+			self.animation_timer = CONSTANTS.ANIMATION_DURATION
+
+		elseif self.phase == CONSTANTS.PHASE_PLAYER_DEFEND then
+			-- Calculate block quality
+			local dmg_taken, label = damage_module.calculate_block(result, self.enemy_attack_number, self.enemy_attack_power)
+			self.hero_hp = math.max(0, self.hero_hp - dmg_taken)
+
+			msg.post(GUI_URL, "disable_input")
+			msg.post(GUI_URL, "update_hero_hp", {hp = self.hero_hp, max_hp = self.hero_max_hp})
+
+			if dmg_taken > 0 then
+				msg.post(GUI_URL, "show_damage", {text = "-" .. dmg_taken .. " " .. label, x = 180, y = 500})
+			else
+				msg.post(GUI_URL, "show_damage", {text = label, x = 180, y = 500})
+			end
+			msg.post(GUI_URL, "set_phase", {text = label})
+
+			self.phase = CONSTANTS.PHASE_ANIMATE_DEFEND
+			self.animation_timer = CONSTANTS.ANIMATION_DURATION
+		end
+
+	elseif message_id == hash("continue_pressed") then
+		-- Signal to main controller that battle is done
+		msg.post("main:/controller#script", "battle_complete")
+	end
+end

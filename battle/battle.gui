@@ -1,0 +1,1418 @@
+script: "/battle/battle.gui_script"
+fonts {
+  name: "system_font"
+  font: "/builtins/fonts/default.font"
+}
+background_color {
+  x: 0.0
+  y: 0.0
+  z: 0.0
+  w: 0.0
+}
+nodes {
+  position {
+    x: 640.0
+    y: 360.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 1280.0
+    y: 720.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.102
+    y: 0.039
+    z: 0.2
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "bg"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+  layer: ""
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 640.0
+    y: 688.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 400.0
+    y: 24.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1.0
+    y: 0.8
+    z: 0.267
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "YOUR TURN - ATTACK"
+  font: "system_font"
+  id: "phase_label"
+  pivot: PIVOT_CENTER
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 120.0
+    y: 670.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 200.0
+    y: 16.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.2
+    y: 0.133
+    z: 0.267
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "hero_hp_bg"
+  pivot: PIVOT_W
+  size_mode: SIZE_MODE_MANUAL
+  layer: ""
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 120.0
+    y: 670.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 200.0
+    y: 14.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.267
+    y: 0.8
+    z: 0.4
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "hero_hp_fill"
+  pivot: PIVOT_W
+  size_mode: SIZE_MODE_MANUAL
+  layer: ""
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 30.0
+    y: 670.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 200.0
+    y: 20.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.667
+    y: 0.667
+    z: 0.8
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "HERO"
+  font: "system_font"
+  id: "hero_label"
+  pivot: PIVOT_W
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 330.0
+    y: 670.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 0.8
+    y: 0.8
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 200.0
+    y: 20.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.667
+    y: 0.667
+    z: 0.8
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "100/100"
+  font: "system_font"
+  id: "hero_hp_text"
+  pivot: PIVOT_E
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 180.0
+    y: 420.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 80.0
+    y: 120.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.267
+    y: 0.4
+    z: 0.8
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "hero_body"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+  layer: ""
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 180.0
+    y: 500.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 50.0
+    y: 50.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1.0
+    y: 0.8
+    z: 0.667
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "hero_head"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+  layer: ""
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 850.0
+    y: 450.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 100.0
+    y: 130.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.2
+    y: 0.733
+    z: 0.4
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "enemy_body"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+  layer: ""
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 850.0
+    y: 540.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 40.0
+    y: 30.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1.0
+    y: 0.267
+    z: 0.267
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "enemy_weakness_badge"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+  layer: ""
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 850.0
+    y: 540.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 60.0
+    y: 30.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "7"
+  font: "system_font"
+  id: "enemy_weakness_text"
+  pivot: PIVOT_CENTER
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 810.0
+    y: 370.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 100.0
+    y: 10.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.2
+    y: 0.133
+    z: 0.267
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "enemy_hp_bg"
+  pivot: PIVOT_W
+  size_mode: SIZE_MODE_MANUAL
+  layer: ""
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 810.0
+    y: 370.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 100.0
+    y: 8.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1.0
+    y: 0.4
+    z: 0.267
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "enemy_hp_fill"
+  pivot: PIVOT_W
+  size_mode: SIZE_MODE_MANUAL
+  layer: ""
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 850.0
+    y: 350.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 0.7
+    y: 0.7
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 200.0
+    y: 20.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.667
+    y: 0.667
+    z: 0.8
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "30/30"
+  font: "system_font"
+  id: "enemy_hp_text"
+  pivot: PIVOT_CENTER
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 400.0
+    y: 260.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 600.0
+    y: 50.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.102
+    y: 0.102
+    z: 0.2
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "equation_bg"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+  layer: ""
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 200.0
+    y: 265.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 0.7
+    y: 0.7
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 400.0
+    y: 20.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.4
+    y: 0.4
+    z: 0.533
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "YOUR EQUATION:"
+  font: "system_font"
+  id: "equation_label"
+  pivot: PIVOT_W
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 340.0
+    y: 255.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 400.0
+    y: 30.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: ""
+  font: "system_font"
+  id: "equation_text"
+  pivot: PIVOT_W
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 570.0
+    y: 255.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.2
+    y: 1.2
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 200.0
+    y: 30.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1.0
+    y: 0.867
+    z: 0.267
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: ""
+  font: "system_font"
+  id: "equation_result"
+  pivot: PIVOT_W
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 640.0
+    y: 310.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 0.9
+    y: 0.9
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 300.0
+    y: 24.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.267
+    y: 0.8
+    z: 0.4
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: ""
+  font: "system_font"
+  id: "closeness_label"
+  pivot: PIVOT_CENTER
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 750.0
+    y: 200.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 120.0
+    y: 50.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.267
+    y: 0.8
+    z: 0.4
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "btn_strike"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+  layer: ""
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 750.0
+    y: 200.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 200.0
+    y: 30.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "STRIKE!"
+  font: "system_font"
+  id: "btn_strike_text"
+  pivot: PIVOT_CENTER
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 900.0
+    y: 200.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 80.0
+    y: 50.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.267
+    y: 0.2
+    z: 0.333
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "btn_undo"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+  layer: ""
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 900.0
+    y: 200.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 0.8
+    y: 0.8
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 200.0
+    y: 30.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.6
+    y: 0.533
+    z: 0.6
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "UNDO"
+  font: "system_font"
+  id: "btn_undo_text"
+  pivot: PIVOT_CENTER
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 1000.0
+    y: 200.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 80.0
+    y: 50.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.267
+    y: 0.2
+    z: 0.333
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "btn_clear"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+  layer: ""
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 1000.0
+    y: 200.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 0.8
+    y: 0.8
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 200.0
+    y: 30.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.6
+    y: 0.533
+    z: 0.6
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "CLEAR"
+  font: "system_font"
+  id: "btn_clear_text"
+  pivot: PIVOT_CENTER
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 640.0
+    y: 420.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 2.0
+    y: 2.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 200.0
+    y: 40.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1.0
+    y: 0.267
+    z: 0.267
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: ""
+  font: "system_font"
+  id: "damage_popup"
+  pivot: PIVOT_CENTER
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+  alpha: 0.0
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 640.0
+    y: 420.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 500.0
+    y: 300.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.05
+    y: 0.05
+    z: 0.1
+    w: 0.9
+  }
+  type: TYPE_BOX
+  id: "result_overlay"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+  layer: ""
+  inherit_alpha: true
+  alpha: 0.0
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 640.0
+    y: 450.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.5
+    y: 1.5
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 300.0
+    y: 40.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1.0
+    y: 0.867
+    z: 0.267
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "VICTORY!"
+  font: "system_font"
+  id: "result_title"
+  pivot: PIVOT_CENTER
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+  alpha: 0.0
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 640.0
+    y: 380.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 160.0
+    y: 50.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.267
+    y: 0.8
+    z: 0.4
+    w: 1.0
+  }
+  type: TYPE_BOX
+  id: "btn_continue"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+  layer: ""
+  inherit_alpha: true
+  alpha: 0.0
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 640.0
+    y: 380.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 200.0
+    y: 30.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "CONTINUE"
+  font: "system_font"
+  id: "btn_continue_text"
+  pivot: PIVOT_CENTER
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+  alpha: 0.0
+  parent: "bg"
+}
+nodes {
+  position {
+    x: 150.0
+    y: 140.0
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 0.7
+    y: 0.7
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 200.0
+    y: 20.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.4
+    y: 0.4
+    z: 0.533
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "TILES:"
+  font: "system_font"
+  id: "tiles_label"
+  pivot: PIVOT_W
+  outline {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  shadow {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.0
+  }
+  inherit_alpha: true
+  parent: "bg"
+}
+material: "/builtins/materials/gui.material"
+adjust_reference: ADJUST_REFERENCE_PARENT

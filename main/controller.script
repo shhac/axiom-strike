@@ -1,0 +1,25 @@
+function init(self)
+	msg.post(".", "acquire_input_focus")
+	-- Load battle screen immediately for Phase 1
+	msg.post("#battle_proxy", "load")
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("proxy_loaded") then
+		msg.post(sender, "init")
+		msg.post(sender, "enable")
+	elseif message_id == hash("proxy_unloaded") then
+		-- Screen fully unloaded
+	elseif message_id == hash("show_battle") then
+		msg.post("#battle_proxy", "load")
+	elseif message_id == hash("battle_complete") then
+		-- In Phase 1, just reload battle for another round
+		msg.post(sender, "disable")
+		msg.post(sender, "final")
+		msg.post("#battle_proxy", "unload")
+		-- Reload after a moment
+		timer.delay(0.5, false, function()
+			msg.post("#battle_proxy", "load")
+		end)
+	end
+end
