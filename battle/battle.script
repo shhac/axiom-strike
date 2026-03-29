@@ -256,7 +256,8 @@ function on_message(self, message_id, message, sender)
 
 			send_gui("disable_input")
 			sync_all_enemy_hp(self)
-			send_gui("show_damage", {text = "-" .. dmg .. " " .. label, x = 600 + self.target_index * 80, y = 500})
+			send_gui("enemy_hit", {index = self.target_index})
+			send_gui("show_damage", {text = "-" .. dmg .. " " .. label, x = 600 + self.target_index * 80, y = 450})
 			send_gui("set_phase", {text = label .. " (-" .. dmg .. " HP)"})
 
 			self.phase = CONSTANTS.PHASE_ANIMATE_ATTACK
@@ -271,9 +272,12 @@ function on_message(self, message_id, message, sender)
 
 			send_gui("disable_input")
 			send_gui("update_hero_hp", {hp = self.hero_hp, max_hp = self.hero_max_hp})
+			if dmg_taken > 0 then
+				send_gui("hero_hit")
+			end
 
 			local dmg_text = dmg_taken > 0 and ("-" .. dmg_taken .. " " .. label) or label
-			send_gui("show_damage", {text = dmg_text, x = 180, y = 500})
+			send_gui("show_damage", {text = dmg_text, x = 220, y = 450})
 			send_gui("set_phase", {text = label})
 
 			self.phase = CONSTANTS.PHASE_ANIMATE_DEFEND

@@ -81,13 +81,56 @@ local C = {
 }
 
 -- ============================================================
--- Idle animations
+-- Juice / animation helpers
 -- ============================================================
 
 local function bob(node, base_y, amplitude, duration)
 	gui.cancel_animation(node, "position.y")
 	gui.set_position(node, vmath.vector3(gui.get_position(node).x, base_y, 0))
 	gui.animate(node, "position.y", base_y + amplitude, gui.EASING_INOUTSINE, duration, 0, nil, gui.PLAYBACK_LOOP_PINGPONG)
+end
+
+local function pop(node, scale_to, duration)
+	scale_to = scale_to or 1.15
+	duration = duration or 0.15
+	gui.cancel_animation(node, gui.PROP_SCALE)
+	gui.animate(node, gui.PROP_SCALE, vmath.vector3(scale_to, scale_to, 1), gui.EASING_OUTQUAD, 0.04, 0, function()
+		gui.animate(node, gui.PROP_SCALE, vmath.vector3(1, 1, 1), gui.EASING_OUTBACK, duration)
+	end)
+end
+
+local function pop_text(node)
+	gui.cancel_animation(node, gui.PROP_SCALE)
+	local s = gui.get_scale(node)
+	local big = vmath.vector3(s.x * 1.3, s.y * 1.3, 1)
+	gui.set_scale(node, big)
+	gui.animate(node, gui.PROP_SCALE, s, gui.EASING_OUTBACK, 0.25)
+end
+
+local function flash_white(node, original_color)
+	gui.set_color(node, vmath.vector4(1, 1, 1, 1))
+	gui.animate(node, gui.PROP_COLOR, original_color, gui.EASING_OUTQUAD, 0.2, 0.05)
+end
+
+local function shake(node)
+	local pos = gui.get_position(node)
+	gui.animate(node, "position.x", pos.x + 6, gui.EASING_OUTELASTIC, 0.35, 0, function()
+		gui.set_position(node, pos)
+	end)
+end
+
+local function slide_in(node, from_x, target_x, delay)
+	local pos = gui.get_position(node)
+	gui.set_position(node, vmath.vector3(from_x, pos.y, 0))
+	gui.set_alpha(node, 0)
+	gui.animate(node, "position.x", target_x, gui.EASING_OUTBACK, 0.4, delay or 0)
+	gui.animate(node, "color.w", 1, gui.EASING_OUTQUAD, 0.2, delay or 0)
+end
+
+local function wiggle(node, degrees, duration)
+	degrees = degrees or 2.5
+	duration = duration or 1.2
+	gui.animate(node, "rotation.z", degrees, gui.EASING_INOUTSINE, duration, math.random() * 0.5, nil, gui.PLAYBACK_LOOP_PINGPONG)
 end
 
 -- ============================================================
@@ -239,6 +282,12 @@ local function create_tile_nodes()
 		gui.set_scale(txt, vmath.vector3(1.3, 1.3, 1))
 		gui.set_color(txt, C.tile_text)
 		number_tile_nodes[i] = {box = box, text = txt}
+		-- Pop-in staggered + wiggle
+		gui.set_scale(box, vmath.vector3(0, 0, 1))
+		gui.set_scale(txt, vmath.vector3(0, 0, 1))
+		gui.animate(box, gui.PROP_SCALE, vmath.vector3(1, 1, 1), gui.EASING_OUTBACK, 0.3, i * 0.05)
+		gui.animate(txt, gui.PROP_SCALE, vmath.vector3(1.3, 1.3, 1), gui.EASING_OUTBACK, 0.3, i * 0.05)
+		wiggle(box, 2, 1.5 + math.random() * 0.5)
 	end
 
 	for i = 1, #operator_tile_values do
@@ -250,6 +299,13 @@ local function create_tile_nodes()
 		gui.set_scale(txt, vmath.vector3(1.4, 1.4, 1))
 		gui.set_color(txt, C.tile_text)
 		operator_tile_nodes[i] = {box = box, text = txt}
+		-- Pop-in staggered + wiggle
+		gui.set_scale(box, vmath.vector3(0, 0, 1))
+		gui.set_scale(txt, vmath.vector3(0, 0, 1))
+		local delay = (#number_tile_values + i) * 0.05
+		gui.animate(box, gui.PROP_SCALE, vmath.vector3(1, 1, 1), gui.EASING_OUTBACK, 0.3, delay)
+		gui.animate(txt, gui.PROP_SCALE, vmath.vector3(1.4, 1.4, 1), gui.EASING_OUTBACK, 0.3, delay)
+		wiggle(box, 2.5, 1.3 + math.random() * 0.5)
 	end
 end
 
@@ -368,12 +424,20 @@ local function create_enemy_nodes(enemies, target_index)
 			bob(arrow, ENEMY_Y + h/2 + 36, 5, 0.6)
 		end
 
-		-- Idle bob (each enemy slightly different timing)
+		-- Slide-in + idle bob (each enemy slightly different timing)
 		if alive then
 			local all_parts = {body, belly, el, pl, er, pr, mouth, badge, wtext}
 			if fang_l then all_parts[#all_parts+1] = fang_l; all_parts[#all_parts+1] = fang_r end
 			for _, n in ipairs(all_parts) do
-				bob(n, gui.get_position(n).y, 3, 1.5 + i * 0.3)
+				-- Slide in from right
+				local target_x = gui.get_position(n).x
+				slide_in(n, target_x + 300, target_x, i * 0.12)
+				-- Start bobbing after slide-in
+				timer.delay(0.5 + i * 0.12, false, function()
+					if gui.get_node then  -- guard against deleted nodes
+						bob(n, gui.get_position(n).y, 3, 1.5 + i * 0.3)
+					end
+				end)
 			end
 		end
 
@@ -438,6 +502,15 @@ function init(self)
 	equation_tokens = {}; expecting_number = true; tile_used = {}
 	create_scene()
 	create_hud()
+
+	-- Star twinkling on static star nodes
+	for i = 1, 5 do
+		local ok, star = pcall(gui.get_node, "star" .. i)
+		if ok and star then
+			gui.animate(star, "color.w", 0.1, gui.EASING_INOUTSINE,
+				1.5 + math.random() * 2.0, math.random() * 1.5, nil, gui.PLAYBACK_LOOP_PINGPONG)
+		end
+	end
 end
 
 function on_message(self, message_id, message, sender)
@@ -458,6 +531,7 @@ function on_message(self, message_id, message, sender)
 		local ratio = message.hp / message.max_hp
 		gui.set_size(gui.get_node("hero_hp_fill"), vmath.vector3(200 * ratio, 14, 0))
 		gui.set_text(gui.get_node("hero_hp_text"), tostring(message.hp))
+		pop_text(gui.get_node("hero_hp_text"))
 		local c = ratio > 0.5 and C.hp_green or (ratio > 0.25 and C.hp_yellow or C.hp_red)
 		gui.set_color(gui.get_node("hero_hp_fill"), c)
 
@@ -467,7 +541,24 @@ function on_message(self, message_id, message, sender)
 	elseif message_id == hash("highlight_attacker") then
 		local idx = message.index
 		if enemy_nodes[idx] then
+			-- Flash red and shake to telegraph attack
 			gui.set_color(enemy_nodes[idx].body, vmath.vector4(1, 0.3, 0.2, 1))
+			shake(enemy_nodes[idx].body)
+		end
+
+	elseif message_id == hash("enemy_hit") then
+		-- Flash white and shake enemy on damage
+		local idx = message.index
+		if enemy_nodes[idx] then
+			flash_white(enemy_nodes[idx].body, C.enemy_body)
+			shake(enemy_nodes[idx].body)
+			pop(enemy_nodes[idx].body, 1.15, 0.2)
+		end
+
+	elseif message_id == hash("hero_hit") then
+		-- Flash red and shake hero on damage
+		for _, n in ipairs(scene_nodes) do
+			shake(n)
 		end
 
 	elseif message_id == hash("show_damage") then
@@ -519,22 +610,26 @@ function on_input(self, action_id, action)
 
 	if gui.pick_node(gui.get_node("btn_strike"), action.x, action.y) then
 		local result, err = equation.evaluate(equation_tokens)
-		if result and not err then input_enabled = false; msg.post(SCRIPT_URL, "equation_submitted", {result = math.floor(result), tokens = equation_tokens}) end
+		if result and not err then
+			pop(gui.get_node("btn_strike"), 1.15, 0.2)
+			input_enabled = false
+			msg.post(SCRIPT_URL, "equation_submitted", {result = math.floor(result), tokens = equation_tokens})
+		end
 		return true
 	end
-	if gui.pick_node(gui.get_node("btn_undo"), action.x, action.y) then undo_last(); return true end
-	if gui.pick_node(gui.get_node("btn_clear"), action.x, action.y) then clear_equation(); return true end
+	if gui.pick_node(gui.get_node("btn_undo"), action.x, action.y) then pop(gui.get_node("btn_undo")); undo_last(); return true end
+	if gui.pick_node(gui.get_node("btn_clear"), action.x, action.y) then pop(gui.get_node("btn_clear")); clear_equation(); return true end
 
 	if expecting_number then
 		for i, nd in ipairs(number_tile_nodes) do
 			if not tile_used["num_" .. i] and gui.pick_node(nd.box, action.x, action.y) then
-				tile_used["num_" .. i] = true; dim_tile(nd); equation_tokens[#equation_tokens + 1] = number_tile_values[i]; expecting_number = false; update_equation_display(); return true
+				tile_used["num_" .. i] = true; pop(nd.box, 1.2, 0.15); dim_tile(nd); equation_tokens[#equation_tokens + 1] = number_tile_values[i]; expecting_number = false; update_equation_display(); return true
 			end
 		end
 	else
 		for i, nd in ipairs(operator_tile_nodes) do
 			if not tile_used["op_" .. i] and gui.pick_node(nd.box, action.x, action.y) then
-				tile_used["op_" .. i] = true; dim_tile(nd); equation_tokens[#equation_tokens + 1] = operator_tile_values[i]; expecting_number = true; update_equation_display(); return true
+				tile_used["op_" .. i] = true; pop(nd.box, 1.2, 0.15); dim_tile(nd); equation_tokens[#equation_tokens + 1] = operator_tile_values[i]; expecting_number = true; update_equation_display(); return true
 			end
 		end
 	end
