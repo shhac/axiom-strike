@@ -142,65 +142,105 @@ end
 -- Hint system
 -- ============================================================
 
-local function find_best_hint()
-	-- Try to find the best next tile to get closest to current_target
-	if current_target <= 0 then return nil, nil end
+-- Precomputed hint path: list of {type="num"/"op", index=i} steps
+local hint_path = nil
+local hint_path_step = 0
 
-	-- Get current equation value
-	local current_val = nil
-	if #equation_tokens > 0 then
-		current_val = equation.evaluate(equation_tokens)
+local function compute_hint_path()
+	-- Find the shortest equation from unused tiles that reaches closest to target.
+	-- Try all single-number, then all num+op+num combos.
+	if current_target <= 0 then return nil end
+
+	local best_path = nil
+	local best_dist = math.huge
+
+	-- Gather unused indices
+	local free_nums = {}
+	for i = 1, #number_tile_values do
+		if not tile_used["num_" .. i] then free_nums[#free_nums + 1] = i end
+	end
+	local free_ops = {}
+	for i = 1, #operator_tile_values do
+		if not tile_used["op_" .. i] then free_ops[#free_ops + 1] = i end
 	end
 
-	if expecting_number then
-		-- Find which unused number tile gets us closest to target
-		local best_i, best_dist = nil, math.huge
+	local base = {}
+	for _, t in ipairs(equation_tokens) do base[#base + 1] = t end
 
-		for i = 1, #number_tile_values do
-			if not tile_used["num_" .. i] then
-				-- Try appending this number
-				local test = {}
-				for _, t in ipairs(equation_tokens) do test[#test + 1] = t end
-				test[#test + 1] = number_tile_values[i]
-				local result = equation.evaluate(test)
-				if result then
-					local dist = math.abs(result - current_target)
-					if dist < best_dist then
-						best_dist = dist
-						best_i = i
+	-- Length 1: just a number (if expecting_number and no tokens yet, or extending)
+	if expecting_number then
+		for _, ni in ipairs(free_nums) do
+			local test = {unpack(base)}
+			test[#test + 1] = number_tile_values[ni]
+			local r = equation.evaluate(test)
+			if r then
+				local d = math.abs(r - current_target)
+				if d < best_dist or (d == best_dist and (not best_path or 1 < #best_path)) then
+					best_dist = d
+					best_path = {{type = "num", index = ni}}
+				end
+			end
+		end
+	end
+
+	-- Length 2: op + num (if not expecting_number, i.e. we already have a number)
+	if not expecting_number then
+		for _, oi in ipairs(free_ops) do
+			for _, ni in ipairs(free_nums) do
+				local test = {unpack(base)}
+				test[#test + 1] = operator_tile_values[oi]
+				test[#test + 1] = number_tile_values[ni]
+				local r = equation.evaluate(test)
+				if r then
+					local d = math.abs(r - current_target)
+					if d < best_dist or (d == best_dist and (not best_path or 2 < #best_path)) then
+						best_dist = d
+						best_path = {{type = "op", index = oi}, {type = "num", index = ni}}
 					end
 				end
 			end
 		end
+	end
 
-		if best_i then return "num", best_i end
-	else
-		-- Find which unused operator tile, combined with the best remaining number, gets closest
-		local best_i, best_dist = nil, math.huge
-
-		for i = 1, #operator_tile_values do
-			if not tile_used["op_" .. i] then
-				-- Try each operator with each unused number
-				for j = 1, #number_tile_values do
-					if not tile_used["num_" .. j] then
-						local test = {}
-						for _, t in ipairs(equation_tokens) do test[#test + 1] = t end
-						test[#test + 1] = operator_tile_values[i]
-						test[#test + 1] = number_tile_values[j]
-						local result = equation.evaluate(test)
-						if result then
-							local dist = math.abs(result - current_target)
-							if dist < best_dist then
-								best_dist = dist
-								best_i = i
+	-- Length 3: num + op + num (if expecting_number)
+	if expecting_number then
+		for _, n1 in ipairs(free_nums) do
+			for _, oi in ipairs(free_ops) do
+				for _, n2 in ipairs(free_nums) do
+					if n1 ~= n2 then
+						local test = {unpack(base)}
+						test[#test + 1] = number_tile_values[n1]
+						test[#test + 1] = operator_tile_values[oi]
+						test[#test + 1] = number_tile_values[n2]
+						local r = equation.evaluate(test)
+						if r then
+							local d = math.abs(r - current_target)
+							if d < best_dist or (d == best_dist and (not best_path or 3 < #best_path)) then
+								best_dist = d
+								best_path = {{type = "num", index = n1}, {type = "op", index = oi}, {type = "num", index = n2}}
 							end
 						end
 					end
 				end
 			end
 		end
+	end
 
-		if best_i then return "op", best_i end
+	return best_path
+end
+
+local function find_best_hint()
+	if current_target <= 0 then return nil, nil end
+
+	-- Compute path if not cached or if tiles changed
+	if not hint_path then
+		hint_path = compute_hint_path()
+		hint_path_step = 1
+	end
+
+	if hint_path and hint_path_step <= #hint_path then
+		local step = hint_path[hint_path_step]
+		return step.type, step.index
 	end
 
 	return nil, nil
@@ -222,7 +262,6 @@ end
 
 local function clear_hints()
 	if hint_shown then
-		-- Cancel all hint animations and restore colors
 		for i, nd in ipairs(number_tile_nodes) do
 			gui.cancel_animation(nd.box, gui.PROP_COLOR)
 			if tile_used["num_" .. i] then
@@ -242,6 +281,9 @@ local function clear_hints()
 	end
 	hint_shown = false
 	idle_timer = 0
+	-- Invalidate cached path so it recomputes on next hint
+	hint_path = nil
+	hint_path_step = 0
 end
 
 local function show_equation_feedback(result, target, mode)
