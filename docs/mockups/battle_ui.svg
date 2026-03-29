@@ -1,0 +1,217 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" width="800" height="480">
+  <title>Battle UI Mockup - Landscape Tablet View</title>
+
+  <!-- Background - battle arena -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a0a33"/>
+      <stop offset="100%" stop-color="#2a1a44"/>
+    </linearGradient>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#332244"/>
+      <stop offset="100%" stop-color="#221133"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="800" height="480" fill="url(#sky)"/>
+  <!-- Ground plane with perspective -->
+  <polygon points="0,280 800,280 800,380 0,380" fill="url(#ground)"/>
+  <line x1="0" y1="280" x2="800" y2="280" stroke="#443366" stroke-width="1"/>
+
+  <!-- Grid lines for perspective floor -->
+  <line x1="400" y1="280" x2="300" y2="380" stroke="#2a1a44" stroke-width="0.5" opacity="0.5"/>
+  <line x1="400" y1="280" x2="500" y2="380" stroke="#2a1a44" stroke-width="0.5" opacity="0.5"/>
+  <line x1="400" y1="280" x2="100" y2="380" stroke="#2a1a44" stroke-width="0.5" opacity="0.5"/>
+  <line x1="400" y1="280" x2="700" y2="380" stroke="#2a1a44" stroke-width="0.5" opacity="0.5"/>
+  <line x1="0" y1="310" x2="800" y2="310" stroke="#2a1a44" stroke-width="0.5" opacity="0.3"/>
+  <line x1="0" y1="340" x2="800" y2="340" stroke="#2a1a44" stroke-width="0.5" opacity="0.2"/>
+
+  <!-- === HERO (left side) === -->
+  <g transform="translate(150,160)">
+    <!-- Simplified hero silhouette -->
+    <rect x="-15" y="0" width="30" height="50" fill="#4466cc" rx="3"/>
+    <rect x="-12" y="-25" width="24" height="25" fill="#ffccaa" rx="4"/>
+    <!-- Hair -->
+    <polygon points="-10,-20 -8,-38 0,-25 5,-36 12,-22 14,-18" fill="#3322aa"/>
+    <!-- Cape -->
+    <polygon points="-15,5 -25,50 -10,50" fill="#4a2080" opacity="0.7"/>
+    <!-- Staff -->
+    <rect x="16" y="-30" width="4" height="70" fill="#885522"/>
+    <circle cx="18" cy="-33" r="8" fill="#ff8855"/>
+    <!-- Eyes -->
+    <rect x="-8" y="-16" width="5" height="4" fill="#fff" rx="1"/>
+    <rect x="3" y="-16" width="5" height="4" fill="#fff" rx="1"/>
+  </g>
+
+  <!-- Hero HP bar -->
+  <g transform="translate(20,15)">
+    <text x="0" y="0" fill="#aaaacc" font-family="monospace" font-size="10">HERO</text>
+    <rect x="0" y="5" width="180" height="14" fill="#332244" rx="3"/>
+    <rect x="1" y="6" width="130" height="12" fill="#44cc66" rx="2"/>
+    <text x="170" y="16" fill="#aaaacc" font-family="monospace" font-size="9" text-anchor="end">72/100</text>
+
+    <!-- Recovery icon -->
+    <rect x="185" y="4" width="16" height="16" fill="#225533" rx="3" stroke="#44cc66" stroke-width="1"/>
+    <text x="193" y="16" fill="#44cc66" font-family="monospace" font-size="10" text-anchor="middle">R</text>
+  </g>
+
+  <!-- === ENEMIES (right side) === -->
+  <!-- Enemy 1: Addition minion -->
+  <g transform="translate(530,170)">
+    <circle cx="0" cy="0" r="22" fill="#33bb66"/>
+    <rect x="-2" y="-10" width="4" height="20" fill="#fff" rx="1"/>
+    <rect x="-10" y="-2" width="20" height="4" fill="#fff" rx="1"/>
+    <circle cx="-7" cy="-6" r="3" fill="#fff"/>
+    <circle cx="7" cy="-6" r="3" fill="#fff"/>
+    <circle cx="-6" cy="-5" r="2" fill="#112211"/>
+    <circle cx="8" cy="-5" r="2" fill="#112211"/>
+
+    <!-- Weakness badge -->
+    <rect x="-10" y="-38" width="20" height="14" fill="#ff4444" rx="3"/>
+    <text x="0" y="-28" fill="#fff" font-family="monospace" font-size="10" text-anchor="middle" font-weight="bold">7</text>
+
+    <!-- Enemy HP -->
+    <rect x="-18" y="26" width="36" height="6" fill="#332244" rx="2"/>
+    <rect x="-17" y="27" width="24" height="4" fill="#ff6644" rx="1"/>
+  </g>
+
+  <!-- Enemy 2: Addition standard -->
+  <g transform="translate(630,150)">
+    <rect x="-16" y="-10" width="32" height="40" fill="#228844" rx="3"/>
+    <rect x="-12" y="-30" width="24" height="22" fill="#33aa55" rx="4"/>
+    <rect x="-14" y="-30" width="28" height="10" fill="#116633" rx="2"/>
+    <rect x="-8" y="-24" width="6" height="4" fill="#aaffaa" rx="1"/>
+    <rect x="2" y="-24" width="6" height="4" fill="#aaffaa" rx="1"/>
+
+    <!-- Weakness badge -->
+    <rect x="-12" y="-48" width="24" height="14" fill="#ff4444" rx="3"/>
+    <text x="0" y="-38" fill="#fff" font-family="monospace" font-size="10" text-anchor="middle" font-weight="bold">15</text>
+
+    <!-- Enemy HP -->
+    <rect x="-20" y="34" width="40" height="6" fill="#332244" rx="2"/>
+    <rect x="-19" y="35" width="38" height="4" fill="#ff6644" rx="1"/>
+  </g>
+
+  <!-- Enemy 3: Addition minion -->
+  <g transform="translate(700,180)">
+    <circle cx="0" cy="0" r="18" fill="#33bb66"/>
+    <rect x="-2" y="-8" width="4" height="16" fill="#fff" rx="1"/>
+    <rect x="-8" y="-2" width="16" height="4" fill="#fff" rx="1"/>
+    <circle cx="-5" cy="-5" r="2.5" fill="#fff"/>
+    <circle cx="5" cy="-5" r="2.5" fill="#fff"/>
+    <circle cx="-4" cy="-4" r="1.5" fill="#112211"/>
+    <circle cx="6" cy="-4" r="1.5" fill="#112211"/>
+
+    <!-- Weakness badge -->
+    <rect x="-10" y="-32" width="20" height="14" fill="#ff4444" rx="3"/>
+    <text x="0" y="-22" fill="#fff" font-family="monospace" font-size="10" text-anchor="middle" font-weight="bold">9</text>
+
+    <!-- Enemy HP -->
+    <rect x="-15" y="22" width="30" height="6" fill="#332244" rx="2"/>
+    <rect x="-14" y="23" width="18" height="4" fill="#ff6644" rx="1"/>
+  </g>
+
+  <!-- Wave indicator -->
+  <g transform="translate(400,15)">
+    <text x="0" y="0" fill="#aaaacc" font-family="monospace" font-size="10" text-anchor="middle">WAVE 2 / 3</text>
+    <rect x="-40" y="5" width="80" height="4" fill="#332244" rx="2"/>
+    <rect x="-39" y="6" width="52" height="2" fill="#ffcc44" rx="1"/>
+  </g>
+
+  <!-- === EQUATION CONSTRUCTION AREA === -->
+  <g transform="translate(0,380)">
+    <!-- Construction zone background -->
+    <rect x="0" y="0" width="800" height="100" fill="#0d0d1a" opacity="0.95"/>
+    <line x1="0" y1="0" x2="800" y2="0" stroke="#443366" stroke-width="2"/>
+
+    <!-- Current equation being built -->
+    <rect x="20" y="8" width="480" height="40" fill="#1a1a33" rx="6" stroke="#443366" stroke-width="1"/>
+    <text x="30" y="18" fill="#666688" font-family="monospace" font-size="8">YOUR EQUATION:</text>
+
+    <!-- Placed tiles in equation -->
+    <rect x="30" y="24" width="38" height="20" fill="#3388cc" rx="4" stroke="#44aaff" stroke-width="1"/>
+    <text x="49" y="38" fill="#fff" font-family="monospace" font-size="12" text-anchor="middle" font-weight="bold">10</text>
+
+    <rect x="75" y="24" width="28" height="20" fill="#cc8833" rx="4" stroke="#ffaa44" stroke-width="1"/>
+    <text x="89" y="38" fill="#fff" font-family="monospace" font-size="12" text-anchor="middle" font-weight="bold">+</text>
+
+    <rect x="110" y="24" width="32" height="20" fill="#3388cc" rx="4" stroke="#44aaff" stroke-width="1"/>
+    <text x="126" y="38" fill="#fff" font-family="monospace" font-size="12" text-anchor="middle" font-weight="bold">5</text>
+
+    <!-- = result display -->
+    <text x="155" y="38" fill="#888899" font-family="monospace" font-size="14">=</text>
+    <text x="175" y="39" fill="#ffdd44" font-family="monospace" font-size="16" font-weight="bold">15</text>
+
+    <!-- Closeness indicator -->
+    <text x="210" y="32" fill="#44cc66" font-family="monospace" font-size="9">EXACT MATCH!</text>
+    <text x="210" y="42" fill="#44cc66" font-family="monospace" font-size="8">Target: 15</text>
+
+    <!-- Submit button -->
+    <rect x="510" y="8" width="80" height="40" fill="#44cc66" rx="6"/>
+    <text x="550" y="33" fill="#fff" font-family="monospace" font-size="13" text-anchor="middle" font-weight="bold">STRIKE!</text>
+
+    <!-- End turn button -->
+    <rect x="600" y="8" width="70" height="40" fill="#443355" rx="6" stroke="#665577" stroke-width="1"/>
+    <text x="635" y="28" fill="#aaaacc" font-family="monospace" font-size="9" text-anchor="middle">END</text>
+    <text x="635" y="40" fill="#aaaacc" font-family="monospace" font-size="9" text-anchor="middle">TURN</text>
+
+    <!-- Recovery button -->
+    <rect x="680" y="8" width="55" height="40" fill="#225533" rx="6" stroke="#44cc66" stroke-width="1"/>
+    <text x="707" y="25" fill="#44cc66" font-family="monospace" font-size="8" text-anchor="middle">REST</text>
+    <text x="707" y="37" fill="#44cc66" font-family="monospace" font-size="8" text-anchor="middle">&amp; READ</text>
+    <text x="707" y="47" fill="#337744" font-family="monospace" font-size="7" text-anchor="middle">1x left</text>
+
+    <!-- Available tiles -->
+    <text x="30" y="62" fill="#666688" font-family="monospace" font-size="8">TILES:</text>
+
+    <!-- Number tiles -->
+    <rect x="30" y="66" width="38" height="28" fill="#224466" rx="5" stroke="#3388cc" stroke-width="1.5"/>
+    <text x="49" y="84" fill="#88ccff" font-family="monospace" font-size="13" text-anchor="middle" font-weight="bold">3</text>
+
+    <rect x="75" y="66" width="38" height="28" fill="#224466" rx="5" stroke="#3388cc" stroke-width="1.5"/>
+    <text x="94" y="84" fill="#88ccff" font-family="monospace" font-size="13" text-anchor="middle" font-weight="bold">8</text>
+
+    <rect x="120" y="66" width="38" height="28" fill="#224466" rx="5" stroke="#3388cc" stroke-width="1.5"/>
+    <text x="139" y="84" fill="#88ccff" font-family="monospace" font-size="13" text-anchor="middle" font-weight="bold">12</text>
+
+    <rect x="165" y="66" width="38" height="28" fill="#224466" rx="5" stroke="#3388cc" stroke-width="1.5"/>
+    <text x="184" y="84" fill="#88ccff" font-family="monospace" font-size="13" text-anchor="middle" font-weight="bold">2</text>
+
+    <rect x="210" y="66" width="38" height="28" fill="#224466" rx="5" stroke="#3388cc" stroke-width="1.5"/>
+    <text x="229" y="84" fill="#88ccff" font-family="monospace" font-size="13" text-anchor="middle" font-weight="bold">20</text>
+
+    <!-- Used tile (greyed out) -->
+    <rect x="255" y="66" width="38" height="28" fill="#1a1a2a" rx="5" stroke="#333344" stroke-width="1" opacity="0.5"/>
+    <text x="274" y="84" fill="#444455" font-family="monospace" font-size="13" text-anchor="middle" font-weight="bold">10</text>
+    <text x="274" y="76" fill="#ff4444" font-family="monospace" font-size="7" text-anchor="middle">USED</text>
+
+    <!-- Operator tiles -->
+    <rect x="320" y="66" width="32" height="28" fill="#443322" rx="5" stroke="#cc8833" stroke-width="1.5"/>
+    <text x="336" y="84" fill="#ffcc66" font-family="monospace" font-size="14" text-anchor="middle" font-weight="bold">+</text>
+
+    <rect x="359" y="66" width="32" height="28" fill="#443322" rx="5" stroke="#cc8833" stroke-width="1.5"/>
+    <text x="375" y="84" fill="#ffcc66" font-family="monospace" font-size="14" text-anchor="middle" font-weight="bold">-</text>
+
+    <!-- Used operator -->
+    <rect x="398" y="66" width="32" height="28" fill="#1a1a2a" rx="5" stroke="#333344" stroke-width="1" opacity="0.5"/>
+    <text x="414" y="84" fill="#444455" font-family="monospace" font-size="14" text-anchor="middle" font-weight="bold">+</text>
+
+    <rect x="437" y="66" width="32" height="28" fill="#443322" rx="5" stroke="#cc8833" stroke-width="1.5"/>
+    <text x="453" y="85" fill="#ffcc66" font-family="monospace" font-size="14" text-anchor="middle" font-weight="bold">x</text>
+
+    <!-- Undo button -->
+    <rect x="500" y="70" width="50" height="22" fill="#332233" rx="4" stroke="#554466" stroke-width="1"/>
+    <text x="525" y="85" fill="#998899" font-family="monospace" font-size="9" text-anchor="middle">UNDO</text>
+
+    <!-- Clear button -->
+    <rect x="558" y="70" width="50" height="22" fill="#332233" rx="4" stroke="#554466" stroke-width="1"/>
+    <text x="583" y="85" fill="#998899" font-family="monospace" font-size="9" text-anchor="middle">CLEAR</text>
+  </g>
+
+  <!-- Damage feedback floating text -->
+  <text x="530" y="120" fill="#ff4444" font-family="monospace" font-size="14" text-anchor="middle" font-weight="bold" opacity="0.8">-8 HP</text>
+
+  <!-- Turn indicator -->
+  <rect x="690" y="10" width="100" height="20" fill="#332244" rx="4"/>
+  <text x="740" y="24" fill="#ffcc44" font-family="monospace" font-size="10" text-anchor="middle">YOUR TURN</text>
+</svg>

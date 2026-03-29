@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" width="800" height="480">
+  <title>Recovery Screen - Question Phase</title>
+
+  <rect width="800" height="480" fill="#0a1a0a"/>
+
+  <!-- Header -->
+  <rect x="0" y="0" width="800" height="40" fill="#0a0a15" opacity="0.9"/>
+  <text x="400" y="26" fill="#ffcc44" font-family="monospace" font-size="13" text-anchor="middle" font-weight="bold">COMPREHENSION CHECK</text>
+
+  <!-- HP display -->
+  <g transform="translate(20,10)">
+    <text x="0" y="0" fill="#888899" font-family="monospace" font-size="8">HP</text>
+    <rect x="0" y="4" width="120" height="10" fill="#332244" rx="3"/>
+    <rect x="1" y="5" width="42" height="8" fill="#cc4444" rx="2"/>
+    <text x="60" y="13" fill="#aaaacc" font-family="monospace" font-size="8" text-anchor="middle">35/100</text>
+  </g>
+
+  <!-- Question -->
+  <rect x="40" y="55" width="720" height="60" fill="#1a1a22" rx="8" stroke="#444455" stroke-width="1"/>
+  <text x="400" y="80" fill="#ddddee" font-family="monospace" font-size="14" text-anchor="middle">How long does it take for light from the</text>
+  <text x="400" y="100" fill="#ddddee" font-family="monospace" font-size="14" text-anchor="middle">Sun to reach Earth?</text>
+
+  <!-- 5 Answer options in a grid -->
+  <!-- Option A (correct - full recovery) -->
+  <g transform="translate(40,135)">
+    <rect x="0" y="0" width="340" height="55" fill="#1a2a1a" rx="8" stroke="#446644" stroke-width="1.5"/>
+    <text x="20" y="20" fill="#44cc66" font-family="monospace" font-size="12" font-weight="bold">A</text>
+    <text x="45" y="20" fill="#ccccdd" font-family="monospace" font-size="12">About 8 minutes</text>
+    <text x="45" y="38" fill="#668866" font-family="monospace" font-size="8">(tap to select)</text>
+  </g>
+
+  <!-- Option B (almost right - partial recovery) -->
+  <g transform="translate(420,135)">
+    <rect x="0" y="0" width="340" height="55" fill="#1a1a22" rx="8" stroke="#444455" stroke-width="1"/>
+    <text x="20" y="20" fill="#88aacc" font-family="monospace" font-size="12" font-weight="bold">B</text>
+    <text x="45" y="20" fill="#ccccdd" font-family="monospace" font-size="12">About 8 seconds</text>
+    <text x="45" y="38" fill="#666677" font-family="monospace" font-size="8">(tap to select)</text>
+  </g>
+
+  <!-- Option C (wrong) -->
+  <g transform="translate(40,205)">
+    <rect x="0" y="0" width="340" height="55" fill="#1a1a22" rx="8" stroke="#444455" stroke-width="1"/>
+    <text x="20" y="20" fill="#88aacc" font-family="monospace" font-size="12" font-weight="bold">C</text>
+    <text x="45" y="20" fill="#ccccdd" font-family="monospace" font-size="12">About 1 hour</text>
+    <text x="45" y="38" fill="#666677" font-family="monospace" font-size="8">(tap to select)</text>
+  </g>
+
+  <!-- Option D (wrong) -->
+  <g transform="translate(420,205)">
+    <rect x="0" y="0" width="340" height="55" fill="#1a1a22" rx="8" stroke="#444455" stroke-width="1"/>
+    <text x="20" y="20" fill="#88aacc" font-family="monospace" font-size="12" font-weight="bold">D</text>
+    <text x="45" y="20" fill="#ccccdd" font-family="monospace" font-size="12">About 1 day</text>
+    <text x="45" y="38" fill="#666677" font-family="monospace" font-size="8">(tap to select)</text>
+  </g>
+
+  <!-- Option E (wrong) -->
+  <g transform="translate(40,275)">
+    <rect x="0" y="0" width="340" height="55" fill="#1a1a22" rx="8" stroke="#444455" stroke-width="1"/>
+    <text x="20" y="20" fill="#88aacc" font-family="monospace" font-size="12" font-weight="bold">E</text>
+    <text x="45" y="20" fill="#ccccdd" font-family="monospace" font-size="12">Instantly</text>
+    <text x="45" y="38" fill="#666677" font-family="monospace" font-size="8">(tap to select)</text>
+  </g>
+
+  <!-- Recovery prediction panel -->
+  <rect x="420" y="275" width="340" height="55" fill="#0a0a15" rx="8" stroke="#333344" stroke-width="1"/>
+  <text x="590" y="295" fill="#888899" font-family="monospace" font-size="10" text-anchor="middle">RECOVERY REWARDS:</text>
+  <text x="590" y="312" fill="#44cc66" font-family="monospace" font-size="9" text-anchor="middle">Correct: +65 HP (full) | Close: +20 HP | Wrong: +0 HP</text>
+
+  <!-- Hero still meditating (smaller, corner) -->
+  <g transform="translate(60,400)">
+    <rect x="-12" y="10" width="24" height="18" fill="#4466cc" rx="2"/>
+    <rect x="-8" y="-3" width="16" height="14" fill="#ffccaa" rx="3"/>
+    <line x1="-4" y1="3" x2="-1" y2="3" stroke="#884444" stroke-width="1" stroke-linecap="round"/>
+    <line x1="2" y1="3" x2="5" y2="3" stroke="#884444" stroke-width="1" stroke-linecap="round"/>
+    <polygon points="-8,0 -6,-10 0,-3 4,-9 8,-1 10,2" fill="#3322aa"/>
+    <circle cx="-18" cy="0" r="1.5" fill="#44ff77" opacity="0.4"/>
+    <circle cx="20" cy="5" r="1.5" fill="#44ff77" opacity="0.3"/>
+  </g>
+
+  <!-- Bottom bar -->
+  <rect x="0" y="450" width="800" height="30" fill="#0a0a15" opacity="0.9"/>
+  <text x="400" y="470" fill="#556655" font-family="monospace" font-size="9" text-anchor="middle">Take your time - there's no rush on the answer.</text>
+</svg>

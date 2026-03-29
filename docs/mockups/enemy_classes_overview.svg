@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 300" width="600" height="300">
+  <title>Enemy Classes Overview - All Operation Types</title>
+
+  <rect width="600" height="300" fill="#1a1a2e" rx="8"/>
+  <text x="300" y="20" fill="#8888aa" font-family="monospace" font-size="10" text-anchor="middle">ENEMY CLASSES BY OPERATION TYPE</text>
+
+  <!-- ADDITION - Green, round/friendly shapes -->
+  <g transform="translate(75,55)">
+    <text x="0" y="0" fill="#44dd77" font-family="monospace" font-size="10" text-anchor="middle" font-weight="bold">ADDITION</text>
+
+    <circle cx="0" cy="50" r="32" fill="#228844"/>
+    <circle cx="0" cy="50" r="28" fill="#33bb66"/>
+
+    <!-- + symbol -->
+    <rect x="-3" y="36" width="6" height="28" fill="#fff" rx="1"/>
+    <rect x="-14" y="47" width="28" height="6" fill="#fff" rx="1"/>
+
+    <!-- Cute face -->
+    <circle cx="-10" cy="42" r="4" fill="#fff"/>
+    <circle cx="10" cy="42" r="4" fill="#fff"/>
+    <circle cx="-9" cy="43" r="2.5" fill="#112211"/>
+    <circle cx="11" cy="43" r="2.5" fill="#112211"/>
+
+    <text x="0" y="100" fill="#44dd77" font-family="monospace" font-size="8" text-anchor="middle">Round, bouncy, organic</text>
+    <text x="0" y="112" fill="#337744" font-family="monospace" font-size="7" text-anchor="middle">Green palette</text>
+    <text x="0" y="122" fill="#337744" font-family="monospace" font-size="7" text-anchor="middle">"Growing" / nature feel</text>
+  </g>
+
+  <!-- SUBTRACTION - Red/orange, sharp/angular shapes -->
+  <g transform="translate(200,55)">
+    <text x="0" y="0" fill="#ff6644" font-family="monospace" font-size="10" text-anchor="middle" font-weight="bold">SUBTRACTION</text>
+
+    <!-- Angular body -->
+    <polygon points="0,20 -28,55 -20,85 20,85 28,55" fill="#cc3322"/>
+    <polygon points="0,24 -24,55 -17,80 17,80 24,55" fill="#ee5544"/>
+
+    <!-- - symbol as visor -->
+    <rect x="-14" y="45" width="28" height="6" fill="#fff" rx="1"/>
+
+    <!-- Sharp eyes above visor -->
+    <polygon points="-12,38 -8,32 -4,38" fill="#ffaa33"/>
+    <polygon points="4,38 8,32 12,38" fill="#ffaa33"/>
+
+    <!-- Jagged base -->
+    <polygon points="-20,85 -22,95 -12,88 -5,95 5,88 12,95 22,88 20,85" fill="#992211"/>
+
+    <text x="0" y="112" fill="#ff6644" font-family="monospace" font-size="8" text-anchor="middle">Angular, sharp, edgy</text>
+    <text x="0" y="124" fill="#aa4433" font-family="monospace" font-size="7" text-anchor="middle">Red/orange palette</text>
+    <text x="0" y="134" fill="#aa4433" font-family="monospace" font-size="7" text-anchor="middle">"Cutting" / fire feel</text>
+  </g>
+
+  <!-- MULTIPLICATION - Purple, geometric/crystalline -->
+  <g transform="translate(325,55)">
+    <text x="0" y="0" fill="#bb77ff" font-family="monospace" font-size="10" text-anchor="middle" font-weight="bold">MULTIPLICATION</text>
+
+    <!-- Crystalline body -->
+    <polygon points="0,20 -25,45 -18,80 0,90 18,80 25,45" fill="#6633aa"/>
+    <polygon points="0,25 -20,45 -14,75 0,84 14,75 20,45" fill="#8855cc"/>
+
+    <!-- x symbol -->
+    <line x1="-10" y1="40" x2="10" y2="60" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+    <line x1="10" y1="40" x2="-10" y2="60" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+
+    <!-- Multiple eyes (multiplied!) -->
+    <circle cx="-8" cy="35" r="3" fill="#ddaaff"/>
+    <circle cx="8" cy="35" r="3" fill="#ddaaff"/>
+    <circle cx="0" cy="32" r="3" fill="#ddaaff"/>
+    <circle cx="-8" cy="35" r="1.5" fill="#331166"/>
+    <circle cx="8" cy="35" r="1.5" fill="#331166"/>
+    <circle cx="0" cy="32" r="1.5" fill="#331166"/>
+
+    <!-- Floating crystal shards -->
+    <polygon points="-30,30 -35,40 -28,42" fill="#8855cc" opacity="0.6"/>
+    <polygon points="30,35 35,28 32,42" fill="#8855cc" opacity="0.6"/>
+
+    <text x="0" y="112" fill="#bb77ff" font-family="monospace" font-size="8" text-anchor="middle">Crystalline, geometric</text>
+    <text x="0" y="124" fill="#8855aa" font-family="monospace" font-size="7" text-anchor="middle">Purple palette</text>
+    <text x="0" y="134" fill="#8855aa" font-family="monospace" font-size="7" text-anchor="middle">"Replicating" / magic feel</text>
+  </g>
+
+  <!-- DIVISION - Blue, split/dual forms -->
+  <g transform="translate(460,55)">
+    <text x="0" y="0" fill="#44aaff" font-family="monospace" font-size="10" text-anchor="middle" font-weight="bold">DIVISION</text>
+
+    <!-- Split body - two halves -->
+    <rect x="-22" y="25" width="18" height="55" fill="#2266aa" rx="4"/>
+    <rect x="4" y="25" width="18" height="55" fill="#2266aa" rx="4"/>
+
+    <!-- Inner glow -->
+    <rect x="-19" y="28" width="12" height="49" fill="#3388cc" rx="3"/>
+    <rect x="7" y="28" width="12" height="49" fill="#3388cc" rx="3"/>
+
+    <!-- Division line between halves -->
+    <line x1="0" y1="22" x2="0" y2="85" stroke="#88ddff" stroke-width="2" stroke-dasharray="4,3"/>
+
+    <!-- Dots above and below (division symbol) -->
+    <circle cx="0" cy="18" r="4" fill="#88ddff"/>
+    <circle cx="0" cy="88" r="4" fill="#88ddff"/>
+
+    <!-- Eyes - one on each half -->
+    <circle cx="-11" cy="40" r="5" fill="#fff"/>
+    <circle cx="11" cy="40" r="5" fill="#fff"/>
+    <circle cx="-10" cy="41" r="3" fill="#112244"/>
+    <circle cx="12" cy="41" r="3" fill="#112244"/>
+
+    <!-- Fractions floating -->
+    <text x="-30" y="60" fill="#88ddff" font-family="monospace" font-size="8" opacity="0.5">1/2</text>
+    <text x="28" y="45" fill="#88ddff" font-family="monospace" font-size="8" opacity="0.5">3/4</text>
+
+    <text x="0" y="112" fill="#44aaff" font-family="monospace" font-size="8" text-anchor="middle">Split, dual, mirrored</text>
+    <text x="0" y="124" fill="#3377aa" font-family="monospace" font-size="7" text-anchor="middle">Blue palette</text>
+    <text x="0" y="134" fill="#3377aa" font-family="monospace" font-size="7" text-anchor="middle">"Splitting" / water feel</text>
+  </g>
+
+  <!-- Future classes note -->
+  <rect x="20" y="200" width="560" height="50" fill="#111122" rx="4" stroke="#333355" stroke-width="1"/>
+  <text x="300" y="218" fill="#888899" font-family="monospace" font-size="9" text-anchor="middle">FUTURE DLC CLASSES</text>
+  <text x="150" y="236" fill="#ff8866" font-family="monospace" font-size="8" text-anchor="middle">NEGATIVES - Dark/shadow palette, inverted forms</text>
+  <text x="450" y="236" fill="#ffcc44" font-family="monospace" font-size="8" text-anchor="middle">FRACTIONS - Fragmented/mosaic, warm gold palette</text>
+
+  <!-- Design principles -->
+  <rect x="20" y="258" width="560" height="34" fill="#111122" rx="4"/>
+  <text x="300" y="272" fill="#aaaacc" font-family="monospace" font-size="8" text-anchor="middle">Design principle: Operation symbol is embedded in the enemy's body/armor as a visual identifier</text>
+  <text x="300" y="284" fill="#aaaacc" font-family="monospace" font-size="8" text-anchor="middle">Each class has a distinct silhouette, color palette, and elemental association</text>
+</svg>
