@@ -127,11 +127,7 @@ local function slide_in(node, from_x, target_x, delay)
 	gui.animate(node, "color.w", 1, gui.EASING_OUTQUAD, 0.2, delay or 0)
 end
 
-local function wiggle(node, degrees, duration)
-	degrees = degrees or 2.5
-	duration = duration or 1.2
-	gui.animate(node, "rotation.z", degrees, gui.EASING_INOUTSINE, duration, math.random() * 0.5, nil, gui.PLAYBACK_LOOP_PINGPONG)
-end
+-- wiggle removed: GUI rotation.z causes scaling artifacts in Defold
 
 -- ============================================================
 -- Scene (hero character)
@@ -282,12 +278,11 @@ local function create_tile_nodes()
 		gui.set_scale(txt, vmath.vector3(1.3, 1.3, 1))
 		gui.set_color(txt, C.tile_text)
 		number_tile_nodes[i] = {box = box, text = txt}
-		-- Pop-in staggered + wiggle
+		-- Pop-in staggered
 		gui.set_scale(box, vmath.vector3(0, 0, 1))
 		gui.set_scale(txt, vmath.vector3(0, 0, 1))
 		gui.animate(box, gui.PROP_SCALE, vmath.vector3(1, 1, 1), gui.EASING_OUTBACK, 0.3, i * 0.05)
 		gui.animate(txt, gui.PROP_SCALE, vmath.vector3(1.3, 1.3, 1), gui.EASING_OUTBACK, 0.3, i * 0.05)
-		wiggle(box, 2, 1.5 + math.random() * 0.5)
 	end
 
 	for i = 1, #operator_tile_values do
@@ -299,13 +294,12 @@ local function create_tile_nodes()
 		gui.set_scale(txt, vmath.vector3(1.4, 1.4, 1))
 		gui.set_color(txt, C.tile_text)
 		operator_tile_nodes[i] = {box = box, text = txt}
-		-- Pop-in staggered + wiggle
+		-- Pop-in staggered
 		gui.set_scale(box, vmath.vector3(0, 0, 1))
 		gui.set_scale(txt, vmath.vector3(0, 0, 1))
 		local delay = (#number_tile_values + i) * 0.05
 		gui.animate(box, gui.PROP_SCALE, vmath.vector3(1, 1, 1), gui.EASING_OUTBACK, 0.3, delay)
 		gui.animate(txt, gui.PROP_SCALE, vmath.vector3(1.4, 1.4, 1), gui.EASING_OUTBACK, 0.3, delay)
-		wiggle(box, 2.5, 1.3 + math.random() * 0.5)
 	end
 end
 
@@ -424,20 +418,12 @@ local function create_enemy_nodes(enemies, target_index)
 			bob(arrow, ENEMY_Y + h/2 + 36, 5, 0.6)
 		end
 
-		-- Slide-in + idle bob (each enemy slightly different timing)
+		-- Idle bob (each enemy slightly different timing)
 		if alive then
 			local all_parts = {body, belly, el, pl, er, pr, mouth, badge, wtext}
 			if fang_l then all_parts[#all_parts+1] = fang_l; all_parts[#all_parts+1] = fang_r end
 			for _, n in ipairs(all_parts) do
-				-- Slide in from right
-				local target_x = gui.get_position(n).x
-				slide_in(n, target_x + 300, target_x, i * 0.12)
-				-- Start bobbing after slide-in
-				timer.delay(0.5 + i * 0.12, false, function()
-					if gui.get_node then  -- guard against deleted nodes
-						bob(n, gui.get_position(n).y, 3, 1.5 + i * 0.3)
-					end
-				end)
+				bob(n, gui.get_position(n).y, 3, 1.5 + i * 0.3)
 			end
 		end
 
