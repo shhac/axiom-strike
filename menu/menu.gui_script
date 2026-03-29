@@ -75,6 +75,12 @@ function on_input(self, action_id, action)
 			msg.post("main:/controller#script", "play_pressed")
 			return true
 		end
+		if gui.pick_node(gui.get_node("btn_collection"), action.x, action.y) then
+			sfx.play("button_press")
+			pop(gui.get_node("btn_collection"))
+			msg.post("main:/controller#script", "collection_pressed")
+			return true
+		end
 		if gui.pick_node(gui.get_node("btn_settings"), action.x, action.y) then
 			settings_holding = true
 			settings_hold_time = 0

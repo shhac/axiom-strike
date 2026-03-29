@@ -335,5 +335,31 @@ nodes {
   }
   inherit_alpha: true
 }
+nodes {
+  position { x: 1180.0 y: 40.0 z: 0.0 w: 1.0 }
+  rotation { x: 0.0 y: 0.0 z: 0.0 w: 1.0 }
+  scale { x: 0.8 y: 0.8 z: 1.0 w: 1.0 }
+  size { x: 140.0 y: 32.0 z: 0.0 w: 1.0 }
+  color { x: 0.35 y: 0.25 z: 0.12 w: 1.0 }
+  type: TYPE_BOX
+  id: "btn_collection"
+  pivot: PIVOT_CENTER
+  size_mode: SIZE_MODE_MANUAL
+}
+nodes {
+  position { x: 1180.0 y: 40.0 z: 0.0 w: 1.0 }
+  rotation { x: 0.0 y: 0.0 z: 0.0 w: 1.0 }
+  scale { x: 0.65 y: 0.65 z: 1.0 w: 1.0 }
+  size { x: 300.0 y: 24.0 z: 0.0 w: 1.0 }
+  color { x: 1.0 y: 0.85 z: 0.2 w: 1.0 }
+  type: TYPE_TEXT
+  text: "COLLECTION"
+  font: "game_font"
+  id: "btn_collection_text"
+  pivot: PIVOT_CENTER
+  outline { x: 0.0 y: 0.0 z: 0.0 w: 1.0 }
+  shadow { x: 0.0 y: 0.0 z: 0.0 w: 0.0 }
+  inherit_alpha: true
+}
 material: "/builtins/materials/gui.material"
 adjust_reference: ADJUST_REFERENCE_PARENT

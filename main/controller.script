@@ -74,6 +74,9 @@ function on_message(self, message_id, message, sender)
 	elseif message_id == hash("play_pressed") then
 		switch_to(self, "#map_proxy")
 
+	elseif message_id == hash("collection_pressed") then
+		switch_to(self, "#collection_proxy")
+
 	elseif message_id == hash("settings_pressed") then
 		switch_to(self, "#settings_proxy")
 
