@@ -95,13 +95,14 @@ local function build_map()
 
 			-- Pop-in animation
 			gui.set_scale(circle, vmath.vector3(0, 0, 1))
-			gui.animate(circle, gui.PROP_SCALE, vmath.vector3(1, 1, 1), gui.EASING_OUTBACK, 0.3, #node_buttons * 0.04)
-
-			-- Pulse available nodes to attract attention
-			if unlocked and not done then
-				gui.animate(circle, gui.PROP_SCALE, vmath.vector3(1.12, 1.12, 1), gui.EASING_INOUTSINE,
-					0.8, 0.5, nil, gui.PLAYBACK_LOOP_PINGPONG)
-			end
+			local pop_delay = #node_buttons * 0.04
+			gui.animate(circle, gui.PROP_SCALE, vmath.vector3(1, 1, 1), gui.EASING_OUTBACK, 0.3, pop_delay, function()
+				-- Pulse AFTER pop-in completes (only for available, not-done nodes)
+				if unlocked and not done then
+					gui.animate(circle, gui.PROP_SCALE, vmath.vector3(1.08, 1.08, 1), gui.EASING_INOUTSINE,
+						0.8, 0, nil, gui.PLAYBACK_LOOP_PINGPONG)
+				end
+			end)
 
 			node_buttons[#node_buttons + 1] = {
 				circle = circle,

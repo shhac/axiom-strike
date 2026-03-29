@@ -42,20 +42,22 @@ function final(self)
 	bg_nodes = {}
 end
 
-local settings_hold_start = 0
+local settings_holding = false
+local settings_hold_time = 0
 local SETTINGS_HOLD_DURATION = 2.0
+local settings_btn_color = vmath.vector4(0.267, 0.2, 0.333, 1)
 
 function update(self, dt)
-	-- Show hold progress on settings button
-	if settings_hold_start > 0 then
-		local held = os.clock() - settings_hold_start
-		local ratio = math.min(held / SETTINGS_HOLD_DURATION, 1)
+	if settings_holding then
+		settings_hold_time = settings_hold_time + dt
+		local ratio = math.min(settings_hold_time / SETTINGS_HOLD_DURATION, 1)
 		local btn = gui.get_node("btn_settings")
-		-- Gradually brighten as they hold
-		gui.set_color(btn, vmath.vector4(0.27 + ratio * 0.3, 0.2, 0.33 + ratio * 0.2, 1))
-		if held >= SETTINGS_HOLD_DURATION then
-			settings_hold_start = 0
-			gui.set_color(btn, vmath.vector4(0.267, 0.2, 0.333, 1))
+		gui.set_color(btn, vmath.vector4(0.27 + ratio * 0.4, 0.2 + ratio * 0.3, 0.33 + ratio * 0.2, 1))
+
+		if settings_hold_time >= SETTINGS_HOLD_DURATION then
+			settings_holding = false
+			settings_hold_time = 0
+			gui.set_color(btn, settings_btn_color)
 			pop(btn)
 			msg.post("main:/controller#script", "settings_pressed")
 		end
@@ -71,25 +73,24 @@ function on_input(self, action_id, action)
 			msg.post("main:/controller#script", "play_pressed")
 			return true
 		end
-		-- Settings: start hold timer (parental gate)
 		if gui.pick_node(gui.get_node("btn_settings"), action.x, action.y) then
-			settings_hold_start = os.clock()
+			settings_holding = true
+			settings_hold_time = 0
 			return true
 		end
 	end
 
 	if action.released then
-		if settings_hold_start > 0 then
-			local held = os.clock() - settings_hold_start
-			settings_hold_start = 0
-			gui.set_color(gui.get_node("btn_settings"), vmath.vector4(0.267, 0.2, 0.333, 1))
-			if held < SETTINGS_HOLD_DURATION then
-				-- Didn't hold long enough — show hint
+		if settings_holding then
+			settings_holding = false
+			gui.set_color(gui.get_node("btn_settings"), settings_btn_color)
+			if settings_hold_time < SETTINGS_HOLD_DURATION then
 				gui.set_text(gui.get_node("btn_settings_text"), "HOLD 2s")
 				timer.delay(1.5, false, function()
 					gui.set_text(gui.get_node("btn_settings_text"), "SETTINGS")
 				end)
 			end
+			settings_hold_time = 0
 		end
 	end
 

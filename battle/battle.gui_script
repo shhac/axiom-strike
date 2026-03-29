@@ -162,6 +162,25 @@ local function show_hint()
 end
 
 local function clear_hints()
+	if hint_shown then
+		-- Cancel all hint animations and restore colors
+		for i, nd in ipairs(number_tile_nodes) do
+			gui.cancel_animation(nd.box, gui.PROP_COLOR)
+			if tile_used["num_" .. i] then
+				gui.set_color(nd.box, C.tile_used)
+			else
+				gui.set_color(nd.box, C.tile_num)
+			end
+		end
+		for i, nd in ipairs(operator_tile_nodes) do
+			gui.cancel_animation(nd.box, gui.PROP_COLOR)
+			if tile_used["op_" .. i] then
+				gui.set_color(nd.box, C.tile_used)
+			else
+				gui.set_color(nd.box, C.tile_op)
+			end
+		end
+	end
 	hint_shown = false
 	idle_timer = 0
 end
@@ -573,18 +592,22 @@ local function show_between_waves_ui(data)
 	bw.overlay = gui.new_box_node(vmath.vector3(640, 400, 0), vmath.vector3(460, 280, 0))
 	gui.set_color(bw.overlay, vmath.vector4(0.06, 0.05, 0.12, 0.95))
 
-	bw.title = gui.new_text_node(vmath.vector3(640, 500, 0), "Wave " .. data.wave .. " incoming!")
+	local is_bonus = data.is_victory_bonus
+	local title_text = is_bonus and "BONUS ROUND!" or ("Wave " .. data.wave .. " incoming!")
+	bw.title = gui.new_text_node(vmath.vector3(640, 500, 0), title_text)
 	gui.set_font(bw.title, "game_font")
 	gui.set_scale(bw.title, vmath.vector3(1.15, 1.15, 1))
 	gui.set_color(bw.title, C.gold)
 
-	bw.hp = gui.new_text_node(vmath.vector3(640, 450, 0), "HP: " .. data.hero_hp)
+	local hp_text = is_bonus and ("You won with " .. data.hero_hp .. " HP!") or ("HP: " .. data.hero_hp)
+	bw.hp = gui.new_text_node(vmath.vector3(640, 450, 0), hp_text)
 	gui.set_font(bw.hp, "game_font")
 	gui.set_color(bw.hp, C.hp_green)
 
+	local btn_label = is_bonus and "SKIP" or "FIGHT!"
 	bw.btn = gui.new_box_node(vmath.vector3(640, 380, 0), vmath.vector3(200, 50, 0))
-	gui.set_color(bw.btn, C.btn_green)
-	bw.btn_t = gui.new_text_node(vmath.vector3(640, 380, 0), "FIGHT!")
+	gui.set_color(bw.btn, is_bonus and vmath.vector4(0.25, 0.2, 0.35, 1) or C.btn_green)
+	bw.btn_t = gui.new_text_node(vmath.vector3(640, 380, 0), btn_label)
 	gui.set_font(bw.btn_t, "game_font")
 	gui.set_scale(bw.btn_t, vmath.vector3(1.1, 1.1, 1))
 	gui.set_color(bw.btn_t, C.white)
@@ -742,23 +765,36 @@ function on_message(self, message_id, message, sender)
 	elseif message_id == hash("show_result") then
 		battle_over = true; input_enabled = false
 		destroy_fill_blank()
-		gui.set_alpha(gui.get_node("result_overlay"), 1.0)
-		gui.set_alpha(gui.get_node("result_title"), 1.0)
-		gui.set_text(gui.get_node("result_title"), message.title or "VICTORY!")
-		gui.set_alpha(gui.get_node("btn_continue"), 1.0)
-		gui.set_alpha(gui.get_node("btn_continue_text"), 1.0)
 
-		-- Show stars if victory
+		-- Create victory overlay dynamically so it renders ON TOP of all other dynamic nodes
+		local overlay = gui.new_box_node(vmath.vector3(640, 400, 0), vmath.vector3(500, 300, 0))
+		gui.set_color(overlay, vmath.vector4(0.05, 0.04, 0.1, 0.92))
+
+		local title = gui.new_text_node(vmath.vector3(640, 460, 0), message.title or "VICTORY!")
+		gui.set_font(title, "game_font")
+		gui.set_scale(title, vmath.vector3(2.0, 2.0, 1))
+		gui.set_color(title, vmath.vector4(1, 0.85, 0.2, 1))
+
+		-- Stars
 		if message.stars then
 			local star_str = string.rep("*", message.stars) .. string.rep("-", 3 - message.stars)
 			local star_node = gui.new_text_node(vmath.vector3(640, 400, 0), star_str)
 			gui.set_font(star_node, "game_font")
-			gui.set_scale(star_node, vmath.vector3(2.5, 2.5, 1))
-			gui.set_color(star_node, vmath.vector4(1, 0.85, 0.2, 1))
-			-- Pop each star in staggered
 			gui.set_scale(star_node, vmath.vector3(0, 0, 1))
+			gui.set_color(star_node, vmath.vector4(1, 0.85, 0.2, 1))
 			gui.animate(star_node, gui.PROP_SCALE, vmath.vector3(2.5, 2.5, 1), gui.EASING_OUTBACK, 0.5, 0.3)
 		end
+
+		-- Continue button (dynamic, renders on top)
+		local btn = gui.new_box_node(vmath.vector3(640, 340, 0), vmath.vector3(200, 55, 0))
+		gui.set_color(btn, vmath.vector4(0.15, 0.65, 0.3, 1))
+		local btn_text = gui.new_text_node(vmath.vector3(640, 340, 0), "CONTINUE")
+		gui.set_font(btn_text, "game_font")
+		gui.set_scale(btn_text, vmath.vector3(1.1, 1.1, 1))
+		gui.set_color(btn_text, vmath.vector4(1, 1, 1, 1))
+
+		-- Store for input handling
+		self.victory_btn = btn
 
 	elseif message_id == hash("show_between_waves") then
 		input_enabled = false; show_between_waves_ui(message)
@@ -775,7 +811,10 @@ function on_input(self, action_id, action)
 	end
 
 	if battle_over then
-		if gui.pick_node(gui.get_node("btn_continue"), action.x, action.y) then msg.post(SCRIPT_URL, "continue_pressed") end
+		if self.victory_btn and gui.pick_node(self.victory_btn, action.x, action.y) then
+			pop(self.victory_btn)
+			msg.post(SCRIPT_URL, "continue_pressed")
+		end
 		return true
 	end
 

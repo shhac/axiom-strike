@@ -146,10 +146,25 @@ local function on_animation_complete(self)
 		if count_alive(self) == 0 then
 			-- Wave cleared
 			if self.current_wave >= #self.waves then
-				self.phase = CONSTANTS.PHASE_BATTLE_WON
 				local star_count = stars_module.calculate(self.hero_hp, self.hero_max_hp, self.total_wrong, self.total_attempts)
-			self.earned_stars = star_count
-			send_gui("show_result", {title = "VICTORY!", stars = star_count})
+				self.earned_stars = star_count
+
+				-- Offer bonus quiz for extra star if recovery not used
+				if self.recovery_available then
+					self.phase = "victory_quiz_offer"
+					send_gui("show_between_waves", {
+						wave = 0,
+						total_waves = 0,
+						hero_hp = self.hero_hp,
+						hero_max_hp = self.hero_max_hp,
+						recovery_available = true,
+						is_victory_bonus = true,
+						stars = star_count,
+					})
+				else
+					self.phase = CONSTANTS.PHASE_BATTLE_WON
+					send_gui("show_result", {title = "VICTORY!", stars = star_count})
+				end
 			else
 				self.current_wave = self.current_wave + 1
 				-- Offer recovery between waves
@@ -393,7 +408,13 @@ function on_message(self, message_id, message, sender)
 		msg.post("main:/controller#script", "battle_complete", {stars = self.earned_stars or 1})
 
 	elseif message_id == hash("next_wave_pressed") then
-		start_wave(self)
+		if self.phase == "victory_quiz_offer" then
+			-- Skip quiz, show victory
+			self.phase = CONSTANTS.PHASE_BATTLE_WON
+			send_gui("show_result", {title = "VICTORY!", stars = self.earned_stars})
+		else
+			start_wave(self)
+		end
 
 	elseif message_id == hash("recovery_pressed") then
 		if self.recovery_available then
