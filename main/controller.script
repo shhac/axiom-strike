@@ -1,4 +1,7 @@
+local progress = require("modules.progress")
+
 local current_screen = nil
+local pending_level = nil
 
 local function load_screen(self, proxy)
 	msg.post(proxy, "load")
@@ -9,6 +12,13 @@ local function unload_screen(self, proxy)
 	msg.post(proxy, "disable")
 	msg.post(proxy, "final")
 	msg.post(proxy, "unload")
+end
+
+local function switch_to(self, proxy)
+	if current_screen then
+		unload_screen(self, current_screen)
+	end
+	load_screen(self, proxy)
 end
 
 function init(self)
@@ -24,31 +34,46 @@ function on_message(self, message_id, message, sender)
 		current_screen = self.loading_proxy
 		self.loading_proxy = nil
 
+		-- If we just loaded the battle screen and have pending level data, send it
+		if current_screen == "#battle_proxy" and pending_level then
+			-- Send level config to battle controller in the loaded collection
+			timer.delay(0.1, false, function()
+				msg.post("battle:/battle_controller#script", "set_level", pending_level)
+			end)
+		end
+
 	elseif message_id == hash("proxy_unloaded") then
-		-- Screen fully unloaded
+		-- nothing
 
 	elseif message_id == hash("play_pressed") then
-		if current_screen then
-			unload_screen(self, current_screen)
-		end
-		load_screen(self, "#battle_proxy")
-
-	elseif message_id == hash("battle_complete") then
-		if current_screen then
-			unload_screen(self, current_screen)
-		end
-		load_screen(self, "#menu_proxy")
+		switch_to(self, "#map_proxy")
 
 	elseif message_id == hash("settings_pressed") then
-		if current_screen then
-			unload_screen(self, current_screen)
-		end
-		load_screen(self, "#settings_proxy")
+		switch_to(self, "#settings_proxy")
 
 	elseif message_id == hash("back_to_menu") then
-		if current_screen then
-			unload_screen(self, current_screen)
+		switch_to(self, "#menu_proxy")
+
+	elseif message_id == hash("start_level") then
+		pending_level = {
+			node_id = message.node_id,
+			difficulty = message.difficulty,
+			skill = message.skill,
+		}
+		switch_to(self, "#battle_proxy")
+
+	elseif message_id == hash("battle_complete") then
+		-- Mark level as completed
+		if pending_level and pending_level.node_id then
+			local save_data = progress.load()
+			progress.mark_completed(save_data, pending_level.node_id, 3)
 		end
-		load_screen(self, "#menu_proxy")
+		pending_level = nil
+		switch_to(self, "#map_proxy")
+
+	elseif message_id == hash("show_recovery") then
+		-- Phase 4: will load recovery screen
+		-- For now, just send recovery_complete back
+		msg.post(sender, "recovery_complete", {healed = 30})
 	end
 end
