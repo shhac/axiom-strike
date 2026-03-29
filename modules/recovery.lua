@@ -11,6 +11,13 @@ M.ANSWER_SCORES = {
 	wrong         = 0.15,
 }
 
+M.FEEDBACK = {
+	correct      = "Excellent! Full recovery!",
+	almost_right = "So close! Great effort!",
+	reasonable   = "Not quite, but good try!",
+	wrong        = "Keep reading! You'll get it!",
+}
+
 --- Calculate HP recovery from a reading comprehension answer.
 --- @param max_recovery number Maximum HP that could be recovered
 --- @param answer_quality string One of: "correct", "almost_right", "reasonable", "wrong"
@@ -25,17 +32,7 @@ function M.calculate(max_recovery, answer_quality, streak_count)
 	local streak_bonus = max_recovery * math.min(streak_count * 0.03, M.STREAK_BONUS_CAP)
 
 	local total = math.floor(math.min(base + comprehension + streak_bonus, max_recovery))
-
-	local feedback
-	if answer_quality == "correct" then
-		feedback = "Excellent! Full recovery!"
-	elseif answer_quality == "almost_right" then
-		feedback = "So close! Great effort!"
-	elseif answer_quality == "reasonable" then
-		feedback = "Not quite, but good try!"
-	else
-		feedback = "Keep reading! You'll get it!"
-	end
+	local feedback = M.FEEDBACK[answer_quality] or M.FEEDBACK.wrong
 
 	return total, feedback
 end

@@ -52,35 +52,26 @@ end
 --- @param op string
 --- @param max_operand number
 --- @return table numbers, table operators
-function M._build_solution(target, op, max_operand)
-	if op == "+" then
-		-- Split target into two addends
+local SOLUTION_BUILDERS = {
+	["+"] = function(target, max_operand)
 		local a = math.random(1, math.max(1, target - 1))
 		local b = target - a
-		if b < 1 then
-			a = math.max(1, target - 1)
-			b = target - a
-		end
-		if b < 1 then
-			return {target}, {}
-		end
+		if b < 1 then return {target}, {} end
 		return {a, b}, {"+"}
+	end,
 
-	elseif op == "-" then
-		-- a - b = target, so a = target + b
+	["-"] = function(target, max_operand)
 		local b = math.random(1, math.min(max_operand, max_operand - target))
 		local a = target + b
 		if a > max_operand then
 			a = max_operand
 			b = a - target
 		end
-		if b < 1 then
-			return {target}, {}
-		end
+		if b < 1 then return {target}, {} end
 		return {a, b}, {"-"}
+	end,
 
-	elseif op == "x" or op == "*" then
-		-- Find factor pairs of target
+	["x"] = function(target, max_operand)
 		local factors = {}
 		for i = 2, math.min(max_operand, target) do
 			if target % i == 0 and target / i <= max_operand then
@@ -91,20 +82,22 @@ function M._build_solution(target, op, max_operand)
 			local pair = factors[math.random(1, #factors)]
 			return {pair[1], pair[2]}, {"x"}
 		end
-		-- Fallback: just use target as a single tile
 		return {target}, {}
+	end,
 
-	elseif op == "/" then
-		-- a / b = target, so a = target * b
+	["/"] = function(target, max_operand)
 		local b = math.random(2, math.min(10, math.floor(max_operand / math.max(1, target))))
 		local a = target * b
-		if a > max_operand or b < 2 then
-			return {target}, {}
-		end
+		if a > max_operand or b < 2 then return {target}, {} end
 		return {a, b}, {"/"}
-	end
+	end,
+}
 
-	-- Fallback
+function M._build_solution(target, op, max_operand)
+	local builder = SOLUTION_BUILDERS[util.normalize_op(op)]
+	if builder then
+		return builder(target, max_operand)
+	end
 	return {target}, {}
 end
 

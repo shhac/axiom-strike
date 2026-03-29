@@ -5,22 +5,25 @@ local CONSTANTS = require("modules.constants")
 local util = require("modules.util")
 
 --- Map an Elo rating to concrete question parameters.
+-- Sorted Elo brackets: {max_elo, params}
+local ELO_BRACKETS = {
+	{600,  {max_operand = 5,  num_terms = 2, min_target = 2,  max_target = 10}},
+	{800,  {max_operand = 10, num_terms = 2, min_target = 3,  max_target = 15}},
+	{1000, {max_operand = 15, num_terms = 2, min_target = 5,  max_target = 20}},
+	{1200, {max_operand = 20, num_terms = 2, min_target = 8,  max_target = 30}},
+	{1400, {max_operand = 30, num_terms = 2, min_target = 10, max_target = 50}},
+}
+local ELO_BRACKET_DEFAULT = {max_operand = 50, num_terms = 3, min_target = 15, max_target = 80}
+
 --- @param elo number Player's Elo for this skill
 --- @return table params {max_operand, num_terms, min_target, max_target}
 function M.elo_to_params(elo)
-	if elo < 600 then
-		return {max_operand = 5, num_terms = 2, min_target = 2, max_target = 10}
-	elseif elo < 800 then
-		return {max_operand = 10, num_terms = 2, min_target = 3, max_target = 15}
-	elseif elo < 1000 then
-		return {max_operand = 15, num_terms = 2, min_target = 5, max_target = 20}
-	elseif elo < 1200 then
-		return {max_operand = 20, num_terms = 2, min_target = 8, max_target = 30}
-	elseif elo < 1400 then
-		return {max_operand = 30, num_terms = 2, min_target = 10, max_target = 50}
-	else
-		return {max_operand = 50, num_terms = 3, min_target = 15, max_target = 80}
+	for _, bracket in ipairs(ELO_BRACKETS) do
+		if elo < bracket[1] then
+			return bracket[2]
+		end
 	end
+	return ELO_BRACKET_DEFAULT
 end
 
 --- Generate an enemy weakness number appropriate for the player's Elo.
