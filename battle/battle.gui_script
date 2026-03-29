@@ -886,6 +886,20 @@ function on_message(self, message_id, message, sender)
 	elseif message_id == hash("show_equation_feedback") then
 		show_equation_feedback(message.result, message.target, message.mode, message.wrong_attempts)
 
+	elseif message_id == hash("show_onboarding") then
+		-- Show a brief tutorial message that fades out
+		local node = gui.new_text_node(vmath.vector3(640, 550, 0), message.text)
+		gui.set_font(node, "game_font")
+		gui.set_scale(node, vmath.vector3(0.75, 0.75, 1))
+		gui.set_color(node, vmath.vector4(1, 0.9, 0.5, 1))
+		gui.set_alpha(node, 0)
+		gui.animate(node, "color.w", 1, gui.EASING_OUTQUAD, 0.3)
+		timer.delay(3.0, false, function()
+			gui.animate(node, "color.w", 0, gui.EASING_OUTQUAD, 0.5, 0, function()
+				gui.delete_node(node)
+			end)
+		end)
+
 	elseif message_id == hash("disable_input") then
 		input_enabled = false
 		animating = true

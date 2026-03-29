@@ -1,7 +1,13 @@
 local M = {}
 
 local passage_data = require("data.passages")
+local passage_extra = require("data.passages_extra")
 local util = require("modules.util")
+
+-- Merge extra passages into the main list
+for _, p in ipairs(passage_extra.passages) do
+	passage_data.passages[#passage_data.passages + 1] = p
+end
 
 --- Get a random passage, optionally filtered by grade range.
 --- @param min_grade number|nil

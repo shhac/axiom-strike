@@ -6,6 +6,7 @@ local progress_module = require("modules.progress")
 local tutorial = require("modules.tutorial")
 local fill_blank = require("modules.fill_blank")
 local stars_module = require("modules.stars")
+local onboarding = require("modules.onboarding")
 local CONSTANTS = require("modules.constants")
 
 local GUI_URL = "#gui"
@@ -89,6 +90,12 @@ local function start_attack_phase(self)
 	sync_all_enemy_hp(self)
 	send_gui("enable_input")
 	self.turn_start_time = os.clock()
+
+	-- Onboarding hint
+	local ob_msg = onboarding.get_message(self.battles_completed or 0, "attack")
+	if ob_msg then
+		send_gui("show_onboarding", {text = ob_msg})
+	end
 end
 
 local function find_next_attacker(self)
@@ -125,6 +132,11 @@ local function start_enemy_attack(self, attacker_index)
 	send_gui("highlight_attacker", {index = attacker_index})
 	send_gui("enable_input")
 	self.turn_start_time = os.clock()
+
+	local ob_msg = onboarding.get_message(self.battles_completed or 0, "defend")
+	if ob_msg then
+		send_gui("show_onboarding", {text = ob_msg})
+	end
 end
 
 local function on_animation_complete(self)
@@ -268,6 +280,7 @@ function on_message(self, message_id, message, sender)
 		end
 
 		-- Check if this is the tutorial
+		self.battles_completed = onboarding.battles_completed(self.save_data)
 		self.is_tutorial = tutorial.is_first_battle(self.save_data)
 		if self.is_tutorial then
 			self.waves = tutorial.generate_tutorial_level()
