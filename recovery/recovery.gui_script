@@ -1,4 +1,4 @@
-local passages = require("data.passages")
+local passages = require("modules.passages")
 local recovery_module = require("modules.recovery")
 
 local READING_TIME = 45
