@@ -12,6 +12,7 @@ local SCROLL_OFFSET_X = 0
 
 local function destroy_map_nodes()
 	for _, n in ipairs(node_buttons) do
+		gui.cancel_animations(n.circle)
 		gui.delete_node(n.circle)
 		gui.delete_node(n.text)
 		if n.stars then gui.delete_node(n.stars) end
@@ -128,9 +129,13 @@ local function pop(node)
 	gui.animate(node, gui.PROP_SCALE, s, gui.EASING_OUTBACK, 0.2)
 end
 
-local function create_map_background()
+local function destroy_map_background()
 	for _, n in ipairs(map_bg_nodes) do gui.delete_node(n) end
 	map_bg_nodes = {}
+end
+
+local function create_map_background()
+	destroy_map_background()
 
 	local trees = {
 		{img = "tree_green",        x = 40,   y = 100, s = 4.0, a = 0.2},
@@ -163,6 +168,11 @@ function init(self)
 	save_data = progress.load()
 	create_map_background()
 	build_map()
+end
+
+function final(self)
+	destroy_map_nodes()
+	destroy_map_background()
 end
 
 function on_input(self, action_id, action)

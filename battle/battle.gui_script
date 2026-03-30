@@ -95,6 +95,11 @@ local C = {
 -- Juice / animation helpers
 -- ============================================================
 
+local function safe_delete(node)
+	gui.cancel_animations(node)
+	gui.delete_node(node)
+end
+
 local function bob(node, base_y, amplitude, duration)
 	gui.cancel_animation(node, "position.y")
 	gui.set_position(node, vmath.vector3(gui.get_position(node).x, base_y, 0))
@@ -294,7 +299,7 @@ end
 
 local function show_equation_feedback(result, target, mode, wrong_attempts)
 	if eq_feedback_node then
-		gui.delete_node(eq_feedback_node)
+		safe_delete(eq_feedback_node)
 		eq_feedback_node = nil
 	end
 
@@ -327,7 +332,7 @@ local function show_equation_feedback(result, target, mode, wrong_attempts)
 		if eq_feedback_node then
 			gui.animate(eq_feedback_node, "color.w", 0, gui.EASING_OUTQUAD, 0.5, 0, function()
 				if eq_feedback_node then
-					gui.delete_node(eq_feedback_node)
+					safe_delete(eq_feedback_node)
 					eq_feedback_node = nil
 				end
 			end)
@@ -341,17 +346,17 @@ end
 
 local function destroy_fill_blank()
 	for _, n in ipairs(fill_blank_nodes) do
-		gui.delete_node(n)
+		safe_delete(n)
 	end
 	fill_blank_nodes = {}
 	fill_blank_options = {}
-	if fill_blank_display_node then gui.delete_node(fill_blank_display_node); fill_blank_display_node = nil end
+	if fill_blank_display_node then safe_delete(fill_blank_display_node); fill_blank_display_node = nil end
 	fill_blank_mode = false
 end
 
 local function destroy_tile_nodes()
-	for _, node in ipairs(number_tile_nodes) do gui.delete_node(node.box); gui.delete_node(node.text) end
-	for _, node in ipairs(operator_tile_nodes) do gui.delete_node(node.box); gui.delete_node(node.text) end
+	for _, node in ipairs(number_tile_nodes) do safe_delete(node.box); safe_delete(node.text) end
+	for _, node in ipairs(operator_tile_nodes) do safe_delete(node.box); safe_delete(node.text) end
 	number_tile_nodes = {}
 	operator_tile_nodes = {}
 end
@@ -411,7 +416,7 @@ end
 local bg_nodes = {}
 
 local function create_background()
-	for _, n in ipairs(bg_nodes) do gui.delete_node(n) end
+	for _, n in ipairs(bg_nodes) do safe_delete(n) end
 	bg_nodes = {}
 
 	-- Ground line is at y=220, ground fills below to y=195
@@ -492,7 +497,7 @@ end
 -- ============================================================
 
 local function create_scene()
-	for _, n in ipairs(scene_nodes) do gui.delete_node(n) end
+	for _, n in ipairs(scene_nodes) do safe_delete(n) end
 	scene_nodes = {}
 
 	-- Hero character (pixel art style with colored boxes)
@@ -641,8 +646,8 @@ end
 -- ============================================================
 
 local function create_tile_nodes()
-	for _, n in ipairs(number_tile_nodes) do gui.delete_node(n.box); gui.delete_node(n.text) end
-	for _, n in ipairs(operator_tile_nodes) do gui.delete_node(n.box); gui.delete_node(n.text) end
+	for _, n in ipairs(number_tile_nodes) do safe_delete(n.box); safe_delete(n.text) end
+	for _, n in ipairs(operator_tile_nodes) do safe_delete(n.box); safe_delete(n.text) end
 	number_tile_nodes = {}
 	operator_tile_nodes = {}
 
@@ -739,7 +744,7 @@ end
 
 local function destroy_enemy_nodes()
 	for _, en in ipairs(enemy_nodes) do
-		for _, node in pairs(en) do if type(node) == "userdata" then gui.delete_node(node) end end
+		for _, node in pairs(en) do if type(node) == "userdata" then safe_delete(node) end end
 	end
 	enemy_nodes = {}
 end
@@ -814,20 +819,13 @@ local function create_enemy_nodes(enemies, target_index)
 			bob(arrow, ENEMY_Y + h/2 + 36, 5, 0.6)
 		end
 
-		-- Idle bob
-		if alive then
-			local all_parts = {body, badge, wtext}
-			for _, n in ipairs(all_parts) do
-				bob(n, gui.get_position(n).y, 3, 1.5 + i * 0.3)
-			end
-		end
-
 		enemy_nodes[i] = {
 			body = body, belly = belly, el = el, pl = pl, er = er, pr = pr,
 			mouth = mouth, op_sym = op_sym, badge = badge, wtext = wtext, arrow = arrow,
 			alive = alive,
 		}
 
+		-- Idle bob on all parts (single loop to avoid duplicate animations)
 		if alive then
 			local all_parts = {body, belly, el, pl, er, pr, mouth, op_sym, badge, wtext}
 			for _, n in ipairs(all_parts) do
@@ -888,7 +886,7 @@ end
 
 local function hide_between_waves_ui()
 	between_waves = false
-	for _, node in pairs(bw) do if type(node) == "userdata" then gui.delete_node(node) end end
+	for _, node in pairs(bw) do if type(node) == "userdata" then safe_delete(node) end end
 	bw = {}
 end
 
@@ -948,6 +946,35 @@ function init(self)
 				1.5 + math.random() * 2.0, math.random() * 1.5, nil, gui.PLAYBACK_LOOP_PINGPONG)
 		end
 	end
+end
+
+function final(self)
+	-- Cancel star twinkle animations on static nodes
+	for i = 1, 5 do
+		local ok, star = pcall(gui.get_node, "star" .. i)
+		if ok and star then gui.cancel_animations(star) end
+	end
+	-- Cancel animations on static HUD nodes
+	local static = {"damage_popup", "equation_text", "equation_result", "btn_strike", "btn_undo", "btn_clear"}
+	for _, name in ipairs(static) do
+		local ok, node = pcall(gui.get_node, name)
+		if ok and node then gui.cancel_animations(node) end
+	end
+	if self_pause_btn then gui.cancel_animations(self_pause_btn) end
+	for _, n in ipairs(pause_nodes) do gui.cancel_animations(n) end
+	-- Clean up all dynamic nodes
+	for _, n in ipairs(bg_nodes) do safe_delete(n) end; bg_nodes = {}
+	for _, n in ipairs(scene_nodes) do safe_delete(n) end; scene_nodes = {}
+	destroy_enemy_nodes()
+	destroy_tile_nodes()
+	destroy_fill_blank()
+	hide_between_waves_ui()
+	if eq_feedback_node then safe_delete(eq_feedback_node); eq_feedback_node = nil end
+	if banner_bg then gui.cancel_animations(banner_bg) end
+	if banner_text then gui.cancel_animations(banner_text) end
+	if target_bg then gui.cancel_animations(target_bg) end
+	if target_text then gui.cancel_animations(target_text) end
+	if enemy_hp_fill then gui.cancel_animations(enemy_hp_fill) end
 end
 
 function update(self, dt)
@@ -1074,7 +1101,7 @@ function on_message(self, message_id, message, sender)
 		gui.animate(node, "color.w", 1, gui.EASING_OUTQUAD, 0.3)
 		timer.delay(3.0, false, function()
 			gui.animate(node, "color.w", 0, gui.EASING_OUTQUAD, 0.5, 0, function()
-				gui.delete_node(node)
+				safe_delete(node)
 			end)
 		end)
 

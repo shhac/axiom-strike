@@ -21,7 +21,9 @@ end
 
 local function destroy_answer_nodes()
 	for _, n in ipairs(answer_nodes) do
+		gui.cancel_animations(n.box)
 		gui.delete_node(n.box)
+		gui.cancel_animations(n.text)
 		gui.delete_node(n.text)
 	end
 	answer_nodes = {}

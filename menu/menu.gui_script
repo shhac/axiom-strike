@@ -67,7 +67,12 @@ function init(self)
 end
 
 function final(self)
+	-- Cancel title pulse animation
+	local ok, title = pcall(gui.get_node, "title")
+	if ok and title then gui.cancel_animations(title) end
+	-- Cancel animations and delete dynamic nodes
 	for _, n in ipairs(bg_nodes) do
+		gui.cancel_animations(n)
 		gui.delete_node(n)
 	end
 	bg_nodes = {}
