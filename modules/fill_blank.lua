@@ -39,8 +39,12 @@ function M.generate(target, op, max_operand, difficulty)
 		result = target
 	elseif op == "-" then
 		local max_a = math.min(max_operand, target + max_operand)
-		a = math.random(target + 1, math.max(target + 1, max_a))
-		b = a - target
+		if max_a <= target then
+			a = target + 1; b = 1
+		else
+			a = math.random(target + 1, max_a)
+			b = a - target
+		end
 		result = target
 	elseif op == "x" then
 		local factors = util.find_factor_pairs(target, max_operand)
@@ -115,10 +119,11 @@ function M._generate_number_options(correct, max_operand)
 		end
 	end
 
-	-- Fill remaining with random (guard against exhausting the value space)
+	-- Fill remaining with random — widen range if operand space is too narrow
+	local fill_max = math.max(max_operand, correct + 5, 10)
 	local safety = 0
 	while #opts < 4 and safety < 40 do
-		local v = math.random(1, max_operand)
+		local v = math.random(1, fill_max)
 		if not used[v] then
 			opts[#opts + 1] = v
 			used[v] = true

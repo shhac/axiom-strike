@@ -24,12 +24,12 @@ local function record_elo(self, correct, question_elo, time_taken)
 	progress_module.save(self.save_data)
 end
 
-local function sync_all_enemy_hp(self)
+local function sync_all_enemy_hp(self, full_rebuild)
 	local enemies_data = {}
 	for i, e in ipairs(self.enemies) do
-		enemies_data[i] = {hp = e.hp, max_hp = e.max_hp, weakness = e.weakness, is_boss = e.is_boss, alive = e.hp > 0}
+		enemies_data[i] = {hp = e.hp, max_hp = e.max_hp, weakness = e.weakness, is_boss = e.is_boss, alive = e.hp > 0, skill = e.skill}
 	end
-	send_gui("sync_enemies", {enemies = enemies_data, target = self.target_index})
+	send_gui("sync_enemies", {enemies = enemies_data, target = self.target_index, rebuild = full_rebuild})
 end
 
 local function count_alive(self)
@@ -41,16 +41,16 @@ local function count_alive(self)
 end
 
 local function next_alive_target(self)
-	-- If current target is dead, find next alive
 	if self.enemies[self.target_index] and self.enemies[self.target_index].hp > 0 then
-		return
+		return true
 	end
 	for i, e in ipairs(self.enemies) do
 		if e.hp > 0 then
 			self.target_index = i
-			return
+			return true
 		end
 	end
+	return false
 end
 
 local function start_wave(self)
@@ -58,7 +58,7 @@ local function start_wave(self)
 	self.target_index = 1
 	self.enemy_attack_index = 0
 	send_gui("set_phase", {text = "WAVE " .. self.current_wave .. " / " .. #self.waves})
-	sync_all_enemy_hp(self)
+	sync_all_enemy_hp(self, true)
 
 	-- Brief wave intro delay
 	self.phase = "wave_intro"
@@ -312,7 +312,7 @@ local FILL_BLANK_CONFIG = {
 		elo_offset = 50,
 		next_phase = CONSTANTS.PHASE_ANIMATE_ATTACK,
 		correct_dmg = function(self) return math.floor(CONSTANTS.BASE_DAMAGE * CONSTANTS.EXACT_MATCH_MULTIPLIER) end,
-		bail_dmg = function(self) return CONSTANTS.MIN_DAMAGE end,
+		bail_dmg = function(self) return CONSTANTS.BASE_DAMAGE end,
 		apply_correct = function(self, dmg)
 			local target = self.enemies[self.target_index]
 			target.hp = math.max(0, target.hp - dmg)

@@ -147,11 +147,11 @@ describe("fill_blank._generate_number_options", function()
 	it("handles correct=1 with small max_operand", function()
 		math.randomseed(42)
 		local opts = fill_blank._generate_number_options(1, 3)
-		assert.are.equal(3, #opts) -- only 1,2,3 possible
+		assert.are.equal(4, #opts) -- widened range ensures 4 options
 		local found = false
 		for _, v in ipairs(opts) do
 			if v == 1 then found = true end
-			assert.is_true(v >= 1 and v <= 3)
+			assert.is_true(v >= 1)
 		end
 		assert.is_true(found)
 	end)

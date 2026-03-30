@@ -114,14 +114,13 @@ function on_message(self, message_id, message, sender)
 
 	elseif message_id == hash("recovery_done") then
 		local healed = message.healed or 0
-		-- Restore battle with healed HP
-		if battle_state_backup then
+		if battle_state_backup and pending_level then
 			battle_state_backup.hero_hp = math.min(
 				battle_state_backup.hero_max_hp,
 				battle_state_backup.hero_hp + healed
 			)
 			pending_level = {
-				node_id = pending_level and pending_level.node_id,
+				node_id = pending_level.node_id,
 				difficulty = battle_state_backup.difficulty or 1,
 				skill = battle_state_backup.skill or "+",
 				restored_hp = battle_state_backup.hero_hp,

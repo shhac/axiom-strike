@@ -82,9 +82,11 @@ local SOLUTION_BUILDERS = {
 	end,
 
 	["/"] = function(target, max_operand)
-		local b = math.random(2, math.min(10, math.floor(max_operand / math.max(1, target))))
+		local b_max = math.floor(max_operand / math.max(1, target))
+		if b_max < 2 then return {target}, {} end
+		local b = math.random(2, math.min(10, b_max))
 		local a = target * b
-		if a > max_operand or b < 2 then return {target}, {} end
+		if a > max_operand then return {target}, {} end
 		return {a, b}, {"/"}
 	end,
 }

@@ -188,6 +188,9 @@ local function show_hint()
 	end
 end
 
+local NUM_TINT = vmath.vector4(0.6, 0.7, 1.0, 1)
+local OP_TINT = vmath.vector4(1.0, 0.8, 0.4, 1)
+
 local function clear_hints()
 	if hint_shown then
 		for i, nd in ipairs(number_tile_nodes) do
@@ -213,7 +216,9 @@ local function clear_hints()
 	end
 	hint_shown = false
 	idle_timer = 0
-	-- Invalidate cached path so it recomputes on next hint
+end
+
+local function invalidate_hint_cache()
 	hint_path = nil
 	hint_path_step = 0
 end
@@ -425,7 +430,6 @@ local function create_scene()
 	gui.set_color(mouth, vmath.vector4(0.75, 0.4, 0.35, 1))
 	scene_nodes[#scene_nodes + 1] = mouth
 
-	-- Idle bob on body parts
 	for _, n in ipairs(scene_nodes) do
 		bob(n, gui.get_position(n).y, 4, 1.8)
 	end
@@ -598,9 +602,6 @@ local function update_equation_display()
 	end
 end
 
-local NUM_TINT = vmath.vector4(0.6, 0.7, 1.0, 1)
-local OP_TINT = vmath.vector4(1.0, 0.8, 0.4, 1)
-
 local function dim_tile(nd) gui.set_color(nd.box, vmath.vector4(0.3, 0.3, 0.35, 0.4)); gui.set_color(nd.text, C.tile_used_t) end
 local function restore_tile(nd, is_num) gui.set_color(nd.box, is_num and NUM_TINT or OP_TINT); gui.set_color(nd.text, C.tile_text) end
 
@@ -611,11 +612,13 @@ local function clear_equation()
 		elseif prefix == "op" and operator_tile_nodes[idx] then restore_tile(operator_tile_nodes[idx], false) end
 	end
 	tile_used = {}; equation_tokens = {}; expecting_number = true
+	invalidate_hint_cache()
 	update_equation_display(); gui.set_text(gui.get_node("closeness_label"), "")
 end
 
 local function undo_last()
 	if #equation_tokens == 0 then return end
+	invalidate_hint_cache()
 	local tok = table.remove(equation_tokens)
 	if type(tok) == "number" then
 		for i = #number_tile_nodes, 1, -1 do
@@ -679,31 +682,32 @@ local function create_single_enemy(e, x, is_target, bob_offset)
 	gui.set_scale(op_sym, vmath.vector3(0.8, 0.8, 1))
 	gui.set_color(op_sym, alive and vmath.vector4(1, 1, 1, 0.5) or C.enemy_dead)
 
-	local badge = gui.new_box_node(vmath.vector3(x, ENEMY_Y + h/2 + 16, 0), vmath.vector3(38, 22, 0))
+	local badge = gui.new_box_node(vmath.vector3(x, ENEMY_Y + h/2 + 20, 0), vmath.vector3(48, 28, 0))
 	gui.set_color(badge, is_target and C.badge_gold or (alive and C.badge_red or C.enemy_dead))
-	local wtext = gui.new_text_node(vmath.vector3(x, ENEMY_Y + h/2 + 16, 0), tostring(e.weakness))
+	local wtext = gui.new_text_node(vmath.vector3(x, ENEMY_Y + h/2 + 20, 0), tostring(e.weakness))
 	gui.set_font(wtext, "game_font")
-	gui.set_scale(wtext, vmath.vector3(0.85, 0.85, 1))
+	gui.set_scale(wtext, vmath.vector3(1.0, 1.0, 1))
 	gui.set_color(wtext, alive and C.white or C.tile_used_t)
 
 	local arrow
 	if is_target then
-		arrow = gui.new_text_node(vmath.vector3(x, ENEMY_Y + h/2 + 36, 0), "v")
+		arrow = gui.new_text_node(vmath.vector3(x, ENEMY_Y + h/2 + 44, 0), "v")
 		gui.set_font(arrow, "game_font")
-		gui.set_scale(arrow, vmath.vector3(1.1, 1.1, 1))
+		gui.set_scale(arrow, vmath.vector3(1.4, 1.4, 1))
 		gui.set_color(arrow, C.gold)
-		bob(arrow, ENEMY_Y + h/2 + 36, 5, 0.6)
+		bob(arrow, ENEMY_Y + h/2 + 44, 5, 0.6)
 	end
 
 	local en = {
 		body = body, belly = belly, el = el, pl = pl, er = er, pr = pr,
 		mouth = mouth, op_sym = op_sym, badge = badge, wtext = wtext, arrow = arrow,
-		alive = alive,
+		alive = alive, body_color = ec.body,
 	}
 
 	if alive then
-		local all_parts = {body, belly, el, pl, er, pr, mouth, op_sym, badge, wtext}
-		for _, n in ipairs(all_parts) do bob(n, gui.get_position(n).y, 3, bob_offset) end
+		for _, n in ipairs({body, belly, el, pl, er, pr, mouth, op_sym, badge, wtext}) do
+			bob(n, gui.get_position(n).y, 3, bob_offset)
+		end
 	end
 
 	return en
@@ -717,6 +721,48 @@ local function create_enemy_nodes(enemies, target_index)
 	for i, e in ipairs(enemies) do
 		local x = ENEMY_START_X + (i - 1) * ENEMY_GAP
 		enemy_nodes[i] = create_single_enemy(e, x, i == target_index and e.alive, 1.5 + i * 0.3)
+	end
+end
+
+local function update_enemy_visuals(enemies, target_index)
+	if #enemy_nodes ~= #enemies then
+		create_enemy_nodes(enemies, target_index)
+		return
+	end
+	if enemies[target_index] then
+		update_enemy_hud(enemies[target_index].hp, enemies[target_index].max_hp)
+	end
+	for i, e in ipairs(enemies) do
+		local en = enemy_nodes[i]
+		if not en then break end
+		local alive = e.alive
+		local is_target = (i == target_index and alive)
+		local ec = ENEMY_COLORS[e.skill or "+"] or ENEMY_COLORS["+"]
+		-- Update body color for alive/dead
+		gui.set_color(en.body, alive and ec.body or C.enemy_dead)
+		gui.set_color(en.belly, alive and ec.dark or C.enemy_dead)
+		gui.set_color(en.el, alive and C.enemy_eye or C.enemy_dead)
+		gui.set_color(en.pl, alive and C.enemy_pupil or C.enemy_dead)
+		gui.set_color(en.er, alive and C.enemy_eye or C.enemy_dead)
+		gui.set_color(en.pr, alive and C.enemy_pupil or C.enemy_dead)
+		gui.set_color(en.mouth, alive and vmath.vector4(ec.dark.x * 0.5, ec.dark.y * 0.5, ec.dark.z * 0.5, 1) or C.enemy_dead)
+		gui.set_color(en.op_sym, alive and vmath.vector4(1, 1, 1, 0.5) or C.enemy_dead)
+		-- Update badge
+		gui.set_color(en.badge, is_target and C.badge_gold or (alive and C.badge_red or C.enemy_dead))
+		gui.set_text(en.wtext, tostring(e.weakness))
+		gui.set_color(en.wtext, alive and C.white or C.tile_used_t)
+		-- Update target arrow visibility
+		if en.arrow then
+			gui.set_color(en.arrow, is_target and C.gold or vmath.vector4(0, 0, 0, 0))
+		end
+		-- Cancel bob on dead enemies to free animation slots
+		if not alive and en.alive then
+			for _, key in ipairs({"body", "belly", "el", "pl", "er", "pr", "mouth", "op_sym", "badge", "wtext"}) do
+				if en[key] then gui.cancel_animation(en[key], "position.y") end
+			end
+		end
+		en.alive = alive
+		en.body_color = ec.body
 	end
 end
 
@@ -860,6 +906,15 @@ function final(self)
 	if target_bg then gui.cancel_animations(target_bg) end
 	if target_text then gui.cancel_animations(target_text) end
 	if enemy_hp_fill then gui.cancel_animations(enemy_hp_fill) end
+	-- Nil all module-level HUD refs so next proxy load recreates them
+	banner_bg = nil; banner_text = nil; wave_text = nil
+	target_bg = nil; target_text = nil; target_label = nil
+	enemy_hp_bg = nil; enemy_hp_fill = nil; enemy_hp_text = nil
+	self_pause_btn = nil; pause_nodes = {}
+	current_target = 0; hint_path = nil; hint_path_step = 0
+	idle_timer = 0; hint_shown = false
+	fill_blank_mode = false; fill_blank_nodes = {}; fill_blank_options = {}
+	fill_blank_display_node = nil
 end
 
 function update(self, dt)
@@ -881,6 +936,7 @@ local function handle_deal_tiles(self, message)
 	number_tile_values = message.numbers or {}
 	operator_tile_values = message.operators or {}
 	tile_used = {}; equation_tokens = {}; expecting_number = true
+	invalidate_hint_cache()
 	create_tile_nodes(); update_equation_display()
 	gui.set_text(gui.get_node("closeness_label"), "")
 	input_enabled = true
@@ -918,7 +974,7 @@ local function handle_enemy_hit(self, message)
 	sfx.play("attack_hit")
 	local idx = message.index
 	if enemy_nodes[idx] then
-		flash_white(enemy_nodes[idx].body, C.enemy_body)
+		flash_white(enemy_nodes[idx].body, enemy_nodes[idx].body_color or C.enemy_body)
 		shake(enemy_nodes[idx].body)
 		pop(enemy_nodes[idx].body, 1.15, 0.2)
 	end
@@ -992,7 +1048,9 @@ local msg_handlers = {
 	[hash("deal_tiles")]            = handle_deal_tiles,
 	[hash("set_phase")]             = handle_set_phase,
 	[hash("update_hero_hp")]        = handle_update_hero_hp,
-	[hash("sync_enemies")]          = function(self, m) create_enemy_nodes(m.enemies, m.target) end,
+	[hash("sync_enemies")]          = function(self, m)
+		if m.rebuild then create_enemy_nodes(m.enemies, m.target) else update_enemy_visuals(m.enemies, m.target) end
+	end,
 	[hash("highlight_attacker")]    = handle_highlight_attacker,
 	[hash("enemy_hit")]             = handle_enemy_hit,
 	[hash("hero_hit")]              = handle_hero_hit,
@@ -1070,7 +1128,7 @@ local function handle_tile_input(self, action)
 				sfx.play("tile_tap")
 				tile_used["num_" .. i] = true; pop(nd.box, 1.2, 0.15); dim_tile(nd)
 				equation_tokens[#equation_tokens + 1] = number_tile_values[i]; expecting_number = false
-				update_equation_display(); return true
+				invalidate_hint_cache(); update_equation_display(); return true
 			end
 		end
 	else
@@ -1079,7 +1137,7 @@ local function handle_tile_input(self, action)
 				sfx.play("tile_tap")
 				tile_used["op_" .. i] = true; pop(nd.box, 1.2, 0.15); dim_tile(nd)
 				equation_tokens[#equation_tokens + 1] = operator_tile_values[i]; expecting_number = true
-				update_equation_display(); return true
+				invalidate_hint_cache(); update_equation_display(); return true
 			end
 		end
 	end

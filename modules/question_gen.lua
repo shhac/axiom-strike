@@ -45,6 +45,19 @@ function M.generate_weakness(player_elo, skill)
 			weakness = math.random(params.min_target, params.max_target)
 			attempts = attempts + 1
 		end
+		-- Fallback: clamp to nearest factorable value
+		if not util.has_factor_pair(weakness, params.max_operand) then
+			for offset = 1, params.max_target do
+				local candidate = weakness + offset
+				if candidate <= params.max_target and util.has_factor_pair(candidate, params.max_operand) then
+					weakness = candidate; break
+				end
+				candidate = weakness - offset
+				if candidate >= params.min_target and util.has_factor_pair(candidate, params.max_operand) then
+					weakness = candidate; break
+				end
+			end
+		end
 	end
 
 	-- For division, ensure the weakness is achievable
