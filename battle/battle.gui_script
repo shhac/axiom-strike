@@ -640,7 +640,9 @@ end
 
 local function destroy_enemy_nodes()
 	for _, en in ipairs(enemy_nodes) do
-		for _, node in pairs(en) do if type(node) == "userdata" then safe_delete(node) end end
+		for _, node in pairs(en) do
+			if type(node) == "userdata" then pcall(safe_delete, node) end
+		end
 	end
 	enemy_nodes = {}
 end
@@ -997,10 +999,12 @@ end
 local function handle_enemy_hit(self, message)
 	sfx.play("attack_hit")
 	local idx = message.index
-	if enemy_nodes[idx] then
-		flash_white(enemy_nodes[idx].body, enemy_nodes[idx].body_color or C.enemy_body)
-		shake(enemy_nodes[idx].body)
-		pop(enemy_nodes[idx].body, 1.15, 0.2)
+	local en = enemy_nodes[idx]
+	if en then
+		local restore_color = en.alive and (en.body_color or C.enemy_body) or C.enemy_dead
+		flash_white(en.body, restore_color)
+		shake(en.body)
+		pop(en.body, 1.15, 0.2)
 	end
 end
 
