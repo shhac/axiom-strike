@@ -115,7 +115,7 @@ function on_input(self, action_id, action)
 			if settings_hold_time < SETTINGS_HOLD_DURATION then
 				gui.set_text(gui.get_node("btn_settings_text"), "HOLD 1s")
 				timer.delay(1.5, false, function()
-					gui.set_text(gui.get_node("btn_settings_text"), "SETTINGS")
+					pcall(function() gui.set_text(gui.get_node("btn_settings_text"), "SETTINGS") end)
 				end)
 			end
 			settings_hold_time = 0

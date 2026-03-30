@@ -12,6 +12,7 @@ local hero_hp = 0
 local hero_max_hp = 100
 local streak_count = 0
 local healed_amount = 0
+local last_displayed_sec = -1
 
 local function pop(node)
 	gui_util.pop(node)
@@ -121,6 +122,10 @@ function init(self)
 	timer_remaining = READING_TIME
 	streak_count = 0
 	healed_amount = 0
+	current_passage = nil
+	current_answers = nil
+	last_displayed_sec = -1
+	destroy_answer_nodes()
 end
 
 function on_message(self, message_id, message, sender)
@@ -140,6 +145,7 @@ function on_message(self, message_id, message, sender)
 
 		phase = "reading"
 		timer_remaining = READING_TIME
+		streak_count = 0
 	end
 end
 
@@ -151,10 +157,13 @@ function update(self, dt)
 			show_question()
 		end
 
-		local secs = math.ceil(timer_remaining)
-		local mins = math.floor(secs / 60)
-		secs = secs % 60
-		gui.set_text(gui.get_node("timer_text"), string.format("%d:%02d", mins, secs))
+		local ceil_sec = math.ceil(timer_remaining)
+		if ceil_sec ~= last_displayed_sec then
+			last_displayed_sec = ceil_sec
+			local mins = math.floor(ceil_sec / 60)
+			local secs = ceil_sec % 60
+			gui.set_text(gui.get_node("timer_text"), string.format("%d:%02d", mins, secs))
+		end
 
 		local progress = 1 - (timer_remaining / READING_TIME)
 		gui.set_size(gui.get_node("timer_bar_fill"), vmath.vector3(200 * progress, 6, 0))

@@ -92,7 +92,7 @@ nodes {
   position { x: 640.0 y: 460.0 z: 0.0 w: 1.0 }
   rotation { x: 0.0 y: 0.0 z: 0.0 w: 1.0 }
   scale { x: 1.0 y: 1.0 z: 1.0 w: 1.0 }
-  size { x: 1050.0 y: 340.0 z: 0.0 w: 1.0 }
+  size { x: 1100.0 y: 380.0 z: 0.0 w: 1.0 }
   color { x: 0.4 y: 0.45 z: 0.55 w: 1.0 }
   type: TYPE_BOX
   texture: "ui/btn_dark"
@@ -119,7 +119,7 @@ nodes {
   position { x: 640.0 y: 460.0 z: 0.0 w: 1.0 }
   rotation { x: 0.0 y: 0.0 z: 0.0 w: 1.0 }
   scale { x: 0.95 y: 0.95 z: 1.0 w: 1.0 }
-  size { x: 980.0 y: 320.0 z: 0.0 w: 1.0 }
+  size { x: 920.0 y: 320.0 z: 0.0 w: 1.0 }
   color { x: 0.9 y: 0.88 z: 0.8 w: 1.0 }
   type: TYPE_TEXT
   text: ""

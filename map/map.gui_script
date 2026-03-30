@@ -14,8 +14,8 @@ local SCROLL_OFFSET_X = 0
 local function destroy_map_nodes()
 	for _, n in ipairs(node_buttons) do
 		gui_util.safe_delete(n.circle)
-		gui.delete_node(n.text)
-		if n.stars then gui.delete_node(n.stars) end
+		gui_util.safe_delete(n.text)
+		if n.stars then gui_util.safe_delete(n.stars) end
 	end
 	for _, n in ipairs(path_lines) do gui.delete_node(n) end
 	for _, n in ipairs(region_labels) do gui.delete_node(n) end
