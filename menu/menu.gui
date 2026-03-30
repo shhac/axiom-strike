@@ -15,362 +15,200 @@ textures {
   name: "ui"
   texture: "/assets/images/ui/ui.atlas"
 }
-background_color {
-  x: 0.05
-  y: 0.03
-  z: 0.1
-  w: 1.0
-}
 nodes {
   position {
     x: 640.0
     y: 480.0
-    z: 0.0
-    w: 1.0
-  }
-  rotation {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
   }
   scale {
     x: 2.5
     y: 2.5
-    z: 1.0
-    w: 1.0
   }
   size {
     x: 400.0
     y: 40.0
-    z: 0.0
-    w: 1.0
   }
   color {
-    x: 1.0
     y: 0.867
     z: 0.267
-    w: 1.0
   }
   type: TYPE_TEXT
   text: "AXIOM STRIKE"
   font: "game_font"
   id: "title"
-  pivot: PIVOT_CENTER
   outline {
     x: 0.3
     y: 0.1
-    z: 0.0
-    w: 1.0
-  }
-  shadow {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 0.0
   }
   inherit_alpha: true
+  shadow_alpha: 0.0
 }
 nodes {
   position {
     x: 640.0
     y: 400.0
-    z: 0.0
-    w: 1.0
-  }
-  rotation {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
   }
   scale {
     x: 0.9
     y: 0.9
-    z: 1.0
-    w: 1.0
   }
   size {
     x: 400.0
     y: 24.0
-    z: 0.0
-    w: 1.0
   }
   color {
     x: 0.5
     y: 0.4
     z: 0.7
-    w: 1.0
   }
   type: TYPE_TEXT
   text: "Math is your weapon"
   font: "game_font"
   id: "subtitle"
-  pivot: PIVOT_CENTER
-  outline {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 0.0
-  }
-  shadow {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 0.0
-  }
   inherit_alpha: true
+  outline_alpha: 0.0
+  shadow_alpha: 0.0
 }
 nodes {
   position {
     x: 640.0
     y: 280.0
-    z: 0.0
-    w: 1.0
-  }
-  rotation {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
-  }
-  scale {
-    x: 1.0
-    y: 1.0
-    z: 1.0
-    w: 1.0
   }
   size {
     x: 240.0
     y: 64.0
-    z: 0.0
-    w: 1.0
   }
   color {
     x: 0.267
     y: 0.8
     z: 0.4
-    w: 1.0
   }
   type: TYPE_BOX
   texture: "ui/btn_ornate"
   id: "btn_play"
-  pivot: PIVOT_CENTER
-  size_mode: SIZE_MODE_MANUAL
 }
 nodes {
   position {
     x: 640.0
     y: 280.0
-    z: 0.0
-    w: 1.0
-  }
-  rotation {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
   }
   scale {
     x: 1.3
     y: 1.3
-    z: 1.0
-    w: 1.0
   }
   size {
     x: 200.0
     y: 30.0
-    z: 0.0
-    w: 1.0
-  }
-  color {
-    x: 1.0
-    y: 1.0
-    z: 1.0
-    w: 1.0
   }
   type: TYPE_TEXT
   text: "PLAY"
   font: "game_font"
   id: "btn_play_text"
-  pivot: PIVOT_CENTER
-  outline {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
-  }
-  shadow {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 0.0
-  }
   inherit_alpha: true
+  shadow_alpha: 0.0
 }
 nodes {
   position {
     x: 640.0
     y: 80.0
-    z: 0.0
-    w: 1.0
-  }
-  rotation {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
   }
   scale {
     x: 0.7
     y: 0.7
-    z: 1.0
-    w: 1.0
   }
   size {
     x: 400.0
     y: 20.0
-    z: 0.0
-    w: 1.0
   }
   color {
     x: 0.3
     y: 0.25
     z: 0.45
-    w: 1.0
   }
   type: TYPE_TEXT
   text: "v0.1.0"
   font: "game_font"
   id: "version"
-  pivot: PIVOT_CENTER
-  outline {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 0.0
-  }
-  shadow {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 0.0
-  }
   inherit_alpha: true
+  outline_alpha: 0.0
+  shadow_alpha: 0.0
 }
 nodes {
   position {
     x: 640.0
     y: 190.0
-    z: 0.0
-    w: 1.0
-  }
-  rotation {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
-  }
-  scale {
-    x: 1.0
-    y: 1.0
-    z: 1.0
-    w: 1.0
   }
   size {
     x: 180.0
     y: 50.0
-    z: 0.0
-    w: 1.0
   }
   color {
     x: 0.267
     y: 0.2
     z: 0.333
-    w: 1.0
   }
   type: TYPE_BOX
   texture: "ui/btn_dark"
   id: "btn_settings"
-  pivot: PIVOT_CENTER
-  size_mode: SIZE_MODE_MANUAL
 }
 nodes {
   position {
     x: 640.0
     y: 190.0
-    z: 0.0
-    w: 1.0
-  }
-  rotation {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
-  }
-  scale {
-    x: 1.0
-    y: 1.0
-    z: 1.0
-    w: 1.0
   }
   size {
     x: 200.0
     y: 30.0
-    z: 0.0
-    w: 1.0
   }
   color {
     x: 0.667
     y: 0.667
     z: 0.8
-    w: 1.0
   }
   type: TYPE_TEXT
   text: "SETTINGS"
   font: "game_font"
   id: "btn_settings_text"
-  pivot: PIVOT_CENTER
-  outline {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
-  }
-  shadow {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 0.0
-  }
   inherit_alpha: true
+  shadow_alpha: 0.0
 }
 nodes {
-  position { x: 1150.0 y: 45.0 z: 0.0 w: 1.0 }
-  rotation { x: 0.0 y: 0.0 z: 0.0 w: 1.0 }
-  scale { x: 1.0 y: 1.0 z: 1.0 w: 1.0 }
-  size { x: 200.0 y: 45.0 z: 0.0 w: 1.0 }
-  color { x: 0.5 y: 0.4 z: 0.7 w: 1.0 }
+  position {
+    x: 1150.0
+    y: 45.0
+  }
+  size {
+    x: 200.0
+    y: 45.0
+  }
+  color {
+    x: 0.5
+    y: 0.4
+    z: 0.7
+  }
   type: TYPE_BOX
   texture: "ui/btn_dark"
   id: "btn_collection"
-  pivot: PIVOT_CENTER
-  size_mode: SIZE_MODE_MANUAL
 }
 nodes {
-  position { x: 1150.0 y: 45.0 z: 0.0 w: 1.0 }
-  rotation { x: 0.0 y: 0.0 z: 0.0 w: 1.0 }
-  scale { x: 0.85 y: 0.85 z: 1.0 w: 1.0 }
-  size { x: 300.0 y: 24.0 z: 0.0 w: 1.0 }
-  color { x: 1.0 y: 1.0 z: 1.0 w: 1.0 }
+  position {
+    x: 1150.0
+    y: 45.0
+  }
+  scale {
+    x: 0.85
+    y: 0.85
+  }
+  size {
+    x: 300.0
+    y: 24.0
+  }
   type: TYPE_TEXT
   text: "COLLECTION"
   font: "game_font"
   id: "btn_collection_text"
-  pivot: PIVOT_CENTER
-  outline { x: 0.0 y: 0.0 z: 0.0 w: 1.0 }
-  shadow { x: 0.0 y: 0.0 z: 0.0 w: 0.0 }
   inherit_alpha: true
+  shadow_alpha: 0.0
 }
 material: "/builtins/materials/gui.material"
 adjust_reference: ADJUST_REFERENCE_PARENT
