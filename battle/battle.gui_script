@@ -654,58 +654,81 @@ local ENEMY_COLORS = {
 
 local function create_single_enemy(e, x, is_target, bob_offset)
 	local alive = e.alive
-	local w = e.is_boss and 90 or 72
-	local h = e.is_boss and 100 or 82
 	local ec = ENEMY_COLORS[e.skill or "+"] or ENEMY_COLORS["+"]
 
-	local body = gui.new_box_node(vmath.vector3(x, ENEMY_Y, 0), vmath.vector3(w, h, 0))
+	-- Dimensions: body + separate head (mirrors hero structure)
+	local bw = e.is_boss and 80 or 64
+	local bh = e.is_boss and 70 or 56
+	local hw = e.is_boss and 60 or 48
+	local hh = e.is_boss and 52 or 42
+
+	-- Body (torso) — lower portion
+	local body_y = ENEMY_Y
+	local body = gui.new_box_node(vmath.vector3(x, body_y, 0), vmath.vector3(bw, bh, 0))
 	gui.set_color(body, alive and ec.body or C.enemy_dead)
 
-	local belly = gui.new_box_node(vmath.vector3(x, ENEMY_Y - 8, 0), vmath.vector3(w - 12, h * 0.4, 0))
+	-- Belly patch on body
+	local belly = gui.new_box_node(vmath.vector3(x, body_y - 4, 0), vmath.vector3(bw - 10, bh * 0.4, 0))
 	gui.set_color(belly, alive and ec.dark or C.enemy_dead)
 
-	local ew, eh = e.is_boss and 14 or 11, e.is_boss and 16 or 12
-	local el = gui.new_box_node(vmath.vector3(x - w * 0.2, ENEMY_Y + h * 0.14, 0), vmath.vector3(ew, eh, 0))
-	gui.set_color(el, alive and C.enemy_eye or C.enemy_dead)
-	local pl = gui.new_box_node(vmath.vector3(x - w * 0.2 + 1, ENEMY_Y + h * 0.11, 0), vmath.vector3(ew * 0.55, eh * 0.6, 0))
-	gui.set_color(pl, alive and C.enemy_pupil or C.enemy_dead)
-	local er = gui.new_box_node(vmath.vector3(x + w * 0.2, ENEMY_Y + h * 0.14, 0), vmath.vector3(ew, eh, 0))
-	gui.set_color(er, alive and C.enemy_eye or C.enemy_dead)
-	local pr = gui.new_box_node(vmath.vector3(x + w * 0.2 + 1, ENEMY_Y + h * 0.11, 0), vmath.vector3(ew * 0.55, eh * 0.6, 0))
-	gui.set_color(pr, alive and C.enemy_pupil or C.enemy_dead)
-
-	local mouth = gui.new_box_node(vmath.vector3(x, ENEMY_Y - h * 0.08, 0), vmath.vector3(e.is_boss and 28 or 18, 5, 0))
-	gui.set_color(mouth, alive and vmath.vector4(ec.dark.x * 0.5, ec.dark.y * 0.5, ec.dark.z * 0.5, 1) or C.enemy_dead)
-
-	local op_sym = gui.new_text_node(vmath.vector3(x, ENEMY_Y - 14, 0), e.skill or "+")
+	-- Operation symbol on belly
+	local op_sym = gui.new_text_node(vmath.vector3(x, body_y - 8, 0), e.skill or "+")
 	gui.set_font(op_sym, "game_font")
 	gui.set_scale(op_sym, vmath.vector3(0.8, 0.8, 1))
 	gui.set_color(op_sym, alive and vmath.vector4(1, 1, 1, 0.5) or C.enemy_dead)
 
-	local badge = gui.new_box_node(vmath.vector3(x, ENEMY_Y + h/2 + 20, 0), vmath.vector3(48, 28, 0))
+	-- Head — sits on top of body
+	local head_y = body_y + bh/2 + hh/2 - 4
+	local head = gui.new_box_node(vmath.vector3(x, head_y, 0), vmath.vector3(hw, hh, 0))
+	gui.set_color(head, alive and ec.body or C.enemy_dead)
+
+	-- Eyes on head
+	local ew, eh = e.is_boss and 13 or 10, e.is_boss and 14 or 11
+	local eye_y = head_y + hh * 0.1
+	local eye_spread = hw * 0.22
+	local el = gui.new_box_node(vmath.vector3(x - eye_spread, eye_y, 0), vmath.vector3(ew, eh, 0))
+	gui.set_color(el, alive and C.enemy_eye or C.enemy_dead)
+	local pl = gui.new_box_node(vmath.vector3(x - eye_spread + 1, eye_y - 1, 0), vmath.vector3(ew * 0.55, eh * 0.6, 0))
+	gui.set_color(pl, alive and C.enemy_pupil or C.enemy_dead)
+	local er = gui.new_box_node(vmath.vector3(x + eye_spread, eye_y, 0), vmath.vector3(ew, eh, 0))
+	gui.set_color(er, alive and C.enemy_eye or C.enemy_dead)
+	local pr = gui.new_box_node(vmath.vector3(x + eye_spread + 1, eye_y - 1, 0), vmath.vector3(ew * 0.55, eh * 0.6, 0))
+	gui.set_color(pr, alive and C.enemy_pupil or C.enemy_dead)
+
+	-- Mouth on head
+	local mouth = gui.new_box_node(vmath.vector3(x, head_y - hh * 0.2, 0), vmath.vector3(e.is_boss and 24 or 16, 4, 0))
+	gui.set_color(mouth, alive and vmath.vector4(ec.dark.x * 0.5, ec.dark.y * 0.5, ec.dark.z * 0.5, 1) or C.enemy_dead)
+
+	-- Weakness badge above head
+	local badge_y = head_y + hh/2 + 18
+	local badge = gui.new_box_node(vmath.vector3(x, badge_y, 0), vmath.vector3(48, 28, 0))
 	gui.set_color(badge, is_target and C.badge_gold or (alive and C.badge_red or C.enemy_dead))
-	local wtext = gui.new_text_node(vmath.vector3(x, ENEMY_Y + h/2 + 20, 0), tostring(e.weakness))
+	local wtext = gui.new_text_node(vmath.vector3(x, badge_y, 0), tostring(e.weakness))
 	gui.set_font(wtext, "game_font")
 	gui.set_scale(wtext, vmath.vector3(1.0, 1.0, 1))
 	gui.set_color(wtext, alive and C.white or C.tile_used_t)
 
+	-- Target arrow above badge
 	local arrow
 	if is_target then
-		arrow = gui.new_text_node(vmath.vector3(x, ENEMY_Y + h/2 + 44, 0), "v")
+		local arrow_y = badge_y + 24
+		arrow = gui.new_text_node(vmath.vector3(x, arrow_y, 0), "v")
 		gui.set_font(arrow, "game_font")
 		gui.set_scale(arrow, vmath.vector3(1.4, 1.4, 1))
 		gui.set_color(arrow, C.gold)
-		bob(arrow, ENEMY_Y + h/2 + 44, 5, 0.6)
+		bob(arrow, arrow_y, 5, 0.6)
 	end
 
+	local all_parts = {body, belly, op_sym, head, el, pl, er, pr, mouth, badge, wtext}
 	local en = {
-		body = body, belly = belly, el = el, pl = pl, er = er, pr = pr,
+		body = body, belly = belly, head = head,
+		el = el, pl = pl, er = er, pr = pr,
 		mouth = mouth, op_sym = op_sym, badge = badge, wtext = wtext, arrow = arrow,
 		alive = alive, body_color = ec.body,
 	}
 
 	if alive then
-		for _, n in ipairs({body, belly, el, pl, er, pr, mouth, op_sym, badge, wtext}) do
+		for _, n in ipairs(all_parts) do
 			bob(n, gui.get_position(n).y, 3, bob_offset)
 		end
 	end
@@ -741,6 +764,7 @@ local function update_enemy_visuals(enemies, target_index)
 		-- Update body color for alive/dead
 		gui.set_color(en.body, alive and ec.body or C.enemy_dead)
 		gui.set_color(en.belly, alive and ec.dark or C.enemy_dead)
+		if en.head then gui.set_color(en.head, alive and ec.body or C.enemy_dead) end
 		gui.set_color(en.el, alive and C.enemy_eye or C.enemy_dead)
 		gui.set_color(en.pl, alive and C.enemy_pupil or C.enemy_dead)
 		gui.set_color(en.er, alive and C.enemy_eye or C.enemy_dead)
@@ -757,7 +781,7 @@ local function update_enemy_visuals(enemies, target_index)
 		end
 		-- Cancel bob on dead enemies to free animation slots
 		if not alive and en.alive then
-			for _, key in ipairs({"body", "belly", "el", "pl", "er", "pr", "mouth", "op_sym", "badge", "wtext"}) do
+			for _, key in ipairs({"body", "belly", "head", "el", "pl", "er", "pr", "mouth", "op_sym", "badge", "wtext"}) do
 				if en[key] then gui.cancel_animation(en[key], "position.y") end
 			end
 		end
