@@ -41,10 +41,10 @@ local function save_settings(self)
 	})
 end
 
+local gui_util = require("modules.gui_util")
+
 local function pop(node)
-	local s = gui.get_scale(node)
-	gui.set_scale(node, vmath.vector3(s.x * 1.15, s.y * 1.15, 1))
-	gui.animate(node, gui.PROP_SCALE, s, gui.EASING_OUTBACK, 0.2)
+	gui_util.pop(node)
 end
 
 function on_input(self, action_id, action)

@@ -20,6 +20,11 @@ if not sys then
 	}
 end
 
+-- Lua 5.3+ moved unpack to table.unpack; Defold (LuaJIT) provides it as a global
+if not unpack then
+	unpack = table.unpack
+end
+
 -- Add project root to package path so require("modules.foo") works
 local script_dir = debug.getinfo(1, "S").source:match("@(.*/)")
 local project_root = script_dir .. "../"

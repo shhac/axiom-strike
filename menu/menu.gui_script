@@ -1,14 +1,12 @@
 local sfx = require("modules.sfx")
+local gui_util = require("modules.gui_util")
 local bg_nodes = {}
 
 local function pop(node)
-	local s = gui.get_scale(node)
-	gui.set_scale(node, vmath.vector3(s.x * 0.9, s.y * 0.9, 1))
-	gui.animate(node, gui.PROP_SCALE, s, gui.EASING_OUTBACK, 0.25)
+	gui_util.pop(node, 0.9, 0.25)
 end
 
 local function create_background_trees()
-	-- Silhouette trees along bottom for atmosphere
 	local trees = {
 		{img = "tree_green",        x = 60,   y = 100, s = 5.0, a = 0.25},
 		{img = "pine_small_teal",   x = 200,  y = 80,  s = 4.0, a = 0.2},
@@ -18,15 +16,7 @@ local function create_background_trees()
 		{img = "pine_small_autumn", x = 1000, y = 85,  s = 4.0, a = 0.2},
 		{img = "tree_green",        x = 1150, y = 100, s = 5.5, a = 0.25},
 	}
-	for _, t in ipairs(trees) do
-		local node = gui.new_box_node(vmath.vector3(t.x, t.y, 0), vmath.vector3(16, 16, 0))
-		gui.set_texture(node, "bg")
-		gui.play_flipbook(node, hash(t.img))
-		gui.set_scale(node, vmath.vector3(t.s, t.s, 1))
-		gui.set_alpha(node, t.a)
-		gui.set_size_mode(node, gui.SIZE_MODE_AUTO)
-		bg_nodes[#bg_nodes + 1] = node
-	end
+	gui_util.create_bg_layer(trees, bg_nodes)
 end
 
 local function create_floating_symbols()
@@ -67,14 +57,9 @@ function init(self)
 end
 
 function final(self)
-	-- Cancel title pulse animation
 	local ok, title = pcall(gui.get_node, "title")
 	if ok and title then gui.cancel_animations(title) end
-	-- Cancel animations and delete dynamic nodes
-	for _, n in ipairs(bg_nodes) do
-		gui.cancel_animations(n)
-		gui.delete_node(n)
-	end
+	gui_util.destroy_nodes(bg_nodes)
 	bg_nodes = {}
 end
 

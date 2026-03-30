@@ -1,5 +1,6 @@
 local map_data = require("modules.map_data")
 local progress = require("modules.progress")
+local gui_util = require("modules.gui_util")
 
 local node_buttons = {}
 local path_lines = {}
@@ -12,17 +13,12 @@ local SCROLL_OFFSET_X = 0
 
 local function destroy_map_nodes()
 	for _, n in ipairs(node_buttons) do
-		gui.cancel_animations(n.circle)
-		gui.delete_node(n.circle)
+		gui_util.safe_delete(n.circle)
 		gui.delete_node(n.text)
 		if n.stars then gui.delete_node(n.stars) end
 	end
-	for _, n in ipairs(path_lines) do
-		gui.delete_node(n)
-	end
-	for _, n in ipairs(region_labels) do
-		gui.delete_node(n)
-	end
+	for _, n in ipairs(path_lines) do gui.delete_node(n) end
+	for _, n in ipairs(region_labels) do gui.delete_node(n) end
 	node_buttons = {}
 	path_lines = {}
 	region_labels = {}
@@ -124,19 +120,16 @@ local function build_map()
 end
 
 local function pop(node)
-	local s = gui.get_scale(node)
-	gui.set_scale(node, vmath.vector3(s.x * 1.2, s.y * 1.2, 1))
-	gui.animate(node, gui.PROP_SCALE, s, gui.EASING_OUTBACK, 0.2)
+	gui_util.pop(node, 1.2)
 end
 
 local function destroy_map_background()
-	for _, n in ipairs(map_bg_nodes) do gui.delete_node(n) end
+	gui_util.destroy_nodes(map_bg_nodes)
 	map_bg_nodes = {}
 end
 
 local function create_map_background()
 	destroy_map_background()
-
 	local trees = {
 		{img = "tree_green",        x = 40,   y = 100, s = 4.0, a = 0.2},
 		{img = "pine_small_teal",   x = 180,  y = 85,  s = 3.0, a = 0.15},
@@ -146,21 +139,12 @@ local function create_map_background()
 		{img = "tree_teal",         x = 950,  y = 100, s = 4.0, a = 0.2},
 		{img = "pine_small_autumn", x = 1100, y = 80,  s = 3.0, a = 0.15},
 		{img = "tree_green",        x = 1230, y = 95,  s = 4.5, a = 0.2},
-		-- Top edge too
 		{img = "pine_small_green",  x = 100,  y = 650, s = 3.0, a = 0.12},
 		{img = "tree_autumn",       x = 500,  y = 660, s = 3.5, a = 0.12},
 		{img = "bush_autumn",       x = 900,  y = 645, s = 2.5, a = 0.12},
 		{img = "tree_teal",         x = 1200, y = 655, s = 3.0, a = 0.12},
 	}
-	for _, t in ipairs(trees) do
-		local node = gui.new_box_node(vmath.vector3(t.x, t.y, 0), vmath.vector3(16, 16, 0))
-		gui.set_texture(node, "bg")
-		gui.play_flipbook(node, hash(t.img))
-		gui.set_scale(node, vmath.vector3(t.s, t.s, 1))
-		gui.set_alpha(node, t.a)
-		gui.set_size_mode(node, gui.SIZE_MODE_AUTO)
-		map_bg_nodes[#map_bg_nodes + 1] = node
-	end
+	gui_util.create_bg_layer(trees, map_bg_nodes)
 end
 
 function init(self)

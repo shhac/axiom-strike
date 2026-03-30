@@ -1,5 +1,6 @@
 local passages = require("modules.passages")
 local recovery_module = require("modules.recovery")
+local gui_util = require("modules.gui_util")
 
 local READING_TIME = 30
 local current_passage = nil
@@ -13,18 +14,13 @@ local streak_count = 0
 local healed_amount = 0
 
 local function pop(node)
-	gui.cancel_animation(node, gui.PROP_SCALE)
-	local s = gui.get_scale(node)
-	gui.set_scale(node, vmath.vector3(s.x * 1.15, s.y * 1.15, 1))
-	gui.animate(node, gui.PROP_SCALE, s, gui.EASING_OUTBACK, 0.2)
+	gui_util.pop(node)
 end
 
 local function destroy_answer_nodes()
 	for _, n in ipairs(answer_nodes) do
-		gui.cancel_animations(n.box)
-		gui.delete_node(n.box)
-		gui.cancel_animations(n.text)
-		gui.delete_node(n.text)
+		gui_util.safe_delete(n.box)
+		gui_util.safe_delete(n.text)
 	end
 	answer_nodes = {}
 end

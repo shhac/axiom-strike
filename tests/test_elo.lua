@@ -57,6 +57,57 @@ describe("elo.update", function()
 		local new_elo = elo.update(1000, 1000, true, 0, 5)
 		assert.is_true(new_elo > 1000)
 	end)
+
+	it("correct + fast (time<10) gives bigger boost than no time modifier", function()
+		local elo_fast = elo.update(1000, 1000, true, 5, 10)
+		local elo_none = elo.update(1000, 1000, true, nil, 10)
+		assert.is_true(elo_fast > elo_none)
+	end)
+
+	it("correct + slow (time>30) gives smaller boost than no time modifier", function()
+		local elo_slow = elo.update(1000, 1000, true, 35, 10)
+		local elo_none = elo.update(1000, 1000, true, nil, 10)
+		assert.is_true(elo_slow < elo_none)
+	end)
+
+	it("wrong + fast (time<5) gives smaller penalty than wrong with no time", function()
+		local elo_fast_wrong = elo.update(1000, 1000, false, 3, 10)
+		local elo_none_wrong = elo.update(1000, 1000, false, nil, 10)
+		-- Smaller penalty means higher resulting Elo
+		assert.is_true(elo_fast_wrong > elo_none_wrong)
+	end)
+
+	it("wrong + slow does not apply any time modifier", function()
+		local elo_slow_wrong = elo.update(1000, 1000, false, 35, 10)
+		local elo_none_wrong = elo.update(1000, 1000, false, nil, 10)
+		assert.are.equal(elo_slow_wrong, elo_none_wrong)
+	end)
+end)
+
+describe("elo.k_factor", function()
+	it("returns K_INITIAL at 0 attempts", function()
+		assert.are.equal(elo.K_INITIAL, elo.k_factor(0))
+	end)
+
+	it("decreases with more attempts", function()
+		local k0 = elo.k_factor(0)
+		local k10 = elo.k_factor(10)
+		local k100 = elo.k_factor(100)
+		assert.is_true(k0 > k10)
+		assert.is_true(k10 > k100)
+	end)
+
+	it("approaches K_STEADY for very high attempts", function()
+		local k_high = elo.k_factor(10000)
+		assert.is_true(k_high < elo.K_INITIAL)
+		assert.is_true(k_high > 0)
+	end)
+
+	it("follows the formula K_INITIAL / (1 + K_DECAY * attempts)", function()
+		local attempts = 20
+		local expected = elo.K_INITIAL / (1 + elo.K_DECAY * attempts)
+		assert.is_near(expected, elo.k_factor(attempts), 0.001)
+	end)
 end)
 
 describe("elo.select_difficulty", function()

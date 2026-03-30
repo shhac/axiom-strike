@@ -1,20 +1,19 @@
 local collectibles = require("modules.collectibles")
 local progress = require("modules.progress")
 local sfx = require("modules.sfx")
+local gui_util = require("modules.gui_util")
 
 local item_nodes = {}
 local save_data = nil
 
 local function pop(node)
-	local s = gui.get_scale(node)
-	gui.set_scale(node, vmath.vector3(s.x * 1.15, s.y * 1.15, 1))
-	gui.animate(node, gui.PROP_SCALE, s, gui.EASING_OUTBACK, 0.2)
+	gui_util.pop(node)
 end
 
 local function build_items()
 	for _, n in ipairs(item_nodes) do
 		for _, node in pairs(n) do
-			if type(node) == "userdata" then gui.delete_node(node) end
+			if type(node) == "userdata" then gui_util.safe_delete(node) end
 		end
 	end
 	item_nodes = {}
