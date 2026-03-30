@@ -23,9 +23,21 @@ game_binding = /input/game.input_bindingc
 
 [android]
 package = com.axiomstrike.game
+app_icon_36x36 = /icons/android/icon_36.png
+app_icon_48x48 = /icons/android/icon_48.png
+app_icon_72x72 = /icons/android/icon_72.png
+app_icon_96x96 = /icons/android/icon_96.png
+app_icon_144x144 = /icons/android/icon_144.png
+app_icon_192x192 = /icons/android/icon_192.png
 
 [ios]
 bundle_identifier = com.axiomstrike.game
+app_icon_76x76 = /icons/ios/icon_76.png
+app_icon_120x120 = /icons/ios/icon_120.png
+app_icon_152x152 = /icons/ios/icon_152.png
+app_icon_167x167 = /icons/ios/icon_167.png
+app_icon_180x180 = /icons/ios/icon_180.png
+app_icon_1024x1024 = /icons/ios/icon_1024.png
 
 [script]
 shared_state = 1

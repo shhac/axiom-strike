@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <filter id="glow-green" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"/>
+      <feFlood flood-color="#33cc66" flood-opacity="0.9" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="glow"/>
+      <feMerge><feMergeNode in="glow"/><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-purple" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"/>
+      <feFlood flood-color="#6644cc" flood-opacity="0.9" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="glow"/>
+      <feMerge><feMergeNode in="glow"/><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-red" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"/>
+      <feFlood flood-color="#dd5533" flood-opacity="0.9" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="glow"/>
+      <feMerge><feMergeNode in="glow"/><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-gold" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"/>
+      <feFlood flood-color="#ffcc22" flood-opacity="0.9" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="glow"/>
+      <feMerge><feMergeNode in="glow"/><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="blade-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#667788" stop-opacity="0.35"/>
+      <stop offset="40%" stop-color="#aabbcc" stop-opacity="0.6"/>
+      <stop offset="60%" stop-color="#ccddee" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#667788" stop-opacity="0.35"/>
+    </linearGradient>
+    <linearGradient id="blade-edge" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" fill="#1a1428"/>
+
+  <radialGradient id="vignette" cx="50%" cy="50%" r="55%">
+    <stop offset="0%" stop-color="#2a1e3d" stop-opacity="0.4"/>
+    <stop offset="100%" stop-color="#0d0a14" stop-opacity="0"/>
+  </radialGradient>
+  <rect width="512" height="512" fill="url(#vignette)"/>
+
+  <!-- Radiating "A"s — 8 sizes scaling from center, #5 is the hero -->
+  <defs>
+    <g id="a-shape">
+      <path d="M-130,190 L-130,-60 Q-130,-140 -50,-140 L50,-140 Q130,-140 130,-60 L130,190 L74,190 L74,60 L-74,60 L-74,190 Z"
+        fill="#7755bb"/>
+      <rect x="-74" y="-10" width="148" height="46" rx="8" fill="#7755bb"/>
+      <rect x="-74" y="-56" width="148" height="70" rx="10" fill="#1a1428"/>
+    </g>
+  </defs>
+
+  <!-- Radiating A echoes — hero is large, echoes shrink inward and grow outward -->
+  <g transform="translate(256,256)">
+    <!-- Inner echoes (smaller, fading in) -->
+    <use href="#a-shape" transform="scale(0.25) translate(0,-25)" opacity="0.04"/>
+    <use href="#a-shape" transform="scale(0.45) translate(0,-25)" opacity="0.06"/>
+    <use href="#a-shape" transform="scale(0.65) translate(0,-25)" opacity="0.08"/>
+    <use href="#a-shape" transform="scale(0.85) translate(0,-25)" opacity="0.10"/>
+    <!-- Hero A — large and prominent -->
+    <use href="#a-shape" transform="scale(1.05) translate(0,-25)" opacity="0.25"/>
+    <!-- Outer echoes (larger, fading out) -->
+    <use href="#a-shape" transform="scale(1.25) translate(0,-25)" opacity="0.07"/>
+    <use href="#a-shape" transform="scale(1.45) translate(0,-25)" opacity="0.04"/>
+    <use href="#a-shape" transform="scale(1.65) translate(0,-25)" opacity="0.02"/>
+  </g>
+
+  <!-- Manga impact lines -->
+  <g opacity="0.06" stroke="#ffffff" stroke-width="2">
+    <line x1="256" y1="256" x2="20" y2="20"/>
+    <line x1="256" y1="256" x2="492" y2="20"/>
+    <line x1="256" y1="256" x2="20" y2="492"/>
+    <line x1="256" y1="256" x2="492" y2="492"/>
+    <line x1="256" y1="256" x2="256" y2="10"/>
+    <line x1="256" y1="256" x2="256" y2="502"/>
+    <line x1="256" y1="256" x2="10" y2="256"/>
+    <line x1="256" y1="256" x2="502" y2="256"/>
+  </g>
+
+  <!-- Sword — wide cartoon blade -->
+  <g transform="translate(256,256) rotate(-45)">
+    <!-- Blade body — chunky width for kid-friendly readability -->
+    <rect x="-34" y="-230" width="68" height="350" rx="4" fill="url(#blade-grad)" stroke="#556677" stroke-width="2"/>
+    <!-- Blade center line -->
+    <rect x="-1.5" y="-230" width="3" height="350" fill="url(#blade-edge)"/>
+    <!-- Blade tip -->
+    <polygon points="0,-264 -34,-230 34,-230" fill="url(#blade-grad)" stroke="#556677" stroke-width="2" stroke-linejoin="round"/>
+
+    <!-- === Operator symbols etched on blade — large with dark outline === -->
+
+    <!-- / (Division) — gold, near tip -->
+    <g filter="url(#glow-gold)" transform="translate(0,-170)">
+      <rect x="-4" y="-22" width="8" height="44" rx="2" fill="#ffcc22" stroke="#1a1428" stroke-width="3" transform="rotate(25)"/>
+      <circle cx="-10" cy="-17" r="7" fill="#ffcc22" stroke="#1a1428" stroke-width="3"/>
+      <circle cx="10" cy="17" r="7" fill="#ffcc22" stroke="#1a1428" stroke-width="3"/>
+    </g>
+
+    <!-- x (Multiplication) — red, upper-middle -->
+    <g filter="url(#glow-red)" transform="translate(0,-85)">
+      <rect x="-24" y="-6" width="48" height="12" rx="3" fill="#dd5533" stroke="#1a1428" stroke-width="3" transform="rotate(45)"/>
+      <rect x="-24" y="-6" width="48" height="12" rx="3" fill="#dd5533" stroke="#1a1428" stroke-width="3" transform="rotate(-45)"/>
+    </g>
+
+    <!-- - (Subtraction) — purple, center -->
+    <g filter="url(#glow-purple)" transform="translate(0,0)">
+      <rect x="-24" y="-6.5" width="48" height="13" rx="3" fill="#7755dd" stroke="#1a1428" stroke-width="3"/>
+    </g>
+
+    <!-- + (Addition) — green, near guard -->
+    <g filter="url(#glow-green)" transform="translate(0,80)">
+      <rect x="-24" y="-6.5" width="48" height="13" rx="3" fill="#33cc66" stroke="#1a1428" stroke-width="3"/>
+      <rect x="-6.5" y="-24" width="13" height="48" rx="3" fill="#33cc66" stroke="#1a1428" stroke-width="3"/>
+    </g>
+
+    <!-- Guard (crosspiece) -->
+    <rect x="-56" y="116" width="112" height="20" rx="5" fill="#443355" stroke="#665588" stroke-width="2"/>
+    <rect x="-46" y="120" width="92" height="12" rx="3" fill="#554466"/>
+
+    <!-- Handle/grip -->
+    <rect x="-14" y="136" width="28" height="74" rx="4" fill="#332244"/>
+    <rect x="-14" y="144" width="28" height="5" fill="#443366" rx="1"/>
+    <rect x="-14" y="157" width="28" height="5" fill="#443366" rx="1"/>
+    <rect x="-14" y="170" width="28" height="5" fill="#443366" rx="1"/>
+    <rect x="-14" y="183" width="28" height="5" fill="#443366" rx="1"/>
+    <rect x="-14" y="196" width="28" height="5" fill="#443366" rx="1"/>
+
+    <!-- Pommel -->
+    <circle cx="0" cy="220" r="16" fill="#443355" stroke="#665588" stroke-width="2"/>
+    <circle cx="0" cy="220" r="8" fill="#554477"/>
+  </g>
+</svg>
