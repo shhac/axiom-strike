@@ -1,8 +1,12 @@
 local M = {}
 
 function M.safe_delete(node)
-	gui.cancel_animations(node)
-	gui.delete_node(node)
+	-- pcall-protected: a few callers (timer.delay closures, animation completion
+	-- callbacks) may fire after the GUI proxy has been unloaded, leaving the
+	-- captured node handle stale. Without pcall, those would surface as
+	-- runtime errors. Both calls are no-ops on success when the node is gone.
+	pcall(gui.cancel_animations, node)
+	pcall(gui.delete_node, node)
 end
 
 function M.create_sprite(atlas, image, pos, size, opts)
@@ -36,19 +40,6 @@ function M.pop(node, scale_factor, duration)
 	local s = gui.get_scale(node)
 	gui.set_scale(node, vmath.vector3(s.x * scale_factor, s.y * scale_factor, 1))
 	gui.animate(node, gui.PROP_SCALE, s, gui.EASING_OUTBACK, duration)
-end
-
-function M.pop_in(node, target_scale, duration, delay)
-	target_scale = target_scale or vmath.vector3(1, 1, 1)
-	duration = duration or 0.3
-	delay = delay or 0
-	gui.set_scale(node, vmath.vector3(0, 0, 1))
-	gui.animate(node, gui.PROP_SCALE, target_scale, gui.EASING_OUTBACK, duration, delay)
-end
-
-function M.fade_in(node, delay)
-	gui.set_alpha(node, 0)
-	gui.animate(node, "color.w", 1, gui.EASING_OUTQUAD, 0.2, delay or 0)
 end
 
 function M.destroy_nodes(nodes_table)

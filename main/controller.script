@@ -33,7 +33,6 @@ end
 function init(self)
 	msg.post(".", "acquire_input_focus")
 	self.loading_proxy = nil
-	self.pending_recovery_healed = nil
 
 	-- Listen for window focus events (auto-save)
 	if window and window.set_listener then
@@ -65,12 +64,6 @@ function on_message(self, message_id, message, sender)
 			end)
 		end
 
-	elseif message_id == hash("proxy_unloaded") then
-		-- If returning to battle after recovery, reload battle with state
-		if self.pending_recovery_healed and not self.loading_proxy then
-			-- We'll reload battle and send the full state
-		end
-
 	elseif message_id == hash("play_pressed") then
 		switch_to(self, "#map_proxy")
 
@@ -93,10 +86,8 @@ function on_message(self, message_id, message, sender)
 		switch_to(self, "#battle_proxy")
 
 	elseif message_id == hash("battle_complete") then
-		if pending_level and pending_level.node_id then
-			local save_data = progress.load()
-			progress.mark_completed(save_data, pending_level.node_id, message.stars or 1)
-		end
+		-- battle.script marks the node complete using its already-loaded save_data,
+		-- avoiding a second sys.load + sys.save on the main thread here.
 		pending_level = nil
 		battle_state_backup = nil
 		switch_to(self, "#map_proxy")

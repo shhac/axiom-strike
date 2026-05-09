@@ -77,4 +77,49 @@ describe("hint.compute_path", function()
 		-- Verify the result evaluates to target
 		-- Could be single num=5? No, nums are 2,3,7. Could be 3-step: 2+3=5
 	end)
+
+	-- The battle gui_script caches compute_path's result and only re-runs on
+	-- tile state change. The cache distinguishes "uncomputed" (nil + flag false)
+	-- from "computed but no path" (nil + flag true). For that to be safe,
+	-- compute_path must be a pure function: same inputs → same output, no
+	-- hidden state. These tests document and verify that contract.
+	it("is deterministic for the same inputs (cache safety)", function()
+		local a = hint.compute_path(8, {3, 5, 7}, {"+", "-"}, {}, {}, true)
+		local b = hint.compute_path(8, {3, 5, 7}, {"+", "-"}, {}, {}, true)
+		assert.is_not_nil(a)
+		assert.is_not_nil(b)
+		assert.are.equal(#a, #b)
+		for i = 1, #a do
+			assert.are.equal(a[i].type, b[i].type)
+			assert.are.equal(a[i].index, b[i].index)
+		end
+	end)
+
+	it("returns nil repeatably for unsatisfiable target (cache safety)", function()
+		-- All numbers used, no path possible
+		local used = {num_1 = true, num_2 = true}
+		assert.is_nil(hint.compute_path(5, {3, 5}, {"+"}, used, {}, true))
+		assert.is_nil(hint.compute_path(5, {3, 5}, {"+"}, used, {}, true))
+		assert.is_nil(hint.compute_path(5, {3, 5}, {"+"}, used, {}, true))
+	end)
+
+	-- Full-hand-size search exercises the scratch-buffer rewrite at realistic
+	-- game volumes (6 nums × 3 ops × 5 nums = 90 inner iterations). The cache
+	-- is invalidated each call to simulate the player tapping tiles between
+	-- hint requests.
+	it("full hand size search across multiple invalidations is deterministic", function()
+		local nums = {2, 4, 6, 7, 9, 11}
+		local ops  = {"+", "-", "x"}
+		local first = hint.compute_path(13, nums, ops, {}, {}, true)
+		assert.is_not_nil(first)
+		for _ = 1, 5 do
+			local p = hint.compute_path(13, nums, ops, {}, {}, true)
+			assert.is_not_nil(p)
+			assert.are.equal(#first, #p)
+			for i = 1, #first do
+				assert.are.equal(first[i].type, p[i].type)
+				assert.are.equal(first[i].index, p[i].index)
+			end
+		end
+	end)
 end)

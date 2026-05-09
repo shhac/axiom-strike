@@ -2,6 +2,8 @@ local map_data = require("modules.map_data")
 local progress = require("modules.progress")
 local gui_util = require("modules.gui_util")
 
+local TOUCH = hash("touch")
+
 local node_buttons = {}
 local path_lines = {}
 local region_labels = {}
@@ -160,7 +162,7 @@ function final(self)
 end
 
 function on_input(self, action_id, action)
-	if action_id ~= hash("touch") or not action.pressed then
+	if action_id ~= TOUCH or not action.pressed then
 		return false
 	end
 

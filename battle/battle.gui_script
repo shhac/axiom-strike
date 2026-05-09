@@ -1,9 +1,8 @@
 local equation = require("modules.equation")
-local CONSTANTS = require("modules.constants")
-local util = require("modules.util")
 local sfx = require("modules.sfx")
 local gui_util = require("modules.gui_util")
 local hint_module = require("modules.hint")
+local debug_profile = require("modules.debug_profile")
 
 -- Dynamic nodes
 local number_tile_nodes = {}
@@ -36,6 +35,14 @@ local current_target = 0  -- weakness or attack number to aim for
 -- Banner/HUD nodes
 local banner_bg, banner_text, target_bg, target_text, target_label, wave_text
 local enemy_hp_bg, enemy_hp_fill, enemy_hp_text
+
+-- Static GUI nodes cached at init (reduces gui.get_node hash lookups in handlers).
+local n_hero_hp_fill, n_hero_hp_text
+local n_btn_strike, n_btn_strike_text, n_btn_undo, n_btn_clear
+local n_equation_text, n_equation_result, n_closeness_label
+local n_damage_popup
+
+local TOUCH = hash("touch")
 
 local SCRIPT_URL = "/battle_controller#script"
 
@@ -91,7 +98,16 @@ local C = {
 
 	white       = vmath.vector4(1, 1, 1, 1),
 	gold        = vmath.vector4(1, 0.85, 0.2, 1),
+
+	half_white  = vmath.vector4(1, 1, 1, 0.5),
+	transparent = vmath.vector4(0, 0, 0, 0),
+	hp_orange   = vmath.vector4(1, 0.5, 0.25, 1),
+	hp_red_low  = vmath.vector4(1, 0.25, 0.2, 1),
 }
+
+-- Hoisted to module scope: re-allocating a 12-string literal per dead-enemy
+-- update was both garbage and a hidden dependency on field names.
+local ENEMY_CANCEL_KEYS = {"body", "belly", "head", "el", "pl", "er", "pr", "mouth", "op_sym", "badge", "wtext", "arrow"}
 
 -- ============================================================
 -- Juice / animation helpers
@@ -123,7 +139,7 @@ local function pop_text(node)
 end
 
 local function flash_white(node, original_color)
-	gui.set_color(node, vmath.vector4(1, 1, 1, 1))
+	gui.set_color(node, C.white)
 	gui.animate(node, gui.PROP_COLOR, original_color, gui.EASING_OUTQUAD, 0.2, 0.05)
 end
 
@@ -134,14 +150,6 @@ local function shake(node)
 	end)
 end
 
-local function slide_in(node, from_x, target_x, delay)
-	local pos = gui.get_position(node)
-	gui.set_position(node, vmath.vector3(from_x, pos.y, 0))
-	gui.set_alpha(node, 0)
-	gui.animate(node, "position.x", target_x, gui.EASING_OUTBACK, 0.4, delay or 0)
-	gui.animate(node, "color.w", 1, gui.EASING_OUTQUAD, 0.2, delay or 0)
-end
-
 -- wiggle removed: GUI rotation.z causes scaling artifacts in Defold
 
 -- ============================================================
@@ -150,14 +158,18 @@ end
 
 local hint_path = nil
 local hint_path_step = 0
+local hint_path_computed = false
 
 local function find_best_hint()
 	if current_target <= 0 then return nil, nil end
 
-	-- Compute path if not cached or if tiles changed
-	if not hint_path then
+	-- Compute path if not yet computed since last invalidation.
+	-- A nil result is a valid "no path exists" answer — without the
+	-- separate flag, every frame would re-run the O(N^3) compute_path.
+	if not hint_path_computed then
 		hint_path = hint_module.compute_path(current_target, number_tile_values, operator_tile_values, tile_used, equation_tokens, expecting_number)
 		hint_path_step = 1
+		hint_path_computed = true
 	end
 
 	if hint_path and hint_path_step <= #hint_path then
@@ -221,6 +233,7 @@ end
 local function invalidate_hint_cache()
 	hint_path = nil
 	hint_path_step = 0
+	hint_path_computed = false
 end
 
 local function show_equation_feedback(result, target, mode, wrong_attempts)
@@ -293,8 +306,8 @@ local function show_fill_blank_ui(display, options, blank_type)
 	fill_blank_mode = true
 
 	-- Hide normal equation UI
-	gui.set_text(gui.get_node("equation_text"), "")
-	gui.set_text(gui.get_node("equation_result"), "")
+	gui.set_text(n_equation_text, "")
+	gui.set_text(n_equation_result, "")
 
 	-- Show the equation with blank prominently
 	fill_blank_display_node = gui.new_text_node(vmath.vector3(400, 148, 0), display)
@@ -341,49 +354,46 @@ end
 
 local bg_nodes = {}
 
+-- Background tree sprites (scaled up from 16px, placed behind characters)
+local BG_TREES = {
+	{img = "tree_green",        x = 50,   y = 290, s = 4.5},
+	{img = "pine_small_teal",   x = 130,  y = 270, s = 3.5},
+	{img = "tree_autumn",       x = 380,  y = 300, s = 5.0},
+	{img = "big_pine_green",    x = 520,  y = 285, s = 4.0},
+	{img = "tree_teal",         x = 640,  y = 295, s = 4.5},
+	{img = "pine_small_autumn", x = 920,  y = 280, s = 3.5},
+	{img = "tree_green",        x = 1050, y = 290, s = 4.5},
+	{img = "big_tree_autumn",   x = 1180, y = 300, s = 5.0},
+	{img = "pine_small_green",  x = 1260, y = 270, s = 3.5},
+}
+
+-- Far background trees (smaller, more transparent — depth)
+local FAR_TREES = {
+	{img = "tree_green",      x = 90,   y = 340, s = 3.0, a = 0.3},
+	{img = "big_pine_green",  x = 300,  y = 350, s = 3.5, a = 0.25},
+	{img = "tree_teal",       x = 480,  y = 345, s = 3.0, a = 0.3},
+	{img = "pine_small_teal", x = 700,  y = 340, s = 2.5, a = 0.25},
+	{img = "tree_autumn",     x = 850,  y = 348, s = 3.0, a = 0.3},
+	{img = "big_tree_green",  x = 1100, y = 342, s = 3.5, a = 0.25},
+	{img = "tree_green",      x = 1230, y = 345, s = 3.0, a = 0.3},
+}
+
+-- Ground-level bushes and rocks
+local GROUND_DECOR = {
+	{img = "bush_green",    x = 20,   y = 225, s = 2.5},
+	{img = "rock1",         x = 160,  y = 215, s = 2.0},
+	{img = "hedge_green",   x = 350,  y = 222, s = 2.5},
+	{img = "bush_autumn",   x = 500,  y = 225, s = 2.0},
+	{img = "rock2",         x = 700,  y = 215, s = 2.0},
+	{img = "round_bush",    x = 880,  y = 222, s = 2.5},
+	{img = "bush_green",    x = 1000, y = 225, s = 2.0},
+	{img = "rock1",         x = 1150, y = 215, s = 2.0},
+	{img = "hedge_green",   x = 1260, y = 222, s = 2.5},
+}
+
 local function create_background()
 	for _, n in ipairs(bg_nodes) do safe_delete(n) end
 	bg_nodes = {}
-
-	-- Ground line is at y=220, ground fills below to y=195
-	-- Place decorations along and above the ground line
-
-	-- Background tree sprites (scaled up from 16px, placed behind characters)
-	local BG_TREES = {
-		{img = "tree_green",        x = 50,   y = 290, s = 4.5},
-		{img = "pine_small_teal",   x = 130,  y = 270, s = 3.5},
-		{img = "tree_autumn",       x = 380,  y = 300, s = 5.0},
-		{img = "big_pine_green",    x = 520,  y = 285, s = 4.0},
-		{img = "tree_teal",         x = 640,  y = 295, s = 4.5},
-		{img = "pine_small_autumn", x = 920,  y = 280, s = 3.5},
-		{img = "tree_green",        x = 1050, y = 290, s = 4.5},
-		{img = "big_tree_autumn",   x = 1180, y = 300, s = 5.0},
-		{img = "pine_small_green",  x = 1260, y = 270, s = 3.5},
-	}
-
-	-- Far background trees (smaller, more transparent — depth)
-	local FAR_TREES = {
-		{img = "tree_green",      x = 90,   y = 340, s = 3.0, a = 0.3},
-		{img = "big_pine_green",  x = 300,  y = 350, s = 3.5, a = 0.25},
-		{img = "tree_teal",       x = 480,  y = 345, s = 3.0, a = 0.3},
-		{img = "pine_small_teal", x = 700,  y = 340, s = 2.5, a = 0.25},
-		{img = "tree_autumn",     x = 850,  y = 348, s = 3.0, a = 0.3},
-		{img = "big_tree_green",  x = 1100, y = 342, s = 3.5, a = 0.25},
-		{img = "tree_green",      x = 1230, y = 345, s = 3.0, a = 0.3},
-	}
-
-	-- Ground-level bushes and rocks
-	local GROUND_DECOR = {
-		{img = "bush_green",    x = 20,   y = 225, s = 2.5},
-		{img = "rock1",         x = 160,  y = 215, s = 2.0},
-		{img = "hedge_green",   x = 350,  y = 222, s = 2.5},
-		{img = "bush_autumn",   x = 500,  y = 225, s = 2.0},
-		{img = "rock2",         x = 700,  y = 215, s = 2.0},
-		{img = "round_bush",    x = 880,  y = 222, s = 2.5},
-		{img = "bush_green",    x = 1000, y = 225, s = 2.0},
-		{img = "rock1",         x = 1150, y = 215, s = 2.0},
-		{img = "hedge_green",   x = 1260, y = 222, s = 2.5},
-	}
 
 	gui_util.create_bg_layer(FAR_TREES, bg_nodes)
 	gui_util.create_bg_layer(BG_TREES, bg_nodes, 0.7)
@@ -440,6 +450,7 @@ end
 -- ============================================================
 
 local pause_nodes = {}
+local self_pause_btn
 
 local function create_hud()
 	if banner_bg then return end
@@ -499,13 +510,14 @@ local function create_hud()
 	pause_nodes = {bar1, bar2}
 end
 
+local enemy_hp_size_buf = vmath.vector3(180, 12, 0)
 local function update_enemy_hud(hp, max_hp)
 	if not enemy_hp_fill then return end
 	local ratio = hp / max_hp
-	gui.set_size(enemy_hp_fill, vmath.vector3(180 * ratio, 12, 0))
+	enemy_hp_size_buf.x = 180 * ratio
+	gui.set_size(enemy_hp_fill, enemy_hp_size_buf)
 	gui.set_text(enemy_hp_text, tostring(hp))
-	local c = ratio > 0.5 and vmath.vector4(1, 0.5, 0.25, 1) or vmath.vector4(1, 0.25, 0.2, 1)
-	gui.set_color(enemy_hp_fill, c)
+	gui.set_color(enemy_hp_fill, ratio > 0.5 and C.hp_orange or C.hp_red_low)
 end
 
 local function set_attack_mode(weakness)
@@ -517,8 +529,8 @@ local function set_attack_mode(weakness)
 	gui.set_color(target_label, vmath.vector4(0.5, 0.7, 1, 1))
 	gui.set_text(target_text, tostring(weakness))
 	gui.set_color(target_text, C.white)
-	gui.set_text(gui.get_node("btn_strike_text"), "STRIKE!")
-	gui.set_color(gui.get_node("btn_strike"), vmath.vector4(0.4, 1.0, 0.5, 1))
+	gui.set_text(n_btn_strike_text, "STRIKE!")
+	gui.set_color(n_btn_strike, vmath.vector4(0.4, 1.0, 0.5, 1))
 end
 
 local function set_defend_mode(attack_number)
@@ -534,8 +546,8 @@ local function set_defend_mode(attack_number)
 		gui.set_text(target_text, "?")
 	end
 	gui.set_color(target_text, vmath.vector4(1, 0.92, 0.82, 1))
-	gui.set_text(gui.get_node("btn_strike_text"), "BLOCK!")
-	gui.set_color(gui.get_node("btn_strike"), vmath.vector4(1.0, 0.4, 0.3, 1))
+	gui.set_text(n_btn_strike_text, "BLOCK!")
+	gui.set_color(n_btn_strike, vmath.vector4(1.0, 0.4, 0.3, 1))
 end
 
 -- ============================================================
@@ -543,10 +555,7 @@ end
 -- ============================================================
 
 local function create_tile_nodes()
-	for _, n in ipairs(number_tile_nodes) do safe_delete(n.box); safe_delete(n.text) end
-	for _, n in ipairs(operator_tile_nodes) do safe_delete(n.box); safe_delete(n.text) end
-	number_tile_nodes = {}
-	operator_tile_nodes = {}
+	destroy_tile_nodes()
 
 	for i = 1, #number_tile_values do
 		local x = NUM_START_X + (i - 1) * (TILE_W + TILE_GAP)
@@ -591,14 +600,14 @@ local function create_tile_nodes()
 end
 
 local function update_equation_display()
-	gui.set_text(gui.get_node("equation_text"), equation.to_string(equation_tokens))
+	gui.set_text(n_equation_text, equation.to_string(equation_tokens))
 	local result, err = equation.evaluate(equation_tokens)
 	if result and not err then
-		gui.set_text(gui.get_node("equation_result"), "= " .. tostring(math.floor(result)))
+		gui.set_text(n_equation_result, "= " .. tostring(math.floor(result)))
 	elseif #equation_tokens > 0 then
-		gui.set_text(gui.get_node("equation_result"), "= ?")
+		gui.set_text(n_equation_result, "= ?")
 	else
-		gui.set_text(gui.get_node("equation_result"), "")
+		gui.set_text(n_equation_result, "")
 	end
 end
 
@@ -606,14 +615,19 @@ local function dim_tile(nd) gui.set_color(nd.box, vmath.vector4(0.3, 0.3, 0.35, 
 local function restore_tile(nd, is_num) gui.set_color(nd.box, is_num and NUM_TINT or OP_TINT); gui.set_color(nd.text, C.tile_text) end
 
 local function clear_equation()
+	-- Keys are "num_N" or "op_N"; first char distinguishes — avoids pattern engine allocation per key.
 	for key, _ in pairs(tile_used) do
-		local prefix, idx = key:match("(%a+)_(%d+)"); idx = tonumber(idx)
-		if prefix == "num" and number_tile_nodes[idx] then restore_tile(number_tile_nodes[idx], true)
-		elseif prefix == "op" and operator_tile_nodes[idx] then restore_tile(operator_tile_nodes[idx], false) end
+		if key:byte(1) == 110 then -- 'n' → "num_N"
+			local idx = tonumber(key:sub(5))
+			if idx and number_tile_nodes[idx] then restore_tile(number_tile_nodes[idx], true) end
+		else                       -- 'o' → "op_N"
+			local idx = tonumber(key:sub(4))
+			if idx and operator_tile_nodes[idx] then restore_tile(operator_tile_nodes[idx], false) end
+		end
 	end
 	tile_used = {}; equation_tokens = {}; expecting_number = true
 	invalidate_hint_cache()
-	update_equation_display(); gui.set_text(gui.get_node("closeness_label"), "")
+	update_equation_display(); gui.set_text(n_closeness_label, "")
 end
 
 local function undo_last()
@@ -631,7 +645,7 @@ local function undo_last()
 		end
 		expecting_number = false
 	end
-	update_equation_display(); gui.set_text(gui.get_node("closeness_label"), "")
+	update_equation_display(); gui.set_text(n_closeness_label, "")
 end
 
 -- ============================================================
@@ -640,8 +654,9 @@ end
 
 local function destroy_enemy_nodes()
 	for _, en in ipairs(enemy_nodes) do
-		for _, node in pairs(en) do
-			if type(node) == "userdata" then pcall(safe_delete, node) end
+		for _, key in ipairs(ENEMY_CANCEL_KEYS) do
+			local node = en[key]
+			if node then safe_delete(node) end
 		end
 	end
 	enemy_nodes = {}
@@ -653,6 +668,10 @@ local ENEMY_COLORS = {
 	["x"] = {body = vmath.vector4(0.6, 0.3, 0.85, 1), dark = vmath.vector4(0.4, 0.18, 0.6, 1)},
 	["/"] = {body = vmath.vector4(0.25, 0.55, 0.9, 1), dark = vmath.vector4(0.15, 0.35, 0.65, 1)},
 }
+-- Pre-compute mouth color (dark * 0.5) once per skill — avoids per-enemy-per-sync vector4 alloc.
+for _, ec in pairs(ENEMY_COLORS) do
+	ec.mouth = vmath.vector4(ec.dark.x * 0.5, ec.dark.y * 0.5, ec.dark.z * 0.5, 1)
+end
 
 local function create_single_enemy(e, x, is_target, bob_offset)
 	local alive = e.alive
@@ -677,7 +696,7 @@ local function create_single_enemy(e, x, is_target, bob_offset)
 	local op_sym = gui.new_text_node(vmath.vector3(x, body_y - 8, 0), e.skill or "+")
 	gui.set_font(op_sym, "game_font")
 	gui.set_scale(op_sym, vmath.vector3(0.8, 0.8, 1))
-	gui.set_color(op_sym, alive and vmath.vector4(1, 1, 1, 0.5) or C.enemy_dead)
+	gui.set_color(op_sym, alive and C.half_white or C.enemy_dead)
 
 	-- Head — sits on top of body
 	local head_y = body_y + bh/2 + hh/2 - 4
@@ -699,7 +718,7 @@ local function create_single_enemy(e, x, is_target, bob_offset)
 
 	-- Mouth on head
 	local mouth = gui.new_box_node(vmath.vector3(x, head_y - hh * 0.2, 0), vmath.vector3(e.is_boss and 24 or 16, 4, 0))
-	gui.set_color(mouth, alive and vmath.vector4(ec.dark.x * 0.5, ec.dark.y * 0.5, ec.dark.z * 0.5, 1) or C.enemy_dead)
+	gui.set_color(mouth, alive and ec.mouth or C.enemy_dead)
 
 	-- Weakness badge above head
 	local badge_y = head_y + hh/2 + 18
@@ -771,19 +790,20 @@ local function update_enemy_visuals(enemies, target_index)
 		gui.set_color(en.pl, alive and C.enemy_pupil or C.enemy_dead)
 		gui.set_color(en.er, alive and C.enemy_eye or C.enemy_dead)
 		gui.set_color(en.pr, alive and C.enemy_pupil or C.enemy_dead)
-		gui.set_color(en.mouth, alive and vmath.vector4(ec.dark.x * 0.5, ec.dark.y * 0.5, ec.dark.z * 0.5, 1) or C.enemy_dead)
-		gui.set_color(en.op_sym, alive and vmath.vector4(1, 1, 1, 0.5) or C.enemy_dead)
+		gui.set_color(en.mouth, alive and ec.mouth or C.enemy_dead)
+		gui.set_color(en.op_sym, alive and C.half_white or C.enemy_dead)
 		-- Update badge
 		gui.set_color(en.badge, is_target and C.badge_gold or (alive and C.badge_red or C.enemy_dead))
 		gui.set_text(en.wtext, tostring(e.weakness))
 		gui.set_color(en.wtext, alive and C.white or C.tile_used_t)
 		-- Update target arrow visibility
 		if en.arrow then
-			gui.set_color(en.arrow, is_target and C.gold or vmath.vector4(0, 0, 0, 0))
+			gui.set_color(en.arrow, is_target and C.gold or C.transparent)
 		end
-		-- Cancel bob on dead enemies to free animation slots
+		-- Cancel bob on dead enemies to free animation slots (1024 global cap).
+		-- Includes "arrow" — was leaking on death until destroy_enemy_nodes ran at wave end.
 		if not alive and en.alive then
-			for _, key in ipairs({"body", "belly", "head", "el", "pl", "er", "pr", "mouth", "op_sym", "badge", "wtext"}) do
+			for _, key in ipairs(ENEMY_CANCEL_KEYS) do
 				if en[key] then gui.cancel_animation(en[key], "position.y") end
 			end
 		end
@@ -895,6 +915,20 @@ function init(self)
 	create_scene()
 	create_hud()
 
+	-- Cache static GUI nodes once. These are defined in the .gui scene and exist
+	-- for the lifetime of the script — re-resolving them per event is just hash
+	-- lookups in a hot path (every tile tap, every HP change).
+	n_hero_hp_fill     = gui.get_node("hero_hp_fill")
+	n_hero_hp_text     = gui.get_node("hero_hp_text")
+	n_btn_strike       = gui.get_node("btn_strike")
+	n_btn_strike_text  = gui.get_node("btn_strike_text")
+	n_btn_undo         = gui.get_node("btn_undo")
+	n_btn_clear        = gui.get_node("btn_clear")
+	n_equation_text    = gui.get_node("equation_text")
+	n_equation_result  = gui.get_node("equation_result")
+	n_closeness_label  = gui.get_node("closeness_label")
+	n_damage_popup     = gui.get_node("damage_popup")
+
 	-- Star twinkling on static star nodes
 	for i = 1, 5 do
 		local ok, star = pcall(gui.get_node, "star" .. i)
@@ -911,11 +945,10 @@ function final(self)
 		local ok, star = pcall(gui.get_node, "star" .. i)
 		if ok and star then gui.cancel_animations(star) end
 	end
-	-- Cancel animations on static HUD nodes
-	local static = {"damage_popup", "equation_text", "equation_result", "btn_strike", "btn_undo", "btn_clear"}
-	for _, name in ipairs(static) do
-		local ok, node = pcall(gui.get_node, name)
-		if ok and node then gui.cancel_animations(node) end
+	-- Cancel animations on static HUD nodes (cached at init).
+	local static = {n_damage_popup, n_equation_text, n_equation_result, n_btn_strike, n_btn_undo, n_btn_clear}
+	for _, node in ipairs(static) do
+		if node then gui.cancel_animations(node) end
 	end
 	if self_pause_btn then gui.cancel_animations(self_pause_btn) end
 	for _, n in ipairs(pause_nodes) do gui.cancel_animations(n) end
@@ -937,7 +970,12 @@ function final(self)
 	target_bg = nil; target_text = nil; target_label = nil
 	enemy_hp_bg = nil; enemy_hp_fill = nil; enemy_hp_text = nil
 	self_pause_btn = nil; pause_nodes = {}
-	current_target = 0; hint_path = nil; hint_path_step = 0
+	-- Nil cached static node refs so a re-init resolves fresh handles.
+	n_hero_hp_fill = nil; n_hero_hp_text = nil
+	n_btn_strike = nil; n_btn_strike_text = nil; n_btn_undo = nil; n_btn_clear = nil
+	n_equation_text = nil; n_equation_result = nil; n_closeness_label = nil
+	n_damage_popup = nil
+	current_target = 0; hint_path = nil; hint_path_step = 0; hint_path_computed = false
 	idle_timer = 0; hint_shown = false
 	fill_blank_mode = false; fill_blank_nodes = {}; fill_blank_options = {}
 	fill_blank_display_node = nil
@@ -964,7 +1002,7 @@ local function handle_deal_tiles(self, message)
 	tile_used = {}; equation_tokens = {}; expecting_number = true
 	invalidate_hint_cache()
 	create_tile_nodes(); update_equation_display()
-	gui.set_text(gui.get_node("closeness_label"), "")
+	gui.set_text(n_closeness_label, "")
 	input_enabled = true
 end
 
@@ -981,11 +1019,11 @@ end
 
 local function handle_update_hero_hp(self, message)
 	local ratio = message.hp / message.max_hp
-	gui.set_size(gui.get_node("hero_hp_fill"), vmath.vector3(180 * ratio, 12, 0))
-	gui.set_text(gui.get_node("hero_hp_text"), tostring(message.hp))
-	pop_text(gui.get_node("hero_hp_text"))
+	gui.set_size(n_hero_hp_fill, vmath.vector3(180 * ratio, 12, 0))
+	gui.set_text(n_hero_hp_text, tostring(message.hp))
+	pop_text(n_hero_hp_text)
 	local c = ratio > 0.5 and C.hp_green or (ratio > 0.25 and C.hp_yellow or C.hp_red)
-	gui.set_color(gui.get_node("hero_hp_fill"), c)
+	gui.set_color(n_hero_hp_fill, c)
 end
 
 local function handle_highlight_attacker(self, message)
@@ -1014,15 +1052,14 @@ local function handle_hero_hit(self, message)
 end
 
 local function handle_show_damage(self, message)
-	local popup = gui.get_node("damage_popup")
-	gui.set_text(popup, message.text or "")
-	gui.set_position(popup, vmath.vector3(message.x or 640, message.y or 450, 0))
-	gui.cancel_animation(popup, "position.y")
-	gui.cancel_animation(popup, "color.w")
-	gui.set_alpha(popup, 1.0)
-	gui.set_scale(popup, vmath.vector3(1.6, 1.6, 1))
-	gui.animate(popup, "position.y", (message.y or 450) + 70, gui.EASING_OUTQUAD, 0.9)
-	gui.animate(popup, "color.w", 0, gui.EASING_OUTQUAD, 0.9, 0.3)
+	gui.set_text(n_damage_popup, message.text or "")
+	gui.set_position(n_damage_popup, vmath.vector3(message.x or 640, message.y or 450, 0))
+	gui.cancel_animation(n_damage_popup, "position.y")
+	gui.cancel_animation(n_damage_popup, "color.w")
+	gui.set_alpha(n_damage_popup, 1.0)
+	gui.set_scale(n_damage_popup, vmath.vector3(1.6, 1.6, 1))
+	gui.animate(n_damage_popup, "position.y", (message.y or 450) + 70, gui.EASING_OUTQUAD, 0.9)
+	gui.animate(n_damage_popup, "color.w", 0, gui.EASING_OUTQUAD, 0.9, 0.3)
 end
 
 local function handle_fill_blank_result(self, message)
@@ -1137,18 +1174,18 @@ local function handle_tile_input(self, action)
 		end
 	end
 
-	if gui.pick_node(gui.get_node("btn_strike"), action.x, action.y) then
+	if gui.pick_node(n_btn_strike, action.x, action.y) then
 		local result, err = equation.evaluate(equation_tokens)
 		if result and not err then
 			sfx.play("equation_complete")
-			pop(gui.get_node("btn_strike"), 1.15, 0.2)
+			pop(n_btn_strike, 1.15, 0.2)
 			input_enabled = false
 			msg.post(SCRIPT_URL, "equation_submitted", {result = math.floor(result), tokens = equation_tokens})
 		end
 		return true
 	end
-	if gui.pick_node(gui.get_node("btn_undo"), action.x, action.y) then sfx.play("undo"); pop(gui.get_node("btn_undo")); undo_last(); return true end
-	if gui.pick_node(gui.get_node("btn_clear"), action.x, action.y) then sfx.play("undo"); pop(gui.get_node("btn_clear")); clear_equation(); return true end
+	if gui.pick_node(n_btn_undo, action.x, action.y) then sfx.play("undo"); pop(n_btn_undo); undo_last(); return true end
+	if gui.pick_node(n_btn_clear, action.x, action.y) then sfx.play("undo"); pop(n_btn_clear); clear_equation(); return true end
 
 	if expecting_number then
 		for i, nd in ipairs(number_tile_nodes) do
@@ -1174,7 +1211,8 @@ local function handle_tile_input(self, action)
 end
 
 function on_input(self, action_id, action)
-	if action_id ~= hash("touch") or not action.pressed then return false end
+	if debug_profile.handle(action_id, action) then return true end
+	if action_id ~= TOUCH or not action.pressed then return false end
 
 	if between_waves then return handle_between_waves_input(self, action) end
 	if battle_over then return handle_battle_over_input(self, action) end

@@ -60,6 +60,20 @@ describe("question_gen.generate_weakness", function()
 		end
 	end)
 
+	it("returns factorable weakness for multiplication at high Elo (max_target=80)", function()
+		-- ELO_BRACKET_DEFAULT applies at elo >= 1400: max_target=80, max_operand=50.
+		-- The fallback search at hint.lua's question_gen scans neighbor candidates;
+		-- this test asserts the result is *actually* factorable so a child
+		-- doesn't get an unsolvable multiplication weakness on a valid run.
+		local util = require("modules.util")
+		for _ = 1, 50 do
+			local weakness, _, params = question_gen.generate_weakness(1500, "x")
+			assert.is_true(weakness > 0)
+			assert.is_true(util.has_factor_pair(weakness, params.max_operand),
+				"expected " .. weakness .. " factorable within " .. params.max_operand)
+		end
+	end)
+
 	it("returns a positive number for division", function()
 		local weakness = question_gen.generate_weakness(1000, "/")
 		assert.is_true(weakness > 0)

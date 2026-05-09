@@ -11,13 +11,6 @@ function M.shuffle(t)
 	return t
 end
 
---- Convert a {r, g, b, a} table to vmath.vector4.
---- @param color table {r, g, b, a}
---- @return userdata vmath.vector4
-function M.vec4(color)
-	return vmath.vector4(color[1], color[2], color[3], color[4])
-end
-
 --- Canonical operator form. Normalizes "*" to "x" for display consistency.
 local OP_CANONICAL = {
 	["+"] = "+",

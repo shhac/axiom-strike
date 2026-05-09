@@ -46,4 +46,13 @@ describe("damage.calculate_block", function()
 		local _, label = damage.calculate_block(9, 10, 8)
 		assert.are.equal("Deflected!", label)
 	end)
+
+	it("handles attack_number=3 (live minimum from battle.script:116)", function()
+		-- battle.script:116 generates attack_number = math.random(3, max(5, ap)),
+		-- so 3 is the live floor. Verify the block math doesn't divide-by-near-zero.
+		local dmg, _ = damage.calculate_block(1, 3, 8)
+		-- distance=2, block_quality = 1 - 2/3 ≈ 0.333, damage_taken ≈ floor(8 * 0.667) ≈ 5
+		assert.is_true(dmg >= 1)
+		assert.is_true(dmg <= 8)
+	end)
 end)

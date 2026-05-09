@@ -3,6 +3,8 @@ local progress = require("modules.progress")
 local sfx = require("modules.sfx")
 local gui_util = require("modules.gui_util")
 
+local TOUCH = hash("touch")
+
 local item_nodes = {}
 local save_data = nil
 
@@ -94,7 +96,7 @@ function init(self)
 end
 
 function on_input(self, action_id, action)
-	if action_id ~= hash("touch") or not action.pressed then return false end
+	if action_id ~= TOUCH or not action.pressed then return false end
 
 	if gui.pick_node(gui.get_node("btn_back"), action.x, action.y) then
 		sfx.play("button_press")
