@@ -1,44 +1,49 @@
-
 images {
-  image: "/assets/images/sprites/characters/enemy_bat_green.png"
+  image: "/assets/images/sprites/characters/hero_idle.png"
 }
 images {
-  image: "/assets/images/sprites/characters/enemy_demon_red.png"
+  image: "/assets/images/sprites/characters/hero_attack.png"
 }
 images {
-  image: "/assets/images/sprites/characters/enemy_dragon_red.png"
+  image: "/assets/images/sprites/characters/hero_hurt.png"
 }
 images {
-  image: "/assets/images/sprites/characters/enemy_fire_red.png"
+  image: "/assets/images/sprites/characters/hero_victory.png"
 }
 images {
-  image: "/assets/images/sprites/characters/enemy_ghost_purple.png"
+  image: "/assets/images/sprites/characters/enemy_add.png"
 }
 images {
-  image: "/assets/images/sprites/characters/enemy_goblin_green.png"
+  image: "/assets/images/sprites/characters/enemy_sub.png"
 }
 images {
-  image: "/assets/images/sprites/characters/enemy_ice_blue.png"
+  image: "/assets/images/sprites/characters/enemy_mul.png"
 }
 images {
-  image: "/assets/images/sprites/characters/enemy_mage_purple.png"
+  image: "/assets/images/sprites/characters/enemy_div.png"
 }
 images {
-  image: "/assets/images/sprites/characters/enemy_slime_green.png"
+  image: "/assets/images/sprites/characters/boss_add.png"
 }
 images {
-  image: "/assets/images/sprites/characters/enemy_water_blue.png"
+  image: "/assets/images/sprites/characters/boss_sub.png"
 }
 images {
-  image: "/assets/images/sprites/characters/hero_knight.png"
+  image: "/assets/images/sprites/characters/boss_mul.png"
 }
 images {
-  image: "/assets/images/sprites/characters/hero_mage.png"
+  image: "/assets/images/sprites/characters/boss_div.png"
 }
 images {
-  image: "/assets/images/sprites/characters/hero_rogue.png"
+  image: "/assets/images/sprites/characters/enemy_add_ko.png"
 }
 images {
-  image: "/assets/images/sprites/characters/hero_warrior.png"
+  image: "/assets/images/sprites/characters/enemy_sub_ko.png"
+}
+images {
+  image: "/assets/images/sprites/characters/enemy_mul_ko.png"
+}
+images {
+  image: "/assets/images/sprites/characters/enemy_div_ko.png"
 }
 margin: 1

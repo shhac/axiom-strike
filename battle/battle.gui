@@ -15,6 +15,10 @@ textures {
   name: "ui"
   texture: "/assets/images/ui/ui.atlas"
 }
+textures {
+  name: "characters"
+  texture: "/assets/images/sprites/characters.atlas"
+}
 nodes {
   position {
     x: 640.0
