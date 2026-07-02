@@ -83,7 +83,9 @@ function M.select_difficulty(player_elo)
 	-- 10^((q - p)/400) = 1/0.70 - 1 = 0.4286
 	-- (q - p)/400 = log10(0.4286) = -0.368
 	-- q - p = -147.2
-	local offset = 400 * math.log((1 / M.TARGET_SUCCESS_RATE) - 1, 10)
+	-- log10 via ln ratio: two-arg math.log is Lua 5.2+; Defold's 5.1 runtime
+	-- silently ignores the base and returns ln, skewing difficulty far too easy.
+	local offset = 400 * math.log((1 / M.TARGET_SUCCESS_RATE) - 1) / math.log(10)
 	return math.floor(player_elo + offset)
 end
 
