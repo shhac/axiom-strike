@@ -21,7 +21,9 @@ local function record_elo(self, correct, question_elo, time_taken)
 	self.player_elo = elo_module.update(self.player_elo, question_elo, correct, time_taken, attempts)
 	self.save_data.player_elo[self.elo_skill_key] = self.player_elo
 	self.save_data.last_played = os.time()
-	progress_module.save(self.save_data)
+	-- Defer the blocking sys.save to wave/battle boundaries; a write here runs
+	-- on EVERY answer (incl. each wrong tap) and stutters on slow phone flash.
+	progress_module.mark_dirty()
 end
 
 local function sync_all_enemy_hp(self, full_rebuild)
@@ -150,7 +152,8 @@ local function on_animation_complete(self)
 		end
 
 		if count_alive(self) == 0 then
-			-- Wave cleared
+			-- Wave cleared — safe boundary to persist Elo accumulated during the wave
+			progress_module.flush()
 			if self.current_wave >= #self.waves then
 				local star_count = stars_module.calculate(self.hero_hp, self.hero_max_hp, self.total_wrong, self.total_attempts)
 				self.earned_stars = star_count
@@ -448,6 +451,7 @@ function on_message(self, message_id, message, sender)
 		msg.post("main:/controller#script", "battle_complete", {stars = self.earned_stars or 1})
 
 	elseif message_id == hash("pause_pressed") then
+		progress_module.flush()
 		msg.post("main:/controller#script", "back_to_menu")
 
 	elseif message_id == hash("next_wave_pressed") then
@@ -462,6 +466,7 @@ function on_message(self, message_id, message, sender)
 	elseif message_id == hash("recovery_pressed") then
 		if self.recovery_available then
 			self.recovery_available = false
+			progress_module.flush()
 			-- Signal to main controller to show recovery screen
 			msg.post("main:/controller#script", "show_recovery", {
 				hero_hp = self.hero_hp,
@@ -478,4 +483,9 @@ function on_message(self, message_id, message, sender)
 		send_gui("update_hero_hp", {hp = self.hero_hp, max_hp = self.hero_max_hp})
 		start_wave(self)
 	end
+end
+
+function final(self)
+	-- Safety net: persist any Elo not yet flushed (defeat exit, forced unload)
+	progress_module.flush()
 end

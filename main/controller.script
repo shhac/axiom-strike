@@ -4,16 +4,15 @@ local current_screen = nil
 local pending_level = nil
 local battle_state_backup = nil
 
--- Auto-save on app focus loss
+-- Persist unsaved progress (e.g. mid-battle Elo) on app focus loss
 local function on_window_event(self, event)
 	if event == window.WINDOW_EVENT_FOCUS_LOST or event == window.WINDOW_EVENT_ICONIFIED then
-		local save_data = progress.load()
-		progress.save(save_data)
+		progress.flush()
 	end
 end
 
 local function load_screen(self, proxy)
-	msg.post(proxy, "load")
+	msg.post(proxy, "async_load")
 	self.loading_proxy = proxy
 end
 
@@ -24,8 +23,15 @@ local function unload_screen(self, proxy)
 end
 
 local function switch_to(self, proxy)
+	-- Never overlap proxy loads: a second load/unload while one is in flight is
+	-- a fatal engine error (double-tap, or battle_complete racing pause).
+	if self.loading_proxy then
+		self.pending_switch = proxy
+		return
+	end
 	if current_screen then
 		unload_screen(self, current_screen)
+		current_screen = nil
 	end
 	load_screen(self, proxy)
 end
@@ -33,6 +39,7 @@ end
 function init(self)
 	msg.post(".", "acquire_input_focus")
 	self.loading_proxy = nil
+	self.pending_switch = nil
 
 	-- Listen for window focus events (auto-save)
 	if window and window.set_listener then
@@ -48,6 +55,15 @@ function on_message(self, message_id, message, sender)
 		msg.post(sender, "enable")
 		current_screen = self.loading_proxy
 		self.loading_proxy = nil
+
+		if self.pending_switch then
+			local next_proxy = self.pending_switch
+			self.pending_switch = nil
+			if next_proxy ~= current_screen then
+				switch_to(self, next_proxy)
+				return
+			end
+		end
 
 		if current_screen == "#battle_proxy" and pending_level then
 			timer.delay(0.1, false, function()

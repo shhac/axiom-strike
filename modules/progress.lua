@@ -3,6 +3,11 @@ local M = {}
 local SAVE_FILE = "axiom_strike"
 local SAVE_KEY = "progress"
 
+-- Last loaded/saved table + dirty flag so hot paths (per-answer Elo updates)
+-- can defer the blocking sys.save to a safe boundary via mark_dirty()/flush().
+local cached = nil
+local dirty = false
+
 local default_data = {
 	completed_nodes = {},
 	stars = {},
@@ -35,12 +40,25 @@ function M.load()
 			data[k] = M._deep_copy(v)
 		end
 	end
+	cached = data
 	return data
 end
 
 function M.save(data)
 	local path = sys.get_save_file(SAVE_FILE, SAVE_KEY)
 	sys.save(path, data)
+	cached = data
+	dirty = false
+end
+
+function M.mark_dirty()
+	dirty = true
+end
+
+function M.flush()
+	if dirty and cached then
+		M.save(cached)
+	end
 end
 
 function M.mark_completed(data, node_id, stars)

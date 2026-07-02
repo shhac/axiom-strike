@@ -267,15 +267,17 @@ local function show_equation_feedback(result, target, mode, wrong_attempts)
 		idle_timer = HINT_DELAY
 	end
 
+	-- Capture this node so a newer feedback shown before the timer fires
+	-- isn't the one that gets faded/deleted.
+	local this_node = eq_feedback_node
 	timer.delay(2.5, false, function()
-		if eq_feedback_node then
-			gui.animate(eq_feedback_node, "color.w", 0, gui.EASING_OUTQUAD, 0.5, 0, function()
-				if eq_feedback_node then
-					safe_delete(eq_feedback_node)
-					eq_feedback_node = nil
-				end
-			end)
-		end
+		if eq_feedback_node ~= this_node then return end
+		gui.animate(this_node, "color.w", 0, gui.EASING_OUTQUAD, 0.5, 0, function()
+			if eq_feedback_node == this_node then
+				safe_delete(this_node)
+				eq_feedback_node = nil
+			end
+		end)
 	end)
 end
 
