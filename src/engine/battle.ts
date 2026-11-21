@@ -6,6 +6,11 @@ import { solve, type Solution } from "./solver";
 
 export const HERO_MAX_HP = 100;
 export const HINTS_PER_LEVEL = 3;
+export const POTION_HEAL = 30;
+
+/** Items earned at the campfire and carried into a battle. */
+export type Kit = { scrolls: number; potions: number };
+export const NO_KIT: Kit = { scrolls: 0, potions: 0 };
 
 export type Tile = { id: number; value: number; used: boolean };
 
@@ -42,6 +47,7 @@ export type BattleState = {
   equation: Equation;
   aim: Aim | null;
   hints: number;
+  potions: number;
   hintPath: Solution | null;
   nextId: number;
   stars: number;
@@ -55,9 +61,13 @@ export type BattleEvent =
   | { type: "defeated"; enemyId: number }
   | { type: "weaknessShift"; enemyId: number }
   | { type: "enemyAttack"; enemyId: number; damage: number }
+  | { type: "healed"; amount: number }
   | { type: "won"; stars: number }
   | { type: "lost" }
-  | { type: "rejected"; reason: "needOperator" | "badStep" | "tooShort" | "noAim" | "noHints" | "noExact" };
+  | {
+      type: "rejected";
+      reason: "needOperator" | "badStep" | "tooShort" | "noAim" | "noHints" | "noExact" | "noPotions" | "fullHealth";
+    };
 
 /** One beat of the battle: the state to show, and what just happened to get there. */
 export type Step = { state: BattleState; event: BattleEvent | null };
@@ -70,7 +80,8 @@ export type Action =
   | { type: "aim"; aim: Aim }
   | { type: "cast" }
   | { type: "endTurn" }
-  | { type: "hint" };
+  | { type: "hint" }
+  | { type: "potion" };
 
 export const STRIKE_DAMAGE = [0, 0, 20, 35, 55, 80] as const;
 const COUNTER_PER_POWER = 5;
@@ -107,13 +118,16 @@ export const runningTotals = (state: BattleState): number[] =>
 
 export const equationTotal = (state: BattleState): number | null => runningTotals(state).at(-1) ?? null;
 
+const MIN_POWER = 2;
+
 /**
  * How many tiles it really took to reach the final total. `3 + 4 + 5 - 5` is still a two-tile
- * seven, so adding a number and taking it away again earns nothing.
+ * seven, so adding a number and taking it away again earns nothing. It never drops below two:
+ * `6 × 1` is padding too, but it is still a right answer and hits like one.
  */
 const equationPower = (totals: readonly number[]): number => {
   const final = totals.at(-1);
-  return final === undefined ? 0 : totals.indexOf(final) + 1;
+  return final === undefined ? 0 : Math.max(MIN_POWER, totals.indexOf(final) + 1);
 };
 
 export const aimTarget = (state: BattleState): number | null => {
@@ -210,7 +224,7 @@ const openWave = (state: BattleState, wave: number): [Step, Step] => {
 };
 
 /** Always two steps: the first wave arriving, then the first hand being dealt. */
-export const createBattle = (level: Level, seed: number): readonly [Step, Step] => {
+export const createBattle = (level: Level, seed: number, kit: Kit = NO_KIT): readonly [Step, Step] => {
   const blank: BattleState = {
     level,
     seed,
@@ -222,7 +236,8 @@ export const createBattle = (level: Level, seed: number): readonly [Step, Step] 
     hand: [],
     equation: EMPTY_EQUATION,
     aim: null,
-    hints: HINTS_PER_LEVEL,
+    hints: HINTS_PER_LEVEL + kit.scrolls,
+    potions: kit.potions,
     hintPath: null,
     nextId: 1,
     stars: 0,
@@ -428,6 +443,18 @@ const hint = (state: BattleState): Step[] => {
   return quiet({ ...base, hints: state.hints - 1, hintPath: path });
 };
 
+const potion = (state: BattleState): Step[] => {
+  if (state.potions <= 0) return reject(state, "noPotions");
+  if (state.heroHp >= HERO_MAX_HP) return reject(state, "fullHealth");
+  const heroHp = Math.min(HERO_MAX_HP, state.heroHp + POTION_HEAL);
+  return [
+    {
+      state: { ...state, heroHp, potions: state.potions - 1 },
+      event: { type: "healed", amount: heroHp - state.heroHp },
+    },
+  ];
+};
+
 /** The tile (and operator) the active hint wants next, if the equation is still on its path. */
 export const hintNext = (state: BattleState): { tileId: number; op: Op | null } | null => {
   const path = state.hintPath;
@@ -461,5 +488,7 @@ export const reduce = (state: BattleState, action: Action): Step[] => {
       return endTurn(state);
     case "hint":
       return hint(state);
+    case "potion":
+      return potion(state);
   }
 };

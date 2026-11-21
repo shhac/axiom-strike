@@ -1,9 +1,20 @@
 import { signal } from "@preact/signals";
-import { createBattle, reduce, type Action, type BattleState, type Step } from "../engine/battle";
-import { FIRST_LEVEL, type Level } from "../engine/levels";
+import {
+  aimTarget,
+  createBattle,
+  equationTotal,
+  reduce,
+  type Action,
+  type BattleState,
+  type Step,
+} from "../engine/battle";
+import { FIRST_LEVEL, tuneLevel, type Level } from "../engine/levels";
+import { kitFor, recordCast, recordLoss, recordWin, spendItems, tierFor } from "../engine/progress";
+import { battleDifficulty, castScore } from "../engine/skill";
+import { solve } from "../engine/solver";
 import { playMusic } from "./audio";
 import { afterEvent, beforeEvent, heroPose } from "./fx";
-import { saveWin } from "./save";
+import { save, updateSave } from "./save";
 
 const randomSeed = () => Math.floor(Math.random() * 2 ** 31);
 
@@ -14,32 +25,89 @@ const randomSeed = () => Math.floor(Math.random() * 2 ** 31);
 export const battle = signal<BattleState>(createBattle(FIRST_LEVEL, 1)[0].state);
 export const busy = signal(false);
 
+/** The battle being played; leaving or restarting replaces it, which stops any steps still playing. */
+const session: { run: number; difficulty: number } = { run: 0, difficulty: 0 };
+
+/** Items used on screen come out of the save at once, so quitting neither refunds nor loses them. */
+const show = (next: BattleState) => {
+  const potionsDrunk = Math.max(0, battle.value.potions - next.potions);
+  const hintUsed = next.hints < battle.value.hints;
+  battle.value = next;
+  if (potionsDrunk > 0 || hintUsed) updateSave((current) => spendItems(current, next.hints, potionsDrunk));
+};
+
+const settle = (step: Step) => {
+  if (step.event?.type === "won") {
+    const { stars } = step.event;
+    updateSave((current) => recordWin(current, step.state.level, stars));
+  }
+  if (step.event?.type === "lost") updateSave((current) => recordLoss(current, step.state.level));
+};
+
 const play = async (steps: readonly Step[]) => {
+  const run = session.run;
   busy.value = true;
   for (const step of steps) {
     if (step.event) await beforeEvent(step.event);
-    battle.value = step.state;
-    if (step.event?.type === "won") saveWin(step.state.level, step.event.stars);
+    if (run !== session.run) return;
+    show(step.state);
+    settle(step);
     if (step.event) await afterEvent(step.event, step.state);
+    if (run !== session.run) return;
   }
   busy.value = false;
 };
 
+/**
+ * How a cast went, for the skill rating. Only casts that could have been exact with the tiles
+ * left are rated, so spending leftover tiles on a long shot is never held against the player.
+ */
+const castResult = (state: BattleState) => {
+  const target = aimTarget(state);
+  const total = equationTotal(state);
+  if (target === null || total === null || state.equation.tiles.length < 2) return null;
+  const values = state.hand.map((tile) => tile.value);
+  const spentEarlier = state.hand.flatMap((tile, index) =>
+    tile.used && !state.equation.tiles.includes(tile.id) ? [index] : [],
+  );
+  if (!solve(values, state.level.ops, target, { exclude: spentEarlier })) return null;
+  const distance = Math.abs(total - target);
+  return { exact: distance === 0, nearMiss: distance === 1, hinted: state.hintPath !== null };
+};
+
+const rateCast = (state: BattleState) => {
+  const result = castResult(state);
+  if (!result) return;
+  updateSave((current) => recordCast(current, state.level.region, session.difficulty, castScore(result)));
+};
+
 export const dispatch = (action: Action) => {
   if (busy.value) return;
-  const steps = reduce(battle.value, action);
+  const before = battle.value;
+  const steps = reduce(before, action);
   const last = steps.at(-1);
   if (!last) return;
+  if (action.type === "cast" && steps.some((step) => step.event?.type === "strike" || step.event?.type === "parry")) {
+    rateCast(before);
+  }
   const instant = steps.every((step) => step.event === null);
   if (!instant) return void play(steps);
-  battle.value = last.state;
+  show(last.state);
 };
 
 export const startBattle = (level: Level, seed = randomSeed()) => {
-  if (busy.value) return;
-  const steps = createBattle(level, seed);
+  const tier = tierFor(save.value, level);
+  const steps = createBattle(tuneLevel(level, tier), seed, kitFor(save.value));
+  session.run += 1;
+  session.difficulty = battleDifficulty(level, tier);
   heroPose.value = "idle";
   playMusic("music_battle");
   battle.value = steps[0].state;
   void play(steps);
+};
+
+/** Walks away from the battle in progress; nothing more from it is shown or saved. */
+export const leaveBattle = () => {
+  session.run += 1;
+  busy.value = false;
 };

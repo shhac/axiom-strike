@@ -14,6 +14,8 @@
 
   /* Everything is sized in rem, and one rem is whichever is smaller: 1/22.5 of the height or
      1/40 of the width. The layout is drawn for a 40 x 22.5 box and simply gains room beyond it. */
+  /* The vh line is for browsers without dynamic viewport units (iOS before 15.4). */
+  font-size: min(calc(100vh / 22.5), calc(100vw / 40));
   font-size: min(calc(100dvh / 22.5), calc(100dvw / 40));
   font-family: "Fredoka Variable", "Trebuchet MS", system-ui, sans-serif;
   font-weight: 600;
@@ -57,6 +59,8 @@ img {
   position: relative;
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  width: 100vw;
   height: 100dvh;
   width: 100dvw;
   overflow: hidden;

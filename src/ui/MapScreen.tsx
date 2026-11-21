@@ -1,10 +1,10 @@
 import { useEffect } from "preact/hooks";
 import { LEVELS, REGIONS, type Level, type Region } from "../engine/levels";
 import { isUnlocked, starsFor, type Save } from "../engine/progress";
-import { playMusic, playSfx, unlockAudio } from "./audio";
+import { playMusic, playSfx } from "./audio";
 import { icon } from "./assets";
-import { Num, RotatePrompt } from "./common";
-import { enterBattle, goTo } from "./nav";
+import { Num } from "./common";
+import { enterBattle, goTo, settingsOpen } from "./nav";
 import { save } from "./save";
 
 /** Where each of a land's five levels sits inside its column, as percentages: a path winding upward. */
@@ -70,10 +70,16 @@ const RegionColumn = ({ region, progress }: { region: Region; progress: Save }) 
   );
 };
 
+const open = (go: () => void) => () => {
+  playSfx("button");
+  go();
+};
+
 export const MapScreen = () => {
   useEffect(() => playMusic("music_calm"), []);
+  const { stories } = save.value;
   return (
-    <div class="screen map" onPointerDown={unlockAudio}>
+    <div class="screen map">
       <div class="map-art" />
       <div class="regions">
         {REGIONS.map((region) => (
@@ -83,7 +89,25 @@ export const MapScreen = () => {
       <button class="btn btn-icon map-back" data-action="back" aria-label="Back to title" onClick={() => goTo("title")}>
         <img src={icon("undo")} alt="" />
       </button>
-      <RotatePrompt />
+      <div class="map-tools">
+        <button
+          class={`btn btn-icon map-fire ${stories > 0 ? "is-lit" : ""}`}
+          data-action="campfire"
+          aria-label={`Campfire, ${stories} stories waiting`}
+          onClick={open(() => goTo("campfire"))}
+        >
+          <img src={icon("campfire")} alt="" />
+          {stories > 0 && <b class="badge">{stories}</b>}
+        </button>
+        <button
+          class="btn btn-icon"
+          data-action="settings"
+          aria-label="Settings"
+          onClick={open(() => (settingsOpen.value = true))}
+        >
+          <img src={icon("gear")} alt="" />
+        </button>
+      </div>
     </div>
   );
 };

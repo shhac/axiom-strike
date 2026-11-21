@@ -47,3 +47,6 @@ effects and jingles) trimmed of leading/trailing silence. Music and
 | `deal.mp3` | `card-fan-1.ogg` | Casino Audio | Kenney (kenney.nl) | https://kenney.nl/assets/casino-audio | CC0 |
 | `star.mp3` | `General Sounds/Coins/sfx_coin_single1.wav` | 512 Sound Effects (8-bit style) | Juhani Junkala (SubspaceAudio) | https://opengameart.org/content/512-sound-effects-8-bit-style | CC0 |
 | `error.mp3` | `General Sounds/Negative Sounds/sfx_sounds_error13.wav` | 512 Sound Effects (8-bit style) | Juhani Junkala (SubspaceAudio) | https://opengameart.org/content/512-sound-effects-8-bit-style | CC0 |
+| `potion.mp3` | `powerUp2.ogg` | Digital Audio | Kenney (kenney.nl) | https://kenney.nl/assets/digital-audio | CC0 |
+| `page.mp3` | `bookFlip2.ogg` | RPG Audio | Kenney (kenney.nl) | https://kenney.nl/assets/rpg-audio | CC0 |
+| `reward.mp3` | `powerUp7.ogg` | Digital Audio | Kenney (kenney.nl) | https://kenney.nl/assets/digital-audio | CC0 |

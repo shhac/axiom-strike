@@ -1,13 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { equationTotal, hintNext, reduce, type Action, type BattleState } from "../src/engine/battle";
+import { createBattle, equationTotal, hintNext, reduce, type Action, type BattleState } from "../src/engine/battle";
 import { dealHand, HAND_SIZE } from "../src/engine/deal";
 import { applyStep, evaluate, type Op } from "../src/engine/equation";
-import { findLevel, LEVELS } from "../src/engine/levels";
+import { findLevel, LEVELS, TIERS, tuneLevel } from "../src/engine/levels";
 import { createRng } from "../src/engine/rng";
 import { solve } from "../src/engine/solver";
 import { applyActions, masherBot, openingState, solverBot, winRate } from "./bots";
 
 const [addLevel, subLevel] = [findLevel("add_1"), findLevel("sub_1")];
+
+/** Every level as it can actually be played: at its own numbers, and one band easier and harder. */
+const TUNED = LEVELS.flatMap((level) =>
+  TIERS.map((tier) => ({ name: `${level.id} ${tier}`, level: tuneLevel(level, tier) })),
+);
 
 const start = (seed = 7, level = addLevel) => openingState(level, seed);
 const act = (state: BattleState, ...actions: Action[]) => applyActions(state, actions);
@@ -77,7 +82,7 @@ describe("solver", () => {
 });
 
 describe("deal guarantee", () => {
-  it.each(LEVELS)("always has disjoint exact answers ($id)", (level) => {
+  it.each(TUNED)("always has disjoint exact answers ($name)", ({ level }) => {
     const failures = Array.from({ length: 600 }, (_, seed) => {
       const rng = createRng(seed + 1);
       const strike = rng.pick(level.weakness);
@@ -160,6 +165,12 @@ describe("battle rules", () => {
     expect(state.enemies[0]!.hp).toBe(80);
   });
 
+  it("multiplying by one is still a right answer and hits as a two-number strike", () => {
+    const base = rig(start(7, findLevel("mul_1")), [6, 1], { weakness: 6, hp: 40, maxHp: 40 });
+    const state = act(base, tap(0), { type: "tapOp", op: "×" }, tap(1), { type: "cast" });
+    expect(state.enemies[0]!.hp).toBe(20);
+  });
+
   it("rejects a tile that needs an operator, or that would go below zero", () => {
     const base = rig(start(7, subLevel), [3, 9]);
     const noOp = reduce(act(base, tap(0)), tap(1));
@@ -226,6 +237,40 @@ describe("battle rules", () => {
     expect(hintNext(act(hinted, tap(1)))?.tileId).toBe(102);
   });
 
+  it("stars follow the health left at the end: 3 from 70, 2 from 35, otherwise 1", () => {
+    const finish = (heroHp: number) => {
+      const opening = start();
+      const lastWave = { ...opening, heroHp, wave: addLevel.waves.length - 1, enemies: opening.enemies.slice(0, 1) };
+      return act(rig(lastWave, [3, 4], { weakness: 7, hp: 20 }), tap(0), tap(1), { type: "cast" }).stars;
+    };
+    expect([100, 70, 69, 35, 34, 1].map(finish)).toEqual([3, 3, 2, 2, 1, 1]);
+  });
+
+  it("explains every refused action", () => {
+    const base = rig(start(), [3, 4, 9], { weakness: 7 });
+    const reason = (state: BattleState, action: Action) => {
+      const event = reduce(state, action)[0]?.event;
+      return event?.type === "rejected" ? event.reason : null;
+    };
+    expect(reason(act(base, tap(0)), { type: "cast" })).toBe("tooShort");
+    expect(reason({ ...act(base, tap(0), tap(1)), aim: null }, { type: "cast" })).toBe("noAim");
+    expect(reason({ ...base, hints: 0 }, { type: "hint" })).toBe("noHints");
+    expect(reason({ ...base, aim: null }, { type: "hint" })).toBe("noAim");
+    expect(reason(base, { type: "potion" })).toBe("noPotions");
+    expect(reason({ ...base, potions: 1 }, { type: "potion" })).toBe("fullHealth");
+  });
+
+  it("a potion heals 30, never past full health, and is used up", () => {
+    const hurt = { ...start(), heroHp: 50, potions: 2 };
+    const healed = act(hurt, { type: "potion" });
+    expect([healed.heroHp, healed.potions]).toEqual([80, 1]);
+    expect(act(healed, { type: "potion" }).heroHp).toBe(100);
+  });
+
+  it("carried hint scrolls add to the three free hints", () => {
+    expect(createBattle(addLevel, 7, { scrolls: 2, potions: 1 })[1].state).toMatchObject({ hints: 5, potions: 1 });
+  });
+
   it("a hint is free when there is no exact answer", () => {
     const rigged = rig(start(), [9, 9, 9], { weakness: 7 });
     const steps = reduce(rigged, { type: "hint" });
@@ -260,15 +305,20 @@ describe("simulated players", () => {
     expect(result.rate).toBeLessThan(0.25);
   });
 
-  it.each(LEVELS)("$id is winnable with two-number answers", (level) => {
-    const result = winRate(level, solverBot(2), 60);
-    console.log(`two-tile bot, ${level.id}:`, JSON.stringify(result));
-    expect(result.rate).toBeGreaterThanOrEqual(0.9);
+  it.each(TUNED)("$name is winnable with two-number answers", ({ level }) => {
+    expect(winRate(level, solverBot(2), 60).rate).toBeGreaterThanOrEqual(0.9);
   });
 
-  it.each(LEVELS)("$id is not winnable by mashing", (level) => {
-    const result = winRate(level, masherBot, 60);
-    console.log(`masher, ${level.id}:`, JSON.stringify(result));
-    expect(result.rate).toBeLessThan(0.3);
+  it.each(TUNED)("$name is not winnable by mashing", ({ level }) => {
+    expect(winRate(level, masherBot, 60).rate).toBeLessThan(0.3);
+  });
+
+  it("a gentler tier is kinder and a tougher tier harsher to a child who never parries", () => {
+    const level = findLevel("add_3");
+    const [gentle, standard, tough] = TIERS.map(
+      (tier) => winRate(tuneLevel(level, tier), solverBot(2, { parries: false }), 200).meanHp,
+    );
+    expect(gentle).toBeGreaterThan(standard!);
+    expect(standard).toBeGreaterThan(tough!);
   });
 });

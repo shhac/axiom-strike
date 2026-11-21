@@ -1,6 +1,9 @@
 import { HERO_MAX_HP, type AimKind, type BattleState, type Enemy } from "../../engine/battle";
 import { enemySprite, icon } from "../assets";
+import { playSfx } from "../audio";
 import { Num } from "../common";
+import { settingsOpen } from "../nav";
+import { busy } from "../store";
 import { act } from "./act";
 
 const HpBar = ({ hp, max, tone }: { hp: number; max: number; tone: "hero" | "enemy" }) => (
@@ -54,6 +57,12 @@ const pipClass = (index: number, wave: number) => {
   return index === wave ? "pip is-now" : "pip";
 };
 
+const openPause = () => {
+  if (busy.value) return;
+  playSfx("button");
+  settingsOpen.value = true;
+};
+
 export const Hud = ({ state }: { state: BattleState }) => (
   <div class="hud">
     <div class="hud-hero">
@@ -67,6 +76,22 @@ export const Hud = ({ state }: { state: BattleState }) => (
           <i class={pipClass(index, state.wave)} />
         ))}
       </span>
+    </div>
+    <div class="hud-side">
+      <button class="btn hud-pause" data-action="pause" aria-label="Pause" onClick={openPause}>
+        <img src={icon("gear")} alt="" />
+      </button>
+      {state.potions > 0 && (
+        <button
+          class="btn hud-potion"
+          data-action="potion"
+          aria-label={`Drink a potion, ${state.potions} left`}
+          onClick={act("button", { type: "potion" })}
+        >
+          <img src={icon("potion")} alt="" />
+          <b class="badge">{state.potions}</b>
+        </button>
+      )}
     </div>
   </div>
 );

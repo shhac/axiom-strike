@@ -99,6 +99,8 @@ const REJECTIONS: Record<EventOf<"rejected">["reason"], string> = {
   noAim: "Tap a target first",
   noHints: "No hint scrolls left",
   noExact: "No exact answer left this turn",
+  noPotions: "No potions left. Earn more at the campfire",
+  fullHealth: "You are already at full health",
 };
 
 const COMBO_NAMES = ["", "", "", "COMBO!", "SUPER COMBO!", "MEGA COMBO!"];
@@ -204,6 +206,13 @@ export const afterEvent = async (event: BattleEvent, state: BattleState) => {
     case "deal":
       playSfx("deal", 0.6);
       return wait(120);
+    case "healed":
+      heroPose.value = "victory";
+      playSfx("potion");
+      float(`+${event.amount}`, heroNode(), "good");
+      await wait(520);
+      heroPose.value = "idle";
+      return;
     case "won":
       return wonFx(event);
     case "lost":

@@ -1,19 +1,26 @@
 import type { BattleState } from "../../engine/battle";
-import { nextLevel } from "../../engine/levels";
+import { findLevel, nextLevel } from "../../engine/levels";
 import { icon } from "../assets";
 import { playSfx } from "../audio";
-import { goTo } from "../nav";
-import { startBattle } from "../store";
+import { enterBattle, goTo } from "../nav";
+import { save } from "../save";
 
 const backToMap = () => {
   playSfx("button");
   goTo("map");
 };
 
+const toCampfire = () => {
+  playSfx("button");
+  goTo("campfire");
+};
+
 export const Result = ({ state }: { state: BattleState }) => {
   if (state.phase === "player") return null;
   const won = state.phase === "won";
   const next = nextLevel(state.level);
+  // The level on screen may carry tuned numbers; replaying starts again from the level as designed.
+  const level = findLevel(state.level.id);
   return (
     <div class="overlay" data-result={state.phase}>
       <div class="result">
@@ -35,13 +42,19 @@ export const Result = ({ state }: { state: BattleState }) => {
           <button class="btn btn-wide" data-action="map" onClick={backToMap}>
             Map
           </button>
+          {won && save.value.stories > 0 && (
+            <button class="btn btn-wide btn-fire" data-action="campfire" onClick={toCampfire}>
+              <img src={icon("campfire")} alt="" />
+              Story
+            </button>
+          )}
           {(!won || !next) && (
-            <button class="btn btn-wide btn-go" data-action="retry" onClick={() => startBattle(state.level)}>
+            <button class="btn btn-wide btn-go" data-action="retry" onClick={() => enterBattle(level)}>
               {won ? "Play again" : "Try again"}
             </button>
           )}
           {won && next && (
-            <button class="btn btn-wide btn-go" data-action="next" onClick={() => startBattle(next)}>
+            <button class="btn btn-wide btn-go" data-action="next" onClick={() => enterBattle(next)}>
               Next level
             </button>
           )}

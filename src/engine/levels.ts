@@ -133,6 +133,45 @@ export const LEVELS: readonly Level[] = REGIONS.flatMap((region) =>
   })),
 );
 
+export type Tier = "gentle" | "standard" | "tough";
+
+/** One band easier than a land's first step and one harder than its last, so every level can flex. */
+const BEYOND: Record<OpFamily, { below: Numbers; above: Numbers }> = {
+  add: {
+    // Any smaller than this and tapping two tiles at random starts to win.
+    below: { tileMax: 8, weakness: range(4, 12), attack: range(3, 10) },
+    above: { tileMax: 25, weakness: range(15, 40), attack: range(12, 28) },
+  },
+  sub: {
+    below: { tileMax: 10, weakness: range(1, 8), attack: range(2, 8) },
+    above: { tileMax: 40, weakness: range(8, 30), attack: range(10, 26) },
+  },
+  mul: {
+    below: { tileMax: 4, weakness: products(4), attack: products(4, 9) },
+    above: { tileMax: 12, weakness: products(12, 144).filter((n) => n >= 12), attack: products(12, 30) },
+  },
+  div: {
+    below: { tileMax: 12, weakness: range(2, 5), attack: range(2, 6) },
+    above: { tileMax: 72, weakness: range(4, 12), attack: range(5, 14) },
+  },
+};
+
+const TIER_STEP: Record<Tier, number> = { gentle: -1, standard: 0, tough: 1 };
+
+/**
+ * The same level with the number sizes of the step before or after it in its land. Waves and
+ * signs stay as they are, and the three number lists always move together.
+ */
+export const tuneLevel = (level: Level, tier: Tier): Level => {
+  if (tier === "standard") return level;
+  const { below, above } = BEYOND[level.region];
+  const bands = [below, ...NUMBERS[level.region], above];
+  const numbers = bands[level.step + 1 + TIER_STEP[tier]];
+  return numbers ? { ...level, ...numbers } : level;
+};
+
+export const TIERS: readonly Tier[] = ["gentle", "standard", "tough"];
+
 export const FIRST_LEVEL: Level = LEVELS[0]!;
 
 /** An unknown id falls back to the first level rather than failing. */

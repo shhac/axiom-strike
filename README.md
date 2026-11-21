@@ -11,15 +11,15 @@ pnpm install
 pnpm dev        # then open the printed URL in a phone-sized landscape window
 ```
 
-Useful URL parameters while developing: `?level=add_1` (any level id, e.g. `mul_3`) to jump straight into a battle, `?seed=7` for a repeatable game.
+Useful URL parameters while developing: `?level=add_1` (any level id, e.g. `mul_3`) to jump straight into a battle (skipping the intro scene), `?seed=7` for a repeatable game.
 
 ## Checks
 
 ```sh
-pnpm test         # rules, dealing promise, simulated players
+pnpm test         # rules, dealing promise, simulated players, save, ratings, campfire
 pnpm typecheck
 pnpm build && pnpm preview --port 5198
-BASE_URL=http://localhost:5198/ pnpm e2e   # full playthroughs on an emulated S21, 4x CPU throttle
+BASE_URL=http://localhost:5198/ pnpm e2e   # full playthroughs and a campfire/items/settings journey on an emulated S21, 4x CPU throttle
 ```
 
 ## Android debug build
@@ -39,6 +39,7 @@ Install on a connected phone with `$ANDROID_HOME/platform-tools/adb install -r a
 
 ```
 src/engine/     pure game rules (seeded, no DOM)
+src/content/    intro scenes and reading passages
 src/ui/         screens, animation, sound
 tests/          vitest, including simulated players that guard balance
 e2e/            Playwright playthrough

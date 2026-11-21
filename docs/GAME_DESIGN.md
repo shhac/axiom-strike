@@ -51,7 +51,7 @@ The first version of this game was built in Defold and is preserved as the git t
 | One away | 1 damage ("So close!") |
 | Further off | Miss, no damage |
 
-- Only numbers that were needed count. `3 + 4 + 5 − 5` is a two-number seven: adding a number and taking it away again earns nothing.
+- Only numbers that were needed count. `3 + 4 + 5 − 5` is a two-number seven: adding a number and taking it away again earns nothing. Padding never costs anything either: `6 × 1` is still a right answer and hits as a two-number six.
 - A monster that survives an exact hit **changes its weakness**, so no sum is repeated.
 - Monster health: minion 20, standard 40, boss 100.
 
@@ -80,16 +80,26 @@ Spare tiles first go to a three-number answer for the same weakness, then to ran
 
 ### Hints
 
-- Three hint scrolls per level. More are earned at the campfire.
+- Three free hint scrolls per level. Scrolls earned at the campfire are carried on top of those; the free ones are used first.
 - A hint lights up the whole path to the aimed number, one tile at a time. If what is already on the board cannot get there, the hint starts the equation over.
 - If no exact answer is left this turn, the game says so and the scroll is not spent.
 - Nothing is revealed for free by waiting.
+
+### Potions
+
+- Earned at the campfire. A potion restores 30 health, never past full, and cannot be drunk at full health.
+- At most two go into any one battle, so a full bag cannot buy three stars. The bag holds nine of each item.
+- Items leave the bag the moment they are used, so quitting a battle neither refunds nor loses them.
+
+### Pausing
+
+- The gear button beside the hero opens the settings sheet, with **Leave battle**. Leaving is not a loss and saves nothing from that battle.
 
 ### Winning and losing
 
 - A level is three waves. Clearing the last wave wins.
 - Stars: 3 for finishing on 70%+ health, 2 for 35%+, otherwise 1.
-- Losing is framed as "So close! Try again" and costs nothing.
+- Losing is framed as "So close! Try again" and costs nothing. Two losses in a row on a level make its numbers gentler (see Adaptive difficulty).
 
 ### Balance targets (checked by simulated players in the test suite)
 
@@ -101,20 +111,45 @@ Spare tiles first go to a three-number answer for the same weakness, then to ran
 
 - Enemy **families** map to operations and to a look: addition (green slimes), subtraction (red spiky), multiplication (purple wizards), division (blue water drops).
 - Three ranks per family: minion, standard, boss.
-- (Not built yet) New families are introduced by a short **intro scene**: the monster meets the hero and shows off an over-the-top personality. This is where a new operation is explained.
+- Each family is introduced by a short **intro scene** the first time one of its levels is entered: the monster (Blobbert, Sir Prickle, Crystamul, Dribble) shows off an over-the-top personality, and the hero answers with a worked example of the new sign. The addition scene doubles as the how-to-play. Each boss gets a one-line taunt the first time its level is entered. Tap to advance; Skip is always there. Scenes are in `src/content/intros.ts`.
 
-## Campfire (reading) — designed, not built yet
+## Campfire (reading)
 
-Between levels the hero rests at a campfire and may read a scroll.
+Every level win lights the campfire for one more story (up to three waiting). It is reached from the victory panel and from the map, and is always optional.
 
-1. A short public-domain passage is shown. **There is no forced timer**: the child reads at their own pace and taps when ready. Time taken is recorded for difficulty tuning, not shown as pressure.
-2. A multiple-choice question follows (one right answer, one nearly right, three wrong).
-3. Rewards are items for the next battle: hint scrolls and potions. A right answer gives the most; a nearly right answer gives some; any honest attempt gives a little.
-4. Reading is always optional and never blocks progress.
+1. A short passage is shown. **There is no timer on screen**: the child reads at their own pace and taps "I have read it".
+2. A multiple-choice question follows (one right answer, one nearly right, three wrong). "Read it again" goes back with no penalty.
+3. Rewards go into the bag for later battles:
 
-Reading difficulty follows the maths level by default and can be set separately.
+| Answer | Reward |
+|---|---|
+| Right | 1 potion + 1 hint scroll |
+| Nearly right | 1 potion |
+| Wrong, after an honest read | 1 hint scroll |
+| Wrong, tapped straight through | nothing, and a gentle "take your time" |
 
-Content pipeline: see [Reading Corpus Pipeline](READING_CORPUS_PIPELINE.md). The 40+ passages written for the first version are in the `defold-final` tag under `data/`.
+- An honest read is at least a quarter of a second per word with the passage on screen. The time is never shown.
+- The story, its reward and the fact it was read are saved in one step when an answer is tapped, so quitting cannot re-roll an answer.
+- Passages do not repeat until all fifty have been read.
+- **Reading level** is chosen for the child: until three stories are answered it sits half a grade below the land they have reached (Addition 2, Subtraction 2.5, Multiplication 3.5, Division 4.5); after that it follows its own rating from their answers. Settings can fix it to Easy, Medium or Hard.
+
+The fifty passages (grades 1 to 7) are in `src/content/passages.ts`; they were written for the first version and still need review. Content pipeline: see [Reading Corpus Pipeline](READING_CORPUS_PIPELINE.md).
+
+## Adaptive difficulty
+
+The game keeps a rating for each of the four operations and uses it to pick the size of the numbers. The method is the Elo model in [Adaptive Difficulty](ADAPTIVE_DIFFICULTY.md), fitted to hand-built levels.
+
+- **What is rated:** every cast that could have been exact with the tiles left. Exact scores 1 (0.5 if a hint was showing), one away 0.4, further 0. Casts made when no exact answer was possible are ignored.
+- **Against what:** the level's difficulty, 900 for the first step of a land rising 100 per step, shifted by 100 for the tier being played.
+- **How fast:** ratings move quickly for a new player (K = 80) and settle (K falls to 24). They stay between 400 and 2000 and drift back toward 1000 by 5% for each day away, up to thirty days.
+- **Tiers:** each battle is played gentle, standard or tough. Tough when the rating leads the level by 200 or more; gentle when it trails by 50 or more, or after two losses in a row on that level.
+- **What a tier changes:** only the number sizes (largest tile, weakness numbers, attack numbers), which move one band down or up. Bands are the steps of the land, plus one easier than its first step and one harder than its last. Signs, monsters and waves never change, so the dealing promise and the simulated-player tests hold at every tier.
+- **Override:** Settings → Sums can fix the tier to Gentle, Normal or Tough.
+- Nothing on screen tells the child which tier they are on.
+
+## Settings
+
+Opened from the title, the map and the pause button: music on/off, sounds on/off, Sums (difficulty), Stories (reading level), and **Start over**, which needs a second tap and wipes progress but keeps these settings.
 
 ## Progression
 
@@ -126,6 +161,7 @@ Content pipeline: see [Reading Corpus Pipeline](READING_CORPUS_PIPELINE.md). The
 
 - Four regions of five levels each (20 levels). The fifth level of a region ends with its boss.
 - Stars earned are saved on the device and shown on the map; replaying never lowers them.
+- Everything else is saved with them: ratings, items, stories waiting, passages read, intros seen and settings. An older save that only has stars still loads.
 
 ### Level definition
 
@@ -155,24 +191,26 @@ Feel is a requirement, not polish.
 
 - **Title screen:** key art, animated logo, music. It should make a child want to press Play.
 - **Numbers** in play (tiles, chips, damage) use a custom drawn glyph set, not a stock font.
-- **Sound:** every tap, hit, parry, miss and win has its own sound; music for title, battle and campfire. All audio is CC0, credited in `public/assets/audio/CREDITS.md`.
+- **Sound:** every tap, hit, parry, miss and win has its own sound; music for title, battle and campfire. Sound stops when the app is in the background. All audio is CC0, credited in `public/assets/audio/CREDITS.md`.
 - **Motion:** attacks have a wind-up before numbers change; hits shake and flash; results pop.
 
 ## Technology
 
 - **Why web:** the game is a turn-based tile and text interface. DOM/CSS gives crisp text at phone pixel densities, layout that adapts to any aspect ratio, and a build that can be driven and inspected automatically in a browser on every change.
+- **iOS:** not built yet, but nothing rules it out. Music volume goes through a gain node (iOS ignores an audio element's volume), sound unlocks on the first touch anywhere, audio is MP3, and layout has a fallback for browsers without dynamic viewport units. To do when iOS is added: move the save from `localStorage` to `@capacitor/preferences`, because WKWebView may evict `localStorage`; all save access is already in `src/ui/save.ts`.
 - **Structure:**
   - `src/engine/` is pure and deterministic (seeded): equation rules, solver, dealing, and a battle reducer that returns a list of steps (state + what happened).
+  - `src/content/` holds the words: intro scenes and reading passages.
   - `src/ui/` renders the current step and plays an animation for each event before showing the next.
 - **Sizing:** one rem is the smaller of 1/22.5 of the screen height or 1/40 of its width, so the whole layout scales together. Touch targets are at least 48 CSS px on an S21.
 - **Checks:**
-  - `pnpm test`: rules, the dealing promise, simulated players.
-  - `pnpm e2e`: plays whole levels through the real interface on an emulated S21 with the CPU slowed 4×, and fails on console errors, overflow, small touch targets, slow frames or long stalls.
+  - `pnpm test`: rules, the dealing promise and simulated players at every tier, saved progress, ratings, campfire rewards.
+  - `pnpm e2e`: plays whole levels through the real interface on an emulated S21 with the CPU slowed 4×, and fails on console errors, overflow, small touch targets, slow frames, long stalls or a strike with no damage number. It also walks one journey: win, read at the campfire, carry the reward into the next battle, drink it, pause, leave, change settings, start over.
 
 ## Related documents
 
 - [Wave Structure](WAVE_STRUCTURE.md) — session pacing research (written for the first version; turn timing still applies)
-- [Adaptive Difficulty](ADAPTIVE_DIFFICULTY.md) — Elo-based difficulty selection (not yet rebuilt)
+- [Adaptive Difficulty](ADAPTIVE_DIFFICULTY.md) — the research behind the ratings; "Adaptive difficulty" above is what is built
 - [Reading Corpus Pipeline](READING_CORPUS_PIPELINE.md)
 - [Art Direction](ART_DIRECTION_RESEARCH.md)
 - [Recovery Balance](RECOVERY_BALANCE.md) — written for in-battle healing; the effort-based reward idea carries over to campfire items
@@ -180,7 +218,7 @@ Feel is a requirement, not polish.
 
 ## Open questions
 
-1. **Tuning with real children.** The simulated players are perfect or random; real play will sit between. Level length and attack sizes are the first levers.
+1. **Tuning with real children.** The simulated players are perfect or random; real play will sit between. Level length and attack sizes are the first levers. The rating thresholds (200 ahead, 50 behind) and the quarter-second-per-word reading floor are first guesses.
 2. **Reading corpus curation.** Pipeline designed, content needs review.
 3. **Accessibility.** Colour-blind safety for the red/blue chips (icons already differ), reduced motion, screen readers.
-4. **Analytics and privacy.** What to record for adaptive difficulty under COPPA / GDPR-K.
+4. **Analytics and privacy.** Ratings and reading times stay on the device today. Anything sent off it needs a COPPA / GDPR-K decision first.

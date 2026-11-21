@@ -1,7 +1,6 @@
-import { goTo } from "./nav";
-import { glyphSrc } from "./assets";
-import { RotatePrompt } from "./common";
-import { playMusic, playSfx, unlockAudio } from "./audio";
+import { goTo, settingsOpen } from "./nav";
+import { glyphSrc, icon } from "./assets";
+import { playMusic, playSfx } from "./audio";
 import { useEffect } from "preact/hooks";
 
 const DRIFTERS = ["plus", "7", "times", "3", "minus", "9", "divide"] as const;
@@ -22,7 +21,7 @@ const openMap = () => {
 export const TitleScreen = () => {
   useEffect(() => playMusic("music_title"), []);
   return (
-    <div class="screen title" onPointerDown={unlockAudio}>
+    <div class="screen title">
       <div class="title-art" />
       <div class="title-shade" />
       <div class="drifters" aria-hidden="true">
@@ -34,8 +33,18 @@ export const TitleScreen = () => {
       <button class="play" data-action="play" onClick={openMap}>
         <span>PLAY</span>
       </button>
+      <button
+        class="btn btn-icon title-settings"
+        data-action="settings"
+        aria-label="Settings"
+        onClick={() => {
+          playSfx("button");
+          settingsOpen.value = true;
+        }}
+      >
+        <img src={icon("gear")} alt="" />
+      </button>
       <p class="tagline">Add it up. Strike it down.</p>
-      <RotatePrompt />
     </div>
   );
 };
