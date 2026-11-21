@@ -1,10 +1,11 @@
 import { useEffect } from "preact/hooks";
 import { LEVELS, REGIONS, type Level, type Region } from "../engine/levels";
 import { isUnlocked, starsFor, type Save } from "../engine/progress";
-import { playMusic, playSfx } from "./audio";
+import { playMusic } from "./audio";
 import { icon } from "./assets";
 import { Num } from "./common";
 import { enterBattle, goTo, settingsOpen } from "./nav";
+import { press } from "./press";
 import { save } from "./save";
 
 /** Where each of a land's five levels sits inside its column, as percentages: a path winding upward. */
@@ -30,10 +31,7 @@ const NodeButton = ({ level, current, progress }: { level: Level; current: boole
       data-level={level.id}
       aria-label={`${level.name}${open ? "" : ", locked"}${stars ? `, ${stars} stars` : ""}`}
       disabled={!open}
-      onClick={() => {
-        playSfx("button");
-        enterBattle(level);
-      }}
+      onClick={press(() => enterBattle(level))}
     >
       {open ? <Num value={level.step + 1} /> : <img class="node-lock" src={icon("lock")} alt="" />}
       {stars > 0 && (
@@ -70,11 +68,6 @@ const RegionColumn = ({ region, progress }: { region: Region; progress: Save }) 
   );
 };
 
-const open = (go: () => void) => () => {
-  playSfx("button");
-  go();
-};
-
 export const MapScreen = () => {
   useEffect(() => playMusic("music_calm"), []);
   const { stories } = save.value;
@@ -94,7 +87,7 @@ export const MapScreen = () => {
           class={`btn btn-icon map-fire ${stories > 0 ? "is-lit" : ""}`}
           data-action="campfire"
           aria-label={`Campfire, ${stories} stories waiting`}
-          onClick={open(() => goTo("campfire"))}
+          onClick={press(() => goTo("campfire"))}
         >
           <img src={icon("campfire")} alt="" />
           {stories > 0 && <b class="badge">{stories}</b>}
@@ -103,7 +96,7 @@ export const MapScreen = () => {
           class="btn btn-icon"
           data-action="settings"
           aria-label="Settings"
-          onClick={open(() => (settingsOpen.value = true))}
+          onClick={press(() => (settingsOpen.value = true))}
         >
           <img src={icon("gear")} alt="" />
         </button>

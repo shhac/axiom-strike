@@ -66,12 +66,17 @@ const layoutProblems = (page, where) =>
     { where, min: MIN_TOUCH },
   );
 
+/** Lets a screen settle, keeps a picture of it and checks its layout, so no screen gets one without the other. */
+const checkScreen = async (page, problems, shot, { name, where = name, settleMs }) => {
+  await page.waitForTimeout(settleMs);
+  await shot(name);
+  problems.push(...(await layoutProblems(page, where)));
+};
+
 /** Taps through an intro scene, checking it once on the way. Returns how many beats were shown. */
 const passIntro = async (page, problems, shot) => {
   await onScreen(page, "intro");
-  await page.waitForTimeout(400);
-  await shot("intro");
-  problems.push(...(await layoutProblems(page, "intro")));
+  await checkScreen(page, problems, shot, { name: "intro", settleMs: 400 });
   const step = async (beats) => {
     if ((await page.evaluate(() => window.__axiom.screen())) !== "intro") return beats;
     await tap(page, "[data-screen=intro]");
@@ -83,14 +88,10 @@ const passIntro = async (page, problems, shot) => {
 
 const openFromTitle = async (page, url, level, problems, shot) => {
   await page.goto(url);
-  await page.waitForTimeout(1500);
-  await shot("title");
-  problems.push(...(await layoutProblems(page, "title")));
+  await checkScreen(page, problems, shot, { name: "title", settleMs: 1500 });
   await tap(page, "[data-action=play]");
   await onScreen(page, "map");
-  await page.waitForTimeout(500);
-  await shot("map");
-  problems.push(...(await layoutProblems(page, "map")));
+  await checkScreen(page, problems, shot, { name: "map", settleMs: 500 });
   await tap(page, `[data-level=${level}]`);
   const beats = await passIntro(page, problems, shot);
   if (beats < 3) problems.push(`intro for ${level}: only ${beats} beats shown`);
@@ -183,8 +184,8 @@ const castMove = async (page, plan, shotOnce) => {
   return showedDamage;
 };
 
-/** Plays until the battle ends, or until `until` says to stop. Counts casts and missing damage numbers. */
-const playTurns = async (page, shotOnce, options = {}, tally = { turns: 0, casts: 0, silentCasts: 0 }) => {
+/** Plays until the battle ends, or until `until` says to stop. Counts casts and keeps any that showed no damage number. */
+const playTurns = async (page, shotOnce, options = {}, tally = { turns: 0, casts: 0, silentCasts: [] }) => {
   if (tally.turns >= MAX_TURNS) return { ...tally, timeout: true };
   if (options.until && (await options.until())) return { ...tally, stopped: true };
   const plan = await planMove(page, options);
@@ -194,11 +195,10 @@ const playTurns = async (page, shotOnce, options = {}, tally = { turns: 0, casts
     return playTurns(page, shotOnce, options, { ...tally, turns: tally.turns + 1 });
   }
   const showedDamage = await castMove(page, plan, shotOnce);
-  if (!showedDamage) console.log("no damage number after", JSON.stringify(plan), JSON.stringify(await readState(page)));
   return playTurns(page, shotOnce, options, {
     turns: tally.turns + 1,
     casts: tally.casts + 1,
-    silentCasts: tally.silentCasts + (showedDamage ? 0 : 1),
+    silentCasts: showedDamage ? tally.silentCasts : [...tally.silentCasts, plan],
   });
 };
 
@@ -223,7 +223,11 @@ const playLevel = async (page, prefix, open, { timed = true } = {}) => {
   if (outcome.timeout) problems.push("did not finish");
   if (outcome.plan?.done !== "won") problems.push(`ended ${outcome.plan?.done ?? "unfinished"}`);
   if (!(outcome.casts > 0)) problems.push("no casts were made");
-  if (outcome.silentCasts > 0) problems.push(`${outcome.silentCasts} casts showed no damage number`);
+  if (outcome.silentCasts.length > 0) {
+    problems.push(
+      `${outcome.silentCasts.length} casts showed no damage number: ${JSON.stringify(outcome.silentCasts)}`,
+    );
+  }
   if (errors.length) problems.push(`console errors ${JSON.stringify(errors)}`);
   if (!(perf.frames > 100)) problems.push(`only ${perf.frames} frames sampled`);
   // Taking full-resolution screenshots stalls the page, so timings only count on runs without them.
@@ -236,41 +240,35 @@ const expectThat = (problems, ok, message) => {
   if (!ok) problems.push(message);
 };
 
-/** Win a level, read at the campfire, carry the reward into the next battle, drink it, and leave. */
-const journey = async (page) => {
-  const errors = watchErrors(page);
-  const problems = [];
-  const { shot, shotOnce } = screenshots(page, "journey");
+const winFirstLevel = async ({ page, problems, shot, shotOnce }) => {
   await openFromTitle(page, `${base}?seed=7`, "add_1", problems, shot);
   await idle(page);
   const first = await playTurns(page, shotOnce);
   expectThat(problems, first.plan?.done === "won", `first level ended ${first.plan?.done}`);
   await page.waitForTimeout(900);
   expectThat(problems, (await readSave(page)).stories === 1, "a win did not light the campfire");
+};
 
+const readAtCampfire = async ({ page, problems, shot }) => {
   await tap(page, "[data-action=campfire]");
   await onScreen(page, "campfire");
-  await page.waitForTimeout(400);
-  await shot("fire_read");
-  problems.push(...(await layoutProblems(page, "campfire passage")));
+  await checkScreen(page, problems, shot, { name: "fire_read", where: "campfire passage", settleMs: 400 });
   await tap(page, "[data-action=read-done]");
-  await page.waitForTimeout(300);
-  await shot("fire_ask");
-  problems.push(...(await layoutProblems(page, "campfire question")));
+  await checkScreen(page, problems, shot, { name: "fire_ask", where: "campfire question", settleMs: 300 });
   await tap(page, "[data-action=read-again]");
   await tap(page, "[data-action=read-done]");
   await tap(page, "[data-answer=correct]");
   await page.waitForSelector("[data-reward='1-1']", { timeout: 3000 }).catch(() => problems.push("no reward shown"));
-  await page.waitForTimeout(500);
-  await shot("fire_done");
-  problems.push(...(await layoutProblems(page, "campfire reward")));
+  await checkScreen(page, problems, shot, { name: "fire_done", where: "campfire reward", settleMs: 500 });
   const rewarded = await readSave(page);
   expectThat(
     problems,
     rewarded.potions === 1 && rewarded.scrolls === 1 && rewarded.stories === 0 && rewarded.read.length === 1,
     `campfire save wrong: ${JSON.stringify(rewarded)}`,
   );
+};
 
+const useCarriedItems = async ({ page, problems, shot, shotOnce }) => {
   await tap(page, "[data-action=map]");
   await onScreen(page, "map");
   await tap(page, "[data-level=add_2]");
@@ -286,9 +284,7 @@ const journey = async (page) => {
   };
   await takeHit(6);
   const before = await readState(page);
-  await page.waitForTimeout(400);
-  await shot("potion_ready");
-  problems.push(...(await layoutProblems(page, "battle with items")));
+  await checkScreen(page, problems, shot, { name: "potion_ready", where: "battle with items", settleMs: 400 });
   await tap(page, "[data-action=potion]");
   await page.waitForTimeout(250);
   await shot("potion_used");
@@ -303,20 +299,22 @@ const journey = async (page) => {
   expectThat(problems, (await readSave(page)).scrolls === 1, "free hints used up a carried scroll");
   await tap(page, "[data-action=hint]");
   expectThat(problems, (await readSave(page)).scrolls === 0, "the carried scroll was not used up");
+};
 
+const changeSettingsAndLeave = async ({ page, problems, shot }) => {
   await tap(page, "[data-action=pause]");
   await page.waitForSelector("[data-screen=settings]");
-  await page.waitForTimeout(400);
-  await shot("pause");
-  problems.push(...(await layoutProblems(page, "pause")));
+  await checkScreen(page, problems, shot, { name: "pause", settleMs: 400 });
   await tap(page, "[data-setting=music]");
   await tap(page, "[data-setting=difficulty-gentle]");
   const tuned = (await readSave(page)).settings;
   expectThat(problems, tuned.music === false && tuned.difficulty === "gentle", "settings were not saved");
   await tap(page, "[data-action=leave]");
   await onScreen(page, "map");
+};
 
-  // Leaving mid-battle must not strand the next one.
+/** Leaving mid-battle must not strand the next one. */
+const comeBackOnGentle = async ({ page, problems }) => {
   await tap(page, "[data-level=add_2]");
   await idle(page);
   const gentle = await readState(page);
@@ -324,7 +322,9 @@ const journey = async (page) => {
   await tap(page, "[data-action=pause]");
   await tap(page, "[data-action=leave]");
   await onScreen(page, "map");
+};
 
+const reloadAndStartOver = async ({ page, problems, shot }) => {
   await page.reload();
   await page.waitForTimeout(1200);
   const reloaded = await readSave(page);
@@ -332,9 +332,7 @@ const journey = async (page) => {
   await tap(page, "[data-action=settings]");
   await page.waitForTimeout(300);
   await tap(page, "[data-action=reset]");
-  await page.waitForTimeout(200);
-  await shot("reset_confirm");
-  problems.push(...(await layoutProblems(page, "reset confirm")));
+  await checkScreen(page, problems, shot, { name: "reset_confirm", where: "reset confirm", settleMs: 200 });
   await tap(page, "[data-action=reset]");
   await onScreen(page, "title");
   const wiped = await readSave(page);
@@ -343,6 +341,23 @@ const journey = async (page) => {
     Object.keys(wiped.stars).length === 0 && wiped.seen.length === 0 && wiped.settings.music === false,
     "starting over did not wipe progress and keep settings",
   );
+};
+
+/** Win a level, read at the campfire, carry the reward into the next battle, drink it, and leave. */
+const JOURNEY = [
+  winFirstLevel,
+  readAtCampfire,
+  useCarriedItems,
+  changeSettingsAndLeave,
+  comeBackOnGentle,
+  reloadAndStartOver,
+];
+
+const journey = async (page) => {
+  const errors = watchErrors(page);
+  const problems = [];
+  const stage = { page, problems, ...screenshots(page, "journey") };
+  for (const leg of JOURNEY) await leg(stage);
   if (errors.length) problems.push(`console errors ${JSON.stringify(errors)}`);
   return { problems };
 };

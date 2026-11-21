@@ -147,3 +147,25 @@
   bottom: 0.5rem;
   width: 3.2rem;
 }
+
+.map-tools {
+  position: absolute;
+  right: max(0.5rem, env(safe-area-inset-right));
+  bottom: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.map-tools .btn {
+  position: relative;
+}
+
+.map-tools img {
+  width: 2.1rem;
+  height: 2.1rem;
+}
+
+.map-fire.is-lit {
+  background: #e0762a;
+  animation: throb 650ms ease-in-out infinite alternate;
+}

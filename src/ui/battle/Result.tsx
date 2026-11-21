@@ -1,19 +1,10 @@
 import type { BattleState } from "../../engine/battle";
 import { findLevel, nextLevel } from "../../engine/levels";
 import { icon } from "../assets";
-import { playSfx } from "../audio";
+import { MapButton } from "../common";
 import { enterBattle, goTo } from "../nav";
+import { press } from "../press";
 import { save } from "../save";
-
-const backToMap = () => {
-  playSfx("button");
-  goTo("map");
-};
-
-const toCampfire = () => {
-  playSfx("button");
-  goTo("campfire");
-};
 
 export const Result = ({ state }: { state: BattleState }) => {
   if (state.phase === "player") return null;
@@ -39,23 +30,20 @@ export const Result = ({ state }: { state: BattleState }) => {
           <p>The monsters won this round. You can beat them!</p>
         )}
         <div class="result-buttons">
-          <button class="btn btn-wide" data-action="map" onClick={backToMap}>
-            Map
-          </button>
+          <MapButton />
           {won && save.value.stories > 0 && (
-            <button class="btn btn-wide btn-fire" data-action="campfire" onClick={toCampfire}>
+            <button class="btn btn-wide btn-fire" data-action="campfire" onClick={press(() => goTo("campfire"))}>
               <img src={icon("campfire")} alt="" />
               Story
             </button>
           )}
-          {(!won || !next) && (
-            <button class="btn btn-wide btn-go" data-action="retry" onClick={() => enterBattle(level)}>
-              {won ? "Play again" : "Try again"}
-            </button>
-          )}
-          {won && next && (
+          {won && next ? (
             <button class="btn btn-wide btn-go" data-action="next" onClick={() => enterBattle(next)}>
               Next level
+            </button>
+          ) : (
+            <button class="btn btn-wide btn-go" data-action="retry" onClick={() => enterBattle(level)}>
+              {won ? "Play again" : "Try again"}
             </button>
           )}
         </div>

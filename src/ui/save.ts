@@ -1,5 +1,6 @@
 import { effect, signal } from "@preact/signals";
-import { parseSave, startDay, EMPTY_SAVE, type Save } from "../engine/progress";
+import { startDay, EMPTY_SAVE, type Save } from "../engine/progress";
+import { parseSave } from "../engine/saveParser";
 import { setAudioPrefs } from "./audio";
 
 const KEY = "axiom-strike-save-v1";

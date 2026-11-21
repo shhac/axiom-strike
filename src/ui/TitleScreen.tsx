@@ -1,6 +1,7 @@
 import { goTo, settingsOpen } from "./nav";
 import { glyphSrc, icon } from "./assets";
-import { playMusic, playSfx } from "./audio";
+import { playMusic } from "./audio";
+import { press } from "./press";
 import { useEffect } from "preact/hooks";
 
 const DRIFTERS = ["plus", "7", "times", "3", "minus", "9", "divide"] as const;
@@ -12,11 +13,6 @@ const drifterStyle = (index: number) => ({
   animationDelay: `${-index * 1.3}s`,
   width: `${1.3 + (index % 3) * 0.5}rem`,
 });
-
-const openMap = () => {
-  playSfx("button");
-  goTo("map");
-};
 
 export const TitleScreen = () => {
   useEffect(() => playMusic("music_title"), []);
@@ -30,17 +26,14 @@ export const TitleScreen = () => {
         ))}
       </div>
       <img class="logo" src="./assets/title/logo.png" alt="Axiom Strike" draggable={false} />
-      <button class="play" data-action="play" onClick={openMap}>
+      <button class="play" data-action="play" onClick={press(() => goTo("map"))}>
         <span>PLAY</span>
       </button>
       <button
         class="btn btn-icon title-settings"
         data-action="settings"
         aria-label="Settings"
-        onClick={() => {
-          playSfx("button");
-          settingsOpen.value = true;
-        }}
+        onClick={press(() => (settingsOpen.value = true))}
       >
         <img src={icon("gear")} alt="" />
       </button>

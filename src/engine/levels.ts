@@ -4,6 +4,14 @@ export type EnemyKind = "minion" | "standard" | "boss";
 
 export type OpFamily = "add" | "sub" | "mul" | "div";
 
+/** One value for each kind of sum; a new family then has to be given one everywhere. */
+export const perFamily = <T>(make: (family: OpFamily) => T): Record<OpFamily, T> => ({
+  add: make("add"),
+  sub: make("sub"),
+  mul: make("mul"),
+  div: make("div"),
+});
+
 export type EnemySpec = { kind: EnemyKind; family: OpFamily };
 
 export type Level = {
@@ -133,7 +141,11 @@ export const LEVELS: readonly Level[] = REGIONS.flatMap((region) =>
   })),
 );
 
-export type Tier = "gentle" | "standard" | "tough";
+export const TIERS = ["gentle", "standard", "tough"] as const;
+export type Tier = (typeof TIERS)[number];
+
+/** How many steps a tier sits from the level as designed. */
+export const TIER_STEP: Record<Tier, number> = { gentle: -1, standard: 0, tough: 1 };
 
 /** One band easier than a land's first step and one harder than its last, so every level can flex. */
 const BEYOND: Record<OpFamily, { below: Numbers; above: Numbers }> = {
@@ -156,8 +168,6 @@ const BEYOND: Record<OpFamily, { below: Numbers; above: Numbers }> = {
   },
 };
 
-const TIER_STEP: Record<Tier, number> = { gentle: -1, standard: 0, tough: 1 };
-
 /**
  * The same level with the number sizes of the step before or after it in its land. Waves and
  * signs stay as they are, and the three number lists always move together.
@@ -169,8 +179,6 @@ export const tuneLevel = (level: Level, tier: Tier): Level => {
   const numbers = bands[level.step + 1 + TIER_STEP[tier]];
   return numbers ? { ...level, ...numbers } : level;
 };
-
-export const TIERS: readonly Tier[] = ["gentle", "standard", "tough"];
 
 export const FIRST_LEVEL: Level = LEVELS[0]!;
 

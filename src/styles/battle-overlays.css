@@ -120,6 +120,15 @@
   background: #2fbf5b;
 }
 
+.btn-fire {
+  background: #e0762a;
+}
+
+.btn-fire img {
+  width: 1.8rem;
+  height: 1.8rem;
+}
+
 .rotate {
   display: none;
 }
@@ -148,5 +157,45 @@
 }
 
 .screen.is-busy .panel {
+  pointer-events: none;
+}
+
+/* ---------- Pause and potion buttons ---------- */
+
+/* Kept after the panel styles, not with the rest of the HUD: they restyle `.btn`, so they must come later. */
+
+/* Stacked down the left edge, beside the hero, so they never crowd the enemies' chips. */
+.hud-side {
+  position: absolute;
+  /* Above the hero, whose sprite box is wider than the figure drawn in it. */
+  z-index: 2;
+  top: 2.9rem;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.hud-potion,
+.hud-pause {
+  position: relative;
+  width: 3.2rem;
+  height: 3.2rem;
+  pointer-events: auto;
+}
+
+.hud-potion img,
+.hud-pause img {
+  width: 2rem;
+  height: 2rem;
+}
+
+.hud-pause {
+  background: rgb(20 18 43 / 0.72);
+  box-shadow: none;
+}
+
+.screen.is-busy .hud-potion,
+.screen.is-busy .hud-pause {
   pointer-events: none;
 }

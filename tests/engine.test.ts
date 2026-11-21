@@ -313,6 +313,18 @@ describe("simulated players", () => {
     expect(winRate(level, masherBot, 60).rate).toBeLessThan(0.3);
   });
 
+  it("changes every level's numbers in both directions, and nothing else", () => {
+    const mean = (values: readonly number[]) => values.reduce((sum, value) => sum + value, 0) / values.length;
+    LEVELS.forEach((level) => {
+      const [gentle, tough] = [tuneLevel(level, "gentle"), tuneLevel(level, "tough")];
+      expect(gentle.tileMax).toBeLessThanOrEqual(level.tileMax);
+      expect(mean(gentle.attack)).toBeLessThan(mean(level.attack));
+      expect(mean(tough.attack)).toBeGreaterThan(mean(level.attack));
+      expect([gentle.id, gentle.waves, gentle.ops]).toEqual([level.id, level.waves, level.ops]);
+      expect(tuneLevel(level, "standard")).toBe(level);
+    });
+  });
+
   it("a gentler tier is kinder and a tougher tier harsher to a child who never parries", () => {
     const level = findLevel("add_3");
     const [gentle, standard, tough] = TIERS.map(

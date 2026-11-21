@@ -1,17 +1,8 @@
 import { signal } from "@preact/signals";
-import {
-  aimTarget,
-  createBattle,
-  equationTotal,
-  reduce,
-  type Action,
-  type BattleState,
-  type Step,
-} from "../engine/battle";
+import { createBattle, reduce, type Action, type BattleState, type Step } from "../engine/battle";
 import { FIRST_LEVEL, tuneLevel, type Level } from "../engine/levels";
 import { kitFor, recordCast, recordLoss, recordWin, spendItems, tierFor } from "../engine/progress";
-import { battleDifficulty, castScore } from "../engine/skill";
-import { solve } from "../engine/solver";
+import { battleDifficulty, castResult, castScore } from "../engine/skill";
 import { playMusic } from "./audio";
 import { afterEvent, beforeEvent, heroPose } from "./fx";
 import { save, updateSave } from "./save";
@@ -58,28 +49,14 @@ const play = async (steps: readonly Step[]) => {
   busy.value = false;
 };
 
-/**
- * How a cast went, for the skill rating. Only casts that could have been exact with the tiles
- * left are rated, so spending leftover tiles on a long shot is never held against the player.
- */
-const castResult = (state: BattleState) => {
-  const target = aimTarget(state);
-  const total = equationTotal(state);
-  if (target === null || total === null || state.equation.tiles.length < 2) return null;
-  const values = state.hand.map((tile) => tile.value);
-  const spentEarlier = state.hand.flatMap((tile, index) =>
-    tile.used && !state.equation.tiles.includes(tile.id) ? [index] : [],
-  );
-  if (!solve(values, state.level.ops, target, { exclude: spentEarlier })) return null;
-  const distance = Math.abs(total - target);
-  return { exact: distance === 0, nearMiss: distance === 1, hinted: state.hintPath !== null };
-};
-
 const rateCast = (state: BattleState) => {
   const result = castResult(state);
   if (!result) return;
   updateSave((current) => recordCast(current, state.level.region, session.difficulty, castScore(result)));
 };
+
+const landed = (steps: readonly Step[]) =>
+  steps.some((step) => step.event?.type === "strike" || step.event?.type === "parry");
 
 export const dispatch = (action: Action) => {
   if (busy.value) return;
@@ -87,9 +64,7 @@ export const dispatch = (action: Action) => {
   const steps = reduce(before, action);
   const last = steps.at(-1);
   if (!last) return;
-  if (action.type === "cast" && steps.some((step) => step.event?.type === "strike" || step.event?.type === "parry")) {
-    rateCast(before);
-  }
+  if (action.type === "cast" && landed(steps)) rateCast(before);
   const instant = steps.every((step) => step.event === null);
   if (!instant) return void play(steps);
   show(last.state);

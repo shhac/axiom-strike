@@ -1,4 +1,6 @@
-import type { Level, Tier } from "./levels";
+import { aimTarget, equationTotal, type BattleState } from "./battle";
+import { TIER_STEP, type Level, type Tier } from "./levels";
+import { solve } from "./solver";
 
 /** How well a player is doing at one kind of question, on the Elo scale. */
 export type Skill = { rating: number; attempts: number };
@@ -6,8 +8,8 @@ export type Skill = { rating: number; attempts: number };
 export const START_RATING = 1000;
 export const NEW_SKILL: Skill = { rating: START_RATING, attempts: 0 };
 
-const RATING_FLOOR = 400;
-const RATING_CEILING = 2000;
+export const RATING_FLOOR = 400;
+export const RATING_CEILING = 2000;
 const K_START = 80;
 const K_FLOOR = 24;
 const K_DECAY = 0.05;
@@ -19,8 +21,6 @@ const STEP_RATING = 100;
 const TOUGH_LEAD = 200;
 const GENTLE_LAG = 50;
 const LOSSES_BEFORE_GENTLE = 2;
-
-const TIER_SHIFT: Record<Tier, number> = { gentle: -1, standard: 0, tough: 1 };
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
@@ -48,9 +48,26 @@ export const decay = (skill: Skill, days: number): Skill => ({
 const baseDifficulty = (level: Level) => 900 + STEP_RATING * level.step;
 
 /** Rated against the numbers actually played, so a tougher tier counts as a tougher question. */
-export const battleDifficulty = (level: Level, tier: Tier) => baseDifficulty(level) + STEP_RATING * TIER_SHIFT[tier];
+export const battleDifficulty = (level: Level, tier: Tier) => baseDifficulty(level) + STEP_RATING * TIER_STEP[tier];
 
 export type CastResult = { exact: boolean; nearMiss: boolean; hinted: boolean };
+
+/**
+ * How a cast went, for the skill rating. Only casts that could have been exact with the tiles
+ * left are rated, so spending leftover tiles on a long shot is never held against the player.
+ */
+export const castResult = (state: BattleState): CastResult | null => {
+  const target = aimTarget(state);
+  const total = equationTotal(state);
+  if (target === null || total === null || state.equation.tiles.length < 2) return null;
+  const values = state.hand.map((tile) => tile.value);
+  const spentEarlier = state.hand.flatMap((tile, index) =>
+    tile.used && !state.equation.tiles.includes(tile.id) ? [index] : [],
+  );
+  if (!solve(values, state.level.ops, target, { exclude: spentEarlier })) return null;
+  const distance = Math.abs(total - target);
+  return { exact: distance === 0, nearMiss: distance === 1, hinted: state.hintPath !== null };
+};
 
 export const castScore = ({ exact, nearMiss, hinted }: CastResult): number => {
   if (exact) return hinted ? 0.5 : 1;

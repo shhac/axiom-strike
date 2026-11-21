@@ -11,6 +11,7 @@ import {
 import { icon } from "./assets";
 import { playSfx } from "./audio";
 import { goTo, screen, settingsOpen } from "./nav";
+import { press } from "./press";
 import { save, updateSave } from "./save";
 
 const DIFFICULTY_NAMES: Record<Difficulty, string> = {
@@ -70,21 +71,13 @@ export const SettingsSheet = () => {
   const { settings } = save.value;
   const inBattle = screen.value === "battle";
 
-  const close = () => {
-    playSfx("button");
-    settingsOpen.value = false;
-  };
+  const close = press(() => (settingsOpen.value = false));
 
   const reset = () => {
     if (!confirming) return setConfirming(true);
     updateSave(resetProgress);
     playSfx("tile_undo");
     goTo("title");
-  };
-
-  const leave = () => {
-    playSfx("button");
-    goTo("map");
   };
 
   return (
@@ -118,7 +111,7 @@ export const SettingsSheet = () => {
         />
         <div class="sheet-row sheet-foot">
           {inBattle ? (
-            <button class="btn btn-wide" data-action="leave" onClick={leave}>
+            <button class="btn btn-wide" data-action="leave" onClick={press(() => goTo("map"))}>
               <img src={icon("exit")} alt="" />
               Leave battle
             </button>

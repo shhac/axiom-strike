@@ -1,4 +1,6 @@
 import { glyphFile, glyphSrc, icon } from "./assets";
+import { goTo } from "./nav";
+import { press } from "./press";
 
 /** Numbers and signs drawn with the game's own glyph set instead of a font. */
 export const Num = ({ value, class: className = "" }: { value: number | string; class?: string }) => (
@@ -15,4 +17,10 @@ export const RotatePrompt = () => (
     <img src={icon("undo")} alt="" />
     <p>Turn your device sideways to play</p>
   </div>
+);
+
+export const MapButton = () => (
+  <button class="btn btn-wide" data-action="map" onClick={press(() => goTo("map"))}>
+    Map
+  </button>
 );
