@@ -69,6 +69,19 @@ The first version of this game was built in Defold and is preserved as the git t
 - Then each monster's countdown drops by one; any that reach zero attack. Monsters attack every two turns, and never on the first turn of a wave. At most two attacks land on the same turn.
 - Hero health is 100 and carries across the waves of a level. It is restored between levels.
 
+### Calling "Impossible!"
+
+Spotting that a number cannot be made is maths too, and it is the way out when the tiles left are no use.
+
+- The **Impossible!** button sits beside Strike. It is a claim that the aimed number cannot be made exactly from the tiles left this turn.
+- **Right:** "Sharp eye!" The leftover tiles are traded for the same number of new ones, which always include an exact two-number answer for the aimed number. The monsters do not get a turn.
+- **Wrong:** "These numbers could make it. Look again!" Nothing is lost.
+- **One call each turn**, right or wrong, so it cannot be tapped as a free check or chained to keep the monsters waiting.
+- Tiles thrown away on a wrong answer this turn still count as if they were in hand, so wasting tiles never turns a makeable number into a right call.
+- The game looks for answers of up to four numbers. A number that needs five or more counts as impossible, in the player's favour.
+- Calls do not move the difficulty rating: the game itself says when one would be right (below), so a right call proves nothing.
+- How a player finds it: the addition intro explains it; a strike thrown at a number that could not be made answers "Stuck? If the number can't be made, tap Impossible!"; and a hint asked for when no answer is left says the same.
+
 ### The dealing promise
 
 Every hand contains, on separate tiles:
@@ -82,7 +95,7 @@ Spare tiles first go to a three-number answer for the same weakness, then to ran
 
 - Three free hint scrolls per level. Scrolls earned at the campfire are carried on top of those; the free ones are used first.
 - A hint lights up the whole path to the aimed number, one tile at a time. If what is already on the board cannot get there, the hint starts the equation over.
-- If no exact answer is left this turn, the game says so and the scroll is not spent.
+- If no exact answer is left this turn, the game says so, points at **Impossible!**, and the scroll is not spent.
 - Nothing is revealed for free by waiting.
 
 ### Potions
@@ -105,17 +118,22 @@ Spare tiles first go to a three-number answer for the same weakness, then to ran
 
 - A player who only ever makes exact two-number sums wins the first level at least 90% of the time, even if they never parry.
 - A player who uses longer equations finishes in fewer turns.
-- A player who taps two random tiles and casts loses most of the time.
+- A player who taps two random tiles and casts loses most of the time, and still does if they also call "Impossible!" blindly.
+- A player who calls "Impossible!" whenever they are truly stuck finishes in about a third fewer turns than one who ends the turn instead. That is the reward for it, in line with pillar 3.
 
 ## Enemies
 
 - Enemy **families** map to operations and to a look: addition (green slimes), subtraction (red spiky), multiplication (purple wizards), division (blue water drops).
 - Three ranks per family: minion, standard, boss.
+- Every monster has a name by family and rank (Blobling, Blobbert, King Glob; Spikelet, Sir Prickle, Lord Thornax; Sparkling, Crystamul, Archmage Multiplix; Droplet, Dribble, The Deep Divider).
+- **Every wave opens with a line from its lead monster** in a speech bubble (the highest rank does the talking; bosses have their own lines), and the hero answers with a cheer when a wave is cleared. Play is held for about half a second for each, then carries on underneath. Lines are in `src/content/taunts.ts`.
 - Each family is introduced by a short **intro scene** the first time one of its levels is entered: the monster (Blobbert, Sir Prickle, Crystamul, Dribble) shows off an over-the-top personality, and the hero answers with a worked example of the new sign. The addition scene doubles as the how-to-play. Each boss gets a one-line taunt the first time its level is entered. Tap to advance; Skip is always there. Scenes are in `src/content/intros.ts`.
 
 ## Campfire (reading)
 
 Every level win lights the campfire for one more story (up to three waiting). It is reached from the victory panel and from the map, and is always optional.
+
+The prize is shown wherever a story is on offer, never as a surprise: the victory panel says "A campfire story is waiting. Read it to win" with the potion and scroll pictured, the map's campfire button reads "Story time! Win" with the same pictures (and shows what is in the bag when no story is waiting), and the passage and question cards carry the same strip. The reward card names each item won, what it does, and why it was given.
 
 1. A short passage is shown. **There is no timer on screen**: the child reads at their own pace and taps "I have read it".
 2. A multiple-choice question follows (one right answer, one nearly right, three wrong). "Read it again" goes back with no penalty.
@@ -193,6 +211,9 @@ Feel is a requirement, not polish.
 - **Numbers** in play (tiles, chips, damage) use a custom drawn glyph set, not a stock font.
 - **Sound:** every tap, hit, parry, miss and win has its own sound; music for title, battle and campfire. Sound stops when the app is in the background. All audio is CC0, credited in `public/assets/audio/CREDITS.md`.
 - **Motion:** attacks have a wind-up before numbers change; hits shake and flash; results pop.
+- **Characters are animated frame by frame.** The hero has four-frame idle, attack, hurt and cheer animations; every monster and boss has a four-frame idle. Sheets are in `art-src/anim_*.png` and are cut into strips by `art-src/slice-anim.sh`.
+- **Beating a monster is an event:** it pops and spins out, stars and coins burst from it, a comic-book word lands (KO!, POW!, BAM!, ZAP!), the stage shakes and the hero cheers.
+- **Screens change behind a curtain:** striped panels sweep shut with a spinning star and open on the next screen, about half a second in all.
 
 ## Technology
 
@@ -205,7 +226,7 @@ Feel is a requirement, not polish.
 - **Sizing:** one rem is the smaller of 1/22.5 of the screen height or 1/40 of its width, so the whole layout scales together. Touch targets are at least 48 CSS px on an S21.
 - **Checks:**
   - `pnpm test`: rules, the dealing promise and simulated players at every tier, saved progress, ratings, campfire rewards.
-  - `pnpm e2e`: plays whole levels through the real interface on an emulated S21 with the CPU slowed 4×, and fails on console errors, overflow, small touch targets, slow frames, long stalls or a strike with no damage number. It also walks one journey: win, read at the campfire, carry the reward into the next battle, drink it, pause, leave, change settings, start over.
+  - `pnpm e2e`: plays whole levels through the real interface on an emulated S21 with the CPU slowed 4×, and fails on console errors, overflow, small touch targets, slow frames, long stalls, a strike with no damage number, a defeat with no burst, a wave with no opening line, or an Impossible call that gets no answer. It also walks one journey: win, read at the campfire, carry the reward into the next battle, drink it, pause, leave, change settings, start over.
 
 ## Related documents
 

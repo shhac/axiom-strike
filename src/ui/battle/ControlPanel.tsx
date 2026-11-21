@@ -38,6 +38,15 @@ const EquationBar = ({ state }: { state: BattleState }) => {
         <img src={icon("undo")} alt="" />
       </button>
       <button
+        class={`btn btn-call ${state.called ? "is-empty" : ""}`}
+        data-action="impossible"
+        aria-label="Impossible: the numbers left cannot make it"
+        onClick={act("button", { type: "impossible" })}
+      >
+        <img src={icon("cross")} alt="" />
+        <span>Impossible!</span>
+      </button>
+      <button
         class={`btn btn-cast btn-cast-${kind} ${ready ? "" : "is-waiting"} ${ready && exact ? "is-exact" : ""}`}
         data-action="cast"
         onClick={() => dispatch({ type: "cast" })}

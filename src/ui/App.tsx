@@ -3,7 +3,8 @@ import { CampfireScreen } from "./CampfireScreen";
 import { RotatePrompt } from "./common";
 import { IntroScreen } from "./IntroScreen";
 import { MapScreen } from "./MapScreen";
-import { screen, settingsOpen, type Screen } from "./nav";
+import { icon } from "./assets";
+import { curtain, screen, settingsOpen, type Screen } from "./nav";
 import { SettingsSheet } from "./SettingsSheet";
 import { TitleScreen } from "./TitleScreen";
 
@@ -21,6 +22,13 @@ export const App = () => {
     <>
       <Current />
       {settingsOpen.value && <SettingsSheet />}
+      {curtain.value && (
+        <div class={`curtain is-${curtain.value}`} aria-hidden="true">
+          <i class="curtain-left" />
+          <i class="curtain-right" />
+          <img class="curtain-star" src={icon("star")} alt="" />
+        </div>
+      )}
       <RotatePrompt />
     </>
   );

@@ -106,6 +106,10 @@
   animation: deal 420ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
 }
 
+.result .prizes {
+  font-size: 0.9rem;
+}
+
 .result-buttons {
   display: flex;
   gap: 0.8rem;
@@ -198,4 +202,74 @@
 .screen.is-busy .hud-potion,
 .screen.is-busy .hud-pause {
   pointer-events: none;
+}
+
+/* ---------- Knock-outs and speech ---------- */
+
+.float-ko {
+  color: var(--gold);
+  font-size: 2.4rem;
+  font-weight: 700;
+}
+
+.burst-star {
+  position: absolute;
+  width: 1.7rem;
+  height: 1.7rem;
+  will-change: transform, opacity;
+}
+
+.say {
+  position: absolute;
+  z-index: 3;
+  top: 3.1rem;
+  max-width: 17rem;
+  padding: 0.45rem 0.9rem 0.55rem;
+  border-radius: 0.9rem;
+  background: var(--cream);
+  color: var(--ink);
+  border: 0.16rem solid var(--ink);
+  box-shadow: 0 0.25rem 0 rgb(0 0 0 / 0.35);
+  font-size: 1rem;
+  line-height: 1.2;
+  pointer-events: none;
+  animation: say 260ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+
+.say::after {
+  content: "";
+  position: absolute;
+  bottom: -0.62rem;
+  width: 1rem;
+  height: 1rem;
+  background: var(--cream);
+  border: solid var(--ink);
+  border-width: 0 0.16rem 0.16rem 0;
+  transform: rotate(45deg);
+}
+
+.say-hero {
+  left: 9.5rem;
+  transform-origin: left bottom;
+}
+
+.say-hero::after {
+  left: 1.2rem;
+}
+
+.say-enemy {
+  right: 21rem;
+  transform-origin: right bottom;
+}
+
+.say-enemy::after {
+  right: 1.2rem;
+}
+
+.say-name {
+  display: block;
+  font-size: 0.7rem;
+  color: #8a3a1c;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }

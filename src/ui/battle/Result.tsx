@@ -1,7 +1,7 @@
 import type { BattleState } from "../../engine/battle";
 import { findLevel, nextLevel } from "../../engine/levels";
 import { icon } from "../assets";
-import { MapButton } from "../common";
+import { MapButton, Prizes } from "../common";
 import { enterBattle, goTo } from "../nav";
 import { press } from "../press";
 import { save } from "../save";
@@ -12,6 +12,7 @@ export const Result = ({ state }: { state: BattleState }) => {
   const next = nextLevel(state.level);
   // The level on screen may carry tuned numbers; replaying starts again from the level as designed.
   const level = findLevel(state.level.id);
+  const storyWaiting = won && save.value.stories > 0;
   return (
     <div class="overlay" data-result={state.phase}>
       <div class="result">
@@ -29,12 +30,13 @@ export const Result = ({ state }: { state: BattleState }) => {
         ) : (
           <p>The monsters won this round. You can beat them!</p>
         )}
+        {storyWaiting && <Prizes lead="A campfire story is waiting. Read it to win" />}
         <div class="result-buttons">
           <MapButton />
-          {won && save.value.stories > 0 && (
+          {storyWaiting && (
             <button class="btn btn-wide btn-fire" data-action="campfire" onClick={press(() => goTo("campfire"))}>
               <img src={icon("campfire")} alt="" />
-              Story
+              Story time
             </button>
           )}
           {won && next ? (

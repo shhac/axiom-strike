@@ -1,7 +1,7 @@
 import { useState } from "preact/hooks";
-import { enemySprite, heroSprite } from "./assets";
+import { enemyStrip, heroStrip } from "./assets";
 import { playSfx } from "./audio";
-import { Num } from "./common";
+import { Num, Sprite } from "./common";
 import { finishIntro, intro } from "./nav";
 
 export const IntroScreen = () => {
@@ -28,12 +28,10 @@ export const IntroScreen = () => {
   return (
     <div class={`screen intro stage-${scene.family}`} data-screen="intro" onClick={advance}>
       <div class={`intro-cast is-${beat.speaker}`}>
-        <img class="intro-hero" src={heroSprite("idle")} alt="" draggable={false} />
-        <img
+        <Sprite class="intro-hero" strip={heroStrip(beat.speaker === "hero" ? "victory" : "idle")} />
+        <Sprite
           class={`intro-enemy ${scene.boss ? "is-boss" : ""}`}
-          src={enemySprite(scene.family, scene.boss ? "boss" : "standard", false)}
-          alt=""
-          draggable={false}
+          strip={enemyStrip(scene.family, scene.boss ? "boss" : "standard")}
         />
       </div>
       <div class={`speech speech-${beat.speaker}`} key={index}>

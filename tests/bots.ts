@@ -113,3 +113,18 @@ export const winRate = (level: Level, bot: Bot, seeds: number) => {
     meanHp: mean(wins.map((outcome) => outcome.heroHp)),
   };
 };
+
+/** Plays like `bot`, but calls "Impossible!" instead of ending the turn when it has nothing to cast. */
+export const callerBot =
+  (bot: Bot): Bot =>
+  (state, rng) => {
+    const actions = bot(state, rng);
+    const giving = actions.length === 1 && actions[0]?.type === "endTurn";
+    return giving && !state.called ? [{ type: "impossible" }] : actions;
+  };
+
+/** Mashes tiles until three are left, then calls "Impossible!" and hopes. */
+export const mashAndCallBot: Bot = (state, rng) => {
+  const left = state.hand.filter((tile) => !tile.used).length;
+  return left <= 3 && !state.called ? [{ type: "impossible" }] : masherBot(state, rng);
+};

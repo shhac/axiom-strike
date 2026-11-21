@@ -1,6 +1,5 @@
-import { aimTarget, equationTotal, type BattleState } from "./battle";
+import { aimTarget, answerLeft, equationTotal, type BattleState } from "./battle";
 import { TIER_STEP, type Level, type Tier } from "./levels";
-import { solve } from "./solver";
 
 /** How well a player is doing at one kind of question, on the Elo scale. */
 export type Skill = { rating: number; attempts: number };
@@ -60,11 +59,7 @@ export const castResult = (state: BattleState): CastResult | null => {
   const target = aimTarget(state);
   const total = equationTotal(state);
   if (target === null || total === null || state.equation.tiles.length < 2) return null;
-  const values = state.hand.map((tile) => tile.value);
-  const spentEarlier = state.hand.flatMap((tile, index) =>
-    tile.used && !state.equation.tiles.includes(tile.id) ? [index] : [],
-  );
-  if (!solve(values, state.level.ops, target, { exclude: spentEarlier })) return null;
+  if (!answerLeft(state)) return null;
   const distance = Math.abs(total - target);
   return { exact: distance === 0, nearMiss: distance === 1, hinted: state.hintPath !== null };
 };

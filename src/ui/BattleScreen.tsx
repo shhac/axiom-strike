@@ -1,8 +1,9 @@
-import { heroSprite } from "./assets";
+import { heroStrip } from "./assets";
 import { ControlPanel } from "./battle/ControlPanel";
 import { Result } from "./battle/Result";
 import { EnemyView, Hud } from "./battle/Stage";
-import { banner, heroPose, toast } from "./fx";
+import { Sprite } from "./common";
+import { banner, heroPose, speech, toast } from "./fx";
 import { battle, busy } from "./store";
 
 export const BattleScreen = () => {
@@ -12,7 +13,12 @@ export const BattleScreen = () => {
       <div class={`stage stage-${state.level.region}`}>
         <Hud state={state} />
         <div class="hero" data-hero>
-          <img class="sprite" src={heroSprite(heroPose.value)} alt="" draggable={false} />
+          <Sprite
+            key={heroPose.value}
+            strip={heroStrip(heroPose.value)}
+            once={heroPose.value === "attack" || heroPose.value === "hurt"}
+            class={`pose-${heroPose.value}`}
+          />
         </div>
         <div class="enemies">
           {state.enemies.map((enemy) => (
@@ -20,6 +26,12 @@ export const BattleScreen = () => {
           ))}
         </div>
         {banner.value && <div class="banner">{banner.value}</div>}
+        {speech.value && (
+          <div class={`say say-${speech.value.who}`} data-say={speech.value.who} key={speech.value.text}>
+            <span class="say-name">{speech.value.name}</span>
+            {speech.value.text}
+          </div>
+        )}
       </div>
       <ControlPanel state={state} />
       <div id="fx" />

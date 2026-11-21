@@ -70,7 +70,7 @@ const RegionColumn = ({ region, progress }: { region: Region; progress: Save }) 
 
 export const MapScreen = () => {
   useEffect(() => playMusic("music_calm"), []);
-  const { stories } = save.value;
+  const { stories, potions, scrolls } = save.value;
   return (
     <div class="screen map">
       <div class="map-art" />
@@ -84,12 +84,22 @@ export const MapScreen = () => {
       </button>
       <div class="map-tools">
         <button
-          class={`btn btn-icon map-fire ${stories > 0 ? "is-lit" : ""}`}
+          class={`btn map-fire ${stories > 0 ? "is-lit" : ""}`}
           data-action="campfire"
-          aria-label={`Campfire, ${stories} stories waiting`}
+          aria-label={`Campfire, ${stories} stories waiting. Read one to win a potion and a hint scroll. You have ${potions} potions and ${scrolls} hint scrolls`}
           onClick={press(() => goTo("campfire"))}
         >
           <img src={icon("campfire")} alt="" />
+          <span class="map-fire-text">
+            {stories > 0 ? "Story time!" : "Campfire"}
+            <small>
+              {stories > 0 && "Win"}
+              <img src={icon("potion")} alt="" />
+              {stories === 0 && <span data-bag="potions">{potions}</span>}
+              <img src={icon("hint")} alt="" />
+              {stories === 0 && <span data-bag="scrolls">{scrolls}</span>}
+            </small>
+          </span>
           {stories > 0 && <b class="badge">{stories}</b>}
         </button>
         <button

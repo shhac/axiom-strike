@@ -111,19 +111,46 @@
 
 .hero {
   position: absolute;
-  left: max(2.2rem, env(safe-area-inset-left));
-  bottom: 0.9rem;
+  left: max(0.2rem, env(safe-area-inset-left) - 2rem);
+  bottom: 0.7rem;
 }
 
 .sprite {
   display: block;
+  background: center bottom / contain no-repeat;
+  image-rendering: pixelated;
   filter: drop-shadow(0 0.25rem 0 rgb(0 0 0 / 0.28));
 }
 
+/* Four frames side by side: the picture is four boxes wide and steps along one box at a time. */
+.sprite-frames {
+  background-size: 400% 100%;
+  background-position: 0 0;
+  animation: frames 900ms steps(4, jump-none) infinite;
+}
+
+.sprite-frames.is-once {
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+  animation-duration: 420ms;
+}
+
+/* The hero's frames are much larger than the figure in them, so every pose shares one footing. */
+.hero {
+  pointer-events: none;
+}
+
 .hero .sprite {
-  width: 9.6rem;
-  height: 9.6rem;
-  animation: bob 1.9s ease-in-out infinite alternate;
+  width: 13.6rem;
+  height: 14.96rem;
+}
+
+.hero .pose-victory {
+  animation-duration: 560ms;
+}
+
+.hero .pose-hurt {
+  animation-duration: 520ms;
 }
 
 .enemies {
@@ -153,29 +180,31 @@
 }
 
 .enemy .sprite {
-  width: 7.4rem;
-  height: 7.4rem;
-  margin: -0.5rem 0 -0.4rem;
-  animation: bob 1.6s ease-in-out infinite alternate;
+  width: 7rem;
+  height: 7rem;
+  margin: -0.3rem 0 -0.2rem;
 }
 
 .enemy:nth-child(2) .sprite {
-  animation-duration: 2s;
+  animation-duration: 1100ms;
+}
+
+.enemy:nth-child(3) .sprite {
+  animation-duration: 760ms;
 }
 
 .enemy-standard .sprite {
-  width: 8.6rem;
-  height: 8.6rem;
+  width: 8.2rem;
+  height: 8.2rem;
 }
 
 .enemy-boss .sprite {
-  width: 9.4rem;
-  height: 9.4rem;
-  margin: -0.9rem 0 -0.6rem;
+  width: 9.6rem;
+  height: 9.6rem;
+  margin: -0.9rem 0 -0.4rem;
 }
 
 .enemy.is-down .sprite {
-  animation: none;
   opacity: 0.55;
   transition: opacity 400ms;
 }
@@ -264,7 +293,7 @@
   text-shadow:
     0 0.18rem 0 var(--ink),
     0 0 1rem rgb(0 0 0 / 0.5);
-  animation: banner 900ms ease-out both;
+  animation: banner 600ms ease-out both;
   pointer-events: none;
 }
 

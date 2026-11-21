@@ -12,6 +12,26 @@ export const Num = ({ value, class: className = "" }: { value: number | string; 
   </span>
 );
 
+/**
+ * A character drawn from a four-frame strip. `once` plays the frames a single time and holds the
+ * last one (an attack, a flinch); otherwise they loop. `still` shows a single picture instead.
+ */
+export const Sprite = (props: { strip?: string; still?: string; once?: boolean; class?: string }) => (
+  <div
+    class={`sprite ${props.strip ? "sprite-frames" : "sprite-still"} ${props.once ? "is-once" : ""} ${props.class ?? ""}`}
+    style={{ backgroundImage: `url(${props.strip ?? props.still})` }}
+  />
+);
+
+/** What a story can win, shown wherever a story is on offer so the prize is never a surprise. */
+export const Prizes = ({ lead }: { lead: string }) => (
+  <span class="prizes" data-prizes>
+    {lead}
+    <img src={icon("potion")} alt="a potion" />
+    <img src={icon("hint")} alt="and a hint scroll" />
+  </span>
+);
+
 export const RotatePrompt = () => (
   <div class="rotate">
     <img src={icon("undo")} alt="" />

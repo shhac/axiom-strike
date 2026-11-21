@@ -4,7 +4,7 @@ import { answersFor, finishReading, rewardFor, wasRead, type Answer, type Reward
 import { createRng } from "../../engine/rng";
 import { icon } from "../assets";
 import { playSfx } from "../audio";
-import { MapButton } from "../common";
+import { MapButton, Prizes } from "../common";
 import { save, updateSave } from "../save";
 import { useReadingClock } from "./readingClock";
 
@@ -16,31 +16,45 @@ const HEADLINES: Record<Answer["kind"], string> = {
   other: "Not quite",
 };
 
-const RewardLine = ({ reward }: { reward: Reward }) => {
+const WHY: Record<Answer["kind"], string> = {
+  correct: "Your prize for the right answer:",
+  almost: "Your prize for a near answer:",
+  other: "Your prize for reading carefully:",
+};
+
+const RewardLine = ({ reward, kind }: { reward: Reward; kind: Answer["kind"] }) => {
   if (reward.potions + reward.scrolls === 0) {
-    return <p class="reward-none">Take your time with the next story and there will be a prize.</p>;
+    return <p class="reward-none">No prize this time. Take your time with the next story and there will be one.</p>;
   }
   return (
-    <div class="reward-items" data-reward={`${reward.potions}-${reward.scrolls}`}>
-      {reward.potions > 0 && (
-        <span>
-          <img src={icon("potion")} alt="" />
-          Potion
-        </span>
-      )}
-      {reward.scrolls > 0 && (
-        <span>
-          <img src={icon("hint")} alt="" />
-          Hint scroll
-        </span>
-      )}
+    <div class="reward">
+      <span class="reward-why">{WHY[kind]}</span>
+      <div class="reward-items" data-reward={`${reward.potions}-${reward.scrolls}`}>
+        {reward.potions > 0 && (
+          <span>
+            <img src={icon("potion")} alt="" />
+            <b>+1 Potion</b>
+            <small>heals you in battle</small>
+          </span>
+        )}
+        {reward.scrolls > 0 && (
+          <span>
+            <img src={icon("hint")} alt="" />
+            <b>+1 Hint scroll</b>
+            <small>shows you an answer</small>
+          </span>
+        )}
+      </div>
     </div>
   );
 };
 
 const ReadCard = ({ passage, done }: { passage: Passage; done: () => void }) => (
   <div class="scroll-card" data-phase="read">
-    <span class="scroll-subject">{passage.subject}</span>
+    <div class="scroll-top">
+      <span class="scroll-subject">{passage.subject}</span>
+      <Prizes lead="Read, then answer to win" />
+    </div>
     <p class="scroll-text">{passage.text}</p>
     <button class="btn btn-wide btn-go" data-action="read-done" onClick={done}>
       I have read it
@@ -55,7 +69,10 @@ const AskCard = (props: {
   back: () => void;
 }) => (
   <div class="scroll-card" data-phase="ask">
-    <p class="scroll-question">{props.passage.question}</p>
+    <div class="scroll-top">
+      <p class="scroll-question">{props.passage.question}</p>
+      <Prizes lead="Win" />
+    </div>
     <div class="answers">
       {props.answers.map((choice) => (
         <button class="btn answer" data-answer={choice.kind} onClick={() => props.answer(choice)}>
@@ -76,7 +93,7 @@ const DoneCard = (props: { passage: Passage; picked: Answer; reward: Reward; ano
     <p class="scroll-answer">
       {props.passage.question} <b>{props.passage.correct}</b>
     </p>
-    <RewardLine reward={props.reward} />
+    <RewardLine reward={props.reward} kind={props.picked.kind} />
     <div class="result-buttons">
       <MapButton />
       {save.value.stories > 0 && (
@@ -103,8 +120,12 @@ export const Story = ({ passage, passageId, seed, another }: StoryProps) => {
   const answer = (picked: Answer) => {
     const spent = readMs();
     updateSave((current) => finishReading(current, passageId, picked.kind, spent));
-    playSfx(picked.kind === "other" ? "tile_undo" : "reward");
-    setProgress({ phase: "done", picked, reward: rewardFor(picked.kind, wasRead(passage, spent)) });
+    const reward = rewardFor(picked.kind, wasRead(passage, spent));
+    const items = reward.potions + reward.scrolls;
+    playSfx(items > 0 ? "reward" : "tile_undo");
+    // A second chime as the second prize pops in.
+    if (items > 1) setTimeout(() => playSfx("star"), 260);
+    setProgress({ phase: "done", picked, reward });
   };
 
   if (progress.phase === "read") return <ReadCard passage={passage} done={() => turn("ask")} />;

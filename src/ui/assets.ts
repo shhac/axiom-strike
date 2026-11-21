@@ -19,20 +19,17 @@ export const glyphSrc = (file: string) => `./assets/glyphs/${file}.png`;
 const HERO_POSES = ["idle", "attack", "hurt", "victory"] as const;
 export type HeroPose = (typeof HERO_POSES)[number];
 
-const charSprite = (name: string) => `./assets/chars/${name}.png`;
+/** Four frames side by side, played as a loop or once through. */
+const strip = (name: string) => `./assets/chars/anim/${name}.png`;
 
-export const heroSprite = (pose: HeroPose) => charSprite(`hero_${pose}`);
+export const heroStrip = (pose: HeroPose) => strip(`hero_${pose}`);
 
-export const enemySprite = (family: OpFamily, kind: EnemyKind, down: boolean) => {
-  if (down) return charSprite(`enemy_${family}_ko`);
-  return charSprite(`${kind === "boss" ? "boss" : "enemy"}_${family}`);
-};
+export const enemyStrip = (family: OpFamily, kind: EnemyKind) =>
+  strip(`${kind === "boss" ? "boss" : "enemy"}_${family}`);
+
+export const knockedOutSprite = (family: OpFamily) => `./assets/chars/enemy_${family}_ko.png`;
 
 export const ALL_SPRITES = [
-  ...HERO_POSES.map(heroSprite),
-  ...REGIONS.flatMap(({ id }) => [
-    enemySprite(id, "standard", false),
-    enemySprite(id, "standard", true),
-    enemySprite(id, "boss", false),
-  ]),
+  ...HERO_POSES.map(heroStrip),
+  ...REGIONS.flatMap(({ id }) => [enemyStrip(id, "standard"), enemyStrip(id, "boss"), knockedOutSprite(id)]),
 ];

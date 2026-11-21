@@ -1,4 +1,4 @@
-import { dealHand } from "./deal";
+import { dealHand, pairFor } from "./deal";
 import { applyStep, type Op } from "./equation";
 import { ENEMY_HP, type EnemyKind, type Level, type OpFamily } from "./levels";
 import { createRng, type Rng } from "./rng";
@@ -49,6 +49,10 @@ export type BattleState = {
   hints: number;
   potions: number;
   hintPath: Solution | null;
+  /** Whether "Impossible!" has been called this turn; one call a turn, right or wrong. */
+  called: boolean;
+  /** Tiles thrown away this turn on answers that were not exact. They still count against a call. */
+  misspent: number[];
   nextId: number;
   stars: number;
 };
@@ -62,11 +66,22 @@ export type BattleEvent =
   | { type: "weaknessShift"; enemyId: number }
   | { type: "enemyAttack"; enemyId: number; damage: number }
   | { type: "healed"; amount: number }
+  | { type: "sharpEye"; swapped: number }
+  | { type: "lookAgain" }
   | { type: "won"; stars: number }
   | { type: "lost" }
   | {
       type: "rejected";
-      reason: "needOperator" | "badStep" | "tooShort" | "noAim" | "noHints" | "noExact" | "noPotions" | "fullHealth";
+      reason:
+        | "needOperator"
+        | "badStep"
+        | "tooShort"
+        | "noAim"
+        | "noHints"
+        | "noExact"
+        | "noPotions"
+        | "fullHealth"
+        | "alreadyCalled";
     };
 
 /** One beat of the battle: the state to show, and what just happened to get there. */
@@ -81,7 +96,8 @@ export type Action =
   | { type: "cast" }
   | { type: "endTurn" }
   | { type: "hint" }
-  | { type: "potion" };
+  | { type: "potion" }
+  | { type: "impossible" };
 
 export const STRIKE_DAMAGE = [0, 0, 20, 35, 55, 80] as const;
 const COUNTER_PER_POWER = 5;
@@ -187,6 +203,8 @@ const dealStep = (state: BattleState): Step => {
       nextId: state.nextId + hand.length,
       equation: EMPTY_EQUATION,
       hintPath: null,
+      called: false,
+      misspent: [],
       aim,
       turn: state.turn + 1,
     },
@@ -239,6 +257,8 @@ export const createBattle = (level: Level, seed: number, kit: Kit = NO_KIT): rea
     hints: HINTS_PER_LEVEL + kit.scrolls,
     potions: kit.potions,
     hintPath: null,
+    called: false,
+    misspent: [],
     nextId: 1,
     stars: 0,
   };
@@ -409,7 +429,9 @@ const cast = (state: BattleState): Step[] => {
   const enemy = living(state).find((candidate) => candidate.id === state.aim?.enemyId);
   if (!enemy || !state.aim) return reject(state, "noAim");
 
-  const spent: BattleState = { ...state, equation: EMPTY_EQUATION, hintPath: null };
+  const target = state.aim.kind === "strike" ? enemy.weakness : enemy.intent.damage;
+  const misspent = total === target ? state.misspent : [...state.misspent, ...state.equation.tiles];
+  const spent: BattleState = { ...state, equation: EMPTY_EQUATION, hintPath: null, misspent };
   const power = equationPower(totals);
   const steps = state.aim.kind === "strike" ? strike(spent, enemy, total, power) : parry(spent, enemy, total, power);
 
@@ -420,20 +442,44 @@ const cast = (state: BattleState): Step[] => {
   return [...steps, ...enemyPhase(end)];
 };
 
+/** Hand positions of tiles spent on earlier casts this turn; tiles sitting in the equation are not spent yet. */
+const spentTiles = (state: BattleState): number[] =>
+  state.hand.flatMap((tile, index) => (tile.used && !state.equation.tiles.includes(tile.id) ? [index] : []));
+
+const searchAnswer = (state: BattleState, target: number, options: { prefix?: Solution; exclude: number[] }) =>
+  solve(
+    state.hand.map((tile) => tile.value),
+    state.level.ops,
+    target,
+    options,
+  );
+
+/** An exact answer for the aimed number from the tiles not yet spent this turn, if there is one. */
+export const answerLeft = (state: BattleState): Solution | null => {
+  const target = aimTarget(state);
+  return target === null ? null : searchAnswer(state, target, { exclude: spentTiles(state) });
+};
+
+/**
+ * Whether the aimed number was within reach this turn. Tiles thrown away on wrong answers count
+ * as if they were still in hand, so wasting tiles never turns a makeable number into a right call.
+ */
+const wasMakeable = (state: BattleState): boolean => {
+  const target = aimTarget(state);
+  const wellSpent = spentTiles(state).filter((index) => !state.misspent.includes(state.hand[index]?.id ?? -1));
+  return target !== null && searchAnswer(state, target, { exclude: wellSpent }) !== null;
+};
+
 const hint = (state: BattleState): Step[] => {
   if (state.hints <= 0) return reject(state, "noHints");
   const target = aimTarget(state);
   if (target === null) return reject(state, "noAim");
 
-  const values = state.hand.map((tile) => tile.value);
-  const indexOf = (tileId: number) => state.hand.findIndex((tile) => tile.id === tileId);
-  const placed = state.equation.tiles.map(indexOf);
-  const spentElsewhere = state.hand.flatMap((tile, index) => (tile.used && !placed.includes(index) ? [index] : []));
+  const placed = state.equation.tiles.map((tileId) => state.hand.findIndex((tile) => tile.id === tileId));
+  const exclude = spentTiles(state);
   const prefix = { tiles: placed, ops: state.equation.ops };
-
-  const continued =
-    placed.length > 0 ? solve(values, state.level.ops, target, { prefix, exclude: spentElsewhere }) : null;
-  const fresh = continued ?? solve(values, state.level.ops, target, { exclude: spentElsewhere });
+  const continued = placed.length > 0 ? searchAnswer(state, target, { prefix, exclude }) : null;
+  const fresh = continued ?? searchAnswer(state, target, { exclude });
   if (!fresh) return reject(state, "noExact");
 
   // If what is on the board cannot lead to the answer, the hint starts the equation over.
@@ -441,6 +487,40 @@ const hint = (state: BattleState): Step[] => {
   const tiles = fresh.tiles.flatMap((index) => state.hand[index]?.id ?? []);
   const path: Solution = { tiles, ops: fresh.ops };
   return quiet({ ...base, hints: state.hints - 1, hintPath: path });
+};
+
+/** Trades every unspent tile for a new one; the new ones always include an exact pair for `target`. */
+const swapUnspent = (state: BattleState, target: number): BattleState => {
+  const count = state.hand.filter((tile) => !tile.used).length;
+  const [values, seed] = withRng(state, (rng) => {
+    const pair = pairFor(rng, state.level, target) ?? [];
+    const filler = Array.from({ length: Math.max(0, count - pair.length) }, () => rng.int(1, state.level.tileMax));
+    return rng.shuffle([...pair, ...filler]).slice(0, count);
+  });
+  // New tiles take the places of the ones traded in, so the spent ones do not jump about.
+  const places = state.hand.flatMap((tile, index) => (tile.used ? [] : [index]));
+  const hand = state.hand.map((tile, index) => {
+    const order = places.indexOf(index);
+    const value = values[order];
+    return order < 0 || value === undefined ? tile : { id: state.nextId + order, value, used: false };
+  });
+  return { ...state, seed, hand, nextId: state.nextId + count };
+};
+
+/**
+ * The player says the aimed number cannot be made from the tiles left. Being right trades those
+ * tiles for new ones that can make it, without the monsters getting a turn. One call a turn,
+ * right or wrong, so it can neither be spammed as a free check nor chained to stall the monsters.
+ */
+const impossible = (state: BattleState): Step[] => {
+  if (state.called) return reject(state, "alreadyCalled");
+  const target = aimTarget(state);
+  if (target === null) return reject(state, "noAim");
+
+  const called: BattleState = { ...lastState(clear(state), state), called: true, hintPath: null };
+  if (wasMakeable(called)) return [{ state: called, event: { type: "lookAgain" } }];
+  const swapped = called.hand.filter((tile) => !tile.used).length;
+  return [{ state: swapUnspent(called, target), event: { type: "sharpEye", swapped } }];
 };
 
 const potion = (state: BattleState): Step[] => {
@@ -490,5 +570,7 @@ export const reduce = (state: BattleState, action: Action): Step[] => {
       return hint(state);
     case "potion":
       return potion(state);
+    case "impossible":
+      return impossible(state);
   }
 };

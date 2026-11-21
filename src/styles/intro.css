@@ -22,7 +22,7 @@
   align-items: flex-end;
 }
 
-.intro-cast img {
+.intro-cast .sprite {
   width: 8.5rem;
   height: 8.5rem;
   transition:
@@ -37,10 +37,19 @@
   height: 11rem;
 }
 
+.intro-cast .intro-hero {
+  width: 14rem;
+  height: 15.4rem;
+  margin: 0 -3rem -0.6rem;
+}
+
 .intro-cast.is-hero .intro-hero,
 .intro-cast.is-enemy .intro-enemy {
   filter: none;
-  animation: bob 900ms ease-in-out infinite alternate;
+}
+
+.intro-cast.is-hero .intro-hero {
+  animation-duration: 560ms;
 }
 
 .speech {

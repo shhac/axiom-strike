@@ -23,7 +23,8 @@ Educational math fighting game for phones/tablets (Android + iOS, landscape), ta
 
 - `src/engine/` — pure, seeded, no DOM. `battle.ts` is a reducer returning steps (state + event).
 - `src/engine/progress.ts` is the save (stars, ratings, items, settings) and `saveParser.ts` reads a stored one back, tolerating anything malformed; `skill.ts` the ratings and tiers; `campfire.ts` the reading rules.
-- `src/content/` — intro scenes and reading passages.
+- `src/content/` — intro scenes, wave taunts and reading passages.
+- `art-src/` — generated art sources. `slice-anim.sh` cuts the character animation sheets into the strips in `public/assets/chars/anim/`.
 - `src/ui/` — Preact components; `save.ts` is the only place that touches storage; `store.ts` plays steps one at a time; `fx.ts` animates each event.
 - `tests/` — vitest, including policy bots in `bots.ts` that guard game balance.
 - `e2e/` — Playwright playthrough: title → map → intro → a level in each region, a direct `?level=` run, and a journey through campfire, items, pause and settings.

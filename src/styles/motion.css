@@ -67,3 +67,16 @@
     animation: none;
   }
 }
+
+@keyframes frames {
+  to {
+    background-position: 100% 0;
+  }
+}
+
+@keyframes say {
+  from {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+}

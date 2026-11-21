@@ -1,7 +1,7 @@
 import { HERO_MAX_HP, type AimKind, type BattleState, type Enemy } from "../../engine/battle";
-import { enemySprite, icon } from "../assets";
+import { enemyStrip, icon, knockedOutSprite } from "../assets";
 import { playSfx } from "../audio";
-import { Num } from "../common";
+import { Num, Sprite } from "../common";
 import { settingsOpen } from "../nav";
 import { busy } from "../store";
 import { act } from "./act";
@@ -46,7 +46,11 @@ export const EnemyView = ({ enemy, state }: { enemy: Enemy; state: BattleState }
         {alive && <AimChip enemy={enemy} kind="strike" state={state} />}
         {alive && <AimChip enemy={enemy} kind="parry" state={state} />}
       </div>
-      <img class="sprite" src={enemySprite(enemy.family, enemy.kind, !alive)} alt="" draggable={false} />
+      {alive ? (
+        <Sprite strip={enemyStrip(enemy.family, enemy.kind)} />
+      ) : (
+        <Sprite still={knockedOutSprite(enemy.family)} />
+      )}
       {alive ? <HpBar hp={enemy.hp} max={enemy.maxHp} tone="enemy" /> : <div class="hp hp-gone" />}
     </div>
   );

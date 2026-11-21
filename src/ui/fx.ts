@@ -1,79 +1,30 @@
 import { signal } from "@preact/signals";
+import { cheerFor, leadOf, tauntFor } from "../content/taunts";
 import type { BattleEvent, BattleState } from "../engine/battle";
-import { glyphFile, glyphSrc, type HeroPose } from "./assets";
+import type { HeroPose } from "./assets";
 import { playMusic, playSfx } from "./audio";
+import { burst, enemyNode, find, flash, float, heroNode, knockOut, lunge, shake, wait } from "./motion";
 
 export const heroPose = signal<HeroPose>("idle");
 export const banner = signal<string | null>(null);
 export const toast = signal<string | null>(null);
 
-/** Fixed waits rather than animation promises: those never settle if the tab is hidden. */
-const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+export type Speech = { who: "hero" | "enemy"; name: string; text: string };
+export const speech = signal<Speech | null>(null);
 
-const find = (selector: string) => document.querySelector<HTMLElement>(selector);
-const enemyNode = (id: number) => find(`[data-enemy="${id}"] .sprite`);
-const heroNode = () => find("[data-hero] .sprite");
+const speechTimer: { id: ReturnType<typeof setTimeout> | null } = { id: null };
 
-const SHAKE: Keyframe[] = [
-  { transform: "translateX(0)" },
-  { transform: "translateX(-0.5rem)" },
-  { transform: "translateX(0.45rem)" },
-  { transform: "translateX(-0.3rem)" },
-  { transform: "translateX(0.15rem)" },
-  { transform: "translateX(0)" },
-];
-
-const shake = (node: HTMLElement | null, duration = 320) => node?.animate(SHAKE, { duration, easing: "ease-out" });
-
-const lunge = (node: HTMLElement | null, distance: string) =>
-  node?.animate(
-    [
-      { transform: "translateX(0)" },
-      { transform: `translateX(${distance})`, offset: 0.45 },
-      { transform: "translateX(0)" },
-    ],
-    { duration: 380, easing: "ease-out" },
-  );
-
-const flash = (node: HTMLElement | null) =>
-  node?.animate([{ opacity: 1 }, { opacity: 0.25 }, { opacity: 1 }, { opacity: 0.4 }, { opacity: 1 }], {
-    duration: 300,
-  });
-
-/** Numbers in floating text use the game's glyphs; words stay as text. */
-const glyphNodes = (text: string): (Node | string)[] => {
-  if (!/^[-+]?\d+$/.test(text)) return [text];
-  return [...text].map((char) => {
-    const img = document.createElement("img");
-    img.src = glyphSrc(glyphFile(char) ?? char);
-    img.alt = "";
-    return img;
-  });
+/** Holds the battle for `holdMs` so the line is noticed, then lets play carry on underneath it. */
+const say = async (line: Speech, holdMs: number, lingerMs: number) => {
+  if (speechTimer.id) clearTimeout(speechTimer.id);
+  speech.value = line;
+  speechTimer.id = setTimeout(() => (speech.value = null), holdMs + lingerMs);
+  await wait(holdMs);
 };
 
-type FloatTone = "damage" | "hurt" | "good" | "miss";
-
-const float = (text: string, anchor: HTMLElement | null, tone: FloatTone, lift = 0) => {
-  const layer = find("#fx");
-  if (!layer || !anchor) return;
-  const box = anchor.getBoundingClientRect();
-  const frame = layer.getBoundingClientRect();
-  const node = document.createElement("div");
-  node.className = `float float-${tone}`;
-  node.append(...glyphNodes(text));
-  node.style.left = `${box.left + box.width / 2 - frame.left}px`;
-  node.style.top = `${box.top - frame.top + box.height * 0.2}px`;
-  layer.append(node);
-  node.animate(
-    [
-      { transform: `translate(-50%, ${lift}rem) scale(0.4)`, opacity: 0 },
-      { transform: `translate(-50%, ${lift - 1}rem) scale(1.25)`, opacity: 1, offset: 0.2 },
-      { transform: `translate(-50%, ${lift - 1.6}rem) scale(1)`, opacity: 1, offset: 0.7 },
-      { transform: `translate(-50%, ${lift - 2.6}rem) scale(1)`, opacity: 0 },
-    ],
-    { duration: 950, easing: "ease-out" },
-  );
-  setTimeout(() => node.remove(), 950);
+export const hush = () => {
+  if (speechTimer.id) clearTimeout(speechTimer.id);
+  speech.value = null;
 };
 
 const showBanner = async (text: string, ms: number) => {
@@ -84,7 +35,7 @@ const showBanner = async (text: string, ms: number) => {
 
 const toastTimer: { id: ReturnType<typeof setTimeout> | null } = { id: null };
 
-const showToast = (text: string) => {
+export const showToast = (text: string) => {
   toast.value = text;
   if (toastTimer.id) clearTimeout(toastTimer.id);
   toastTimer.id = setTimeout(() => (toast.value = null), 1800);
@@ -98,9 +49,10 @@ const REJECTIONS: Record<EventOf<"rejected">["reason"], string> = {
   tooShort: "Use at least two numbers",
   noAim: "Tap a target first",
   noHints: "No hint scrolls left",
-  noExact: "No exact answer left this turn",
+  noExact: "No exact answer left. Tap Impossible!",
   noPotions: "No potions left. Earn more at the campfire",
   fullHealth: "You are already at full health",
+  alreadyCalled: "One Impossible call each turn",
 };
 
 const COMBO_NAMES = ["", "", "", "COMBO!", "SUPER COMBO!", "MEGA COMBO!"];
@@ -187,6 +139,34 @@ const wonFx = (event: EventOf<"won">) => {
   Array.from({ length: event.stars }, (_, index) => setTimeout(() => playSfx("star"), 480 + index * 180));
 };
 
+const KO_WORDS = ["KO!", "POW!", "BAM!", "ZAP!"];
+
+const defeatedFx = async (event: EventOf<"defeated">, state: BattleState) => {
+  const target = enemyNode(event.enemyId);
+  playSfx("enemy_defeat");
+  setTimeout(() => playSfx("star", 0.7), 140);
+  knockOut(target);
+  burst(target);
+  shake(find(".stage"), 220);
+  float(KO_WORDS[event.enemyId % KO_WORDS.length] ?? "KO!", target, "ko", -0.6);
+  heroPose.value = "victory";
+  await wait(560);
+  const waveCleared = state.enemies.every((enemy) => enemy.hp <= 0);
+  const moreWaves = state.wave + 1 < state.level.waves.length;
+  if (waveCleared && moreWaves) await say({ who: "hero", name: "You", text: cheerFor(state.seed) }, 650, 0);
+  heroPose.value = "idle";
+};
+
+const waveStartFx = async (event: EventOf<"waveStart">, state: BattleState) => {
+  if (event.wave > 0) playSfx("jingle_wave", 0.7);
+  await showBanner(`Wave ${event.wave + 1} of ${state.level.waves.length}`, 600);
+  const lead = leadOf(state.enemies);
+  if (!lead) return;
+  playSfx("enemy_attack", 0.5);
+  lunge(enemyNode(lead.id), "-1.4rem");
+  await say({ who: "enemy", ...tauntFor(lead, event.wave, state.seed) }, 500, 1700);
+};
+
 export const afterEvent = async (event: BattleEvent, state: BattleState) => {
   switch (event.type) {
     case "strike":
@@ -194,15 +174,26 @@ export const afterEvent = async (event: BattleEvent, state: BattleState) => {
     case "parry":
       return parryFx(event);
     case "defeated":
-      playSfx("enemy_defeat");
-      return wait(380);
+      return defeatedFx(event, state);
     case "weaknessShift":
       return wait(260);
     case "enemyAttack":
       return enemyAttackFx(event);
     case "waveStart":
-      if (event.wave > 0) playSfx("jingle_wave", 0.7);
-      return showBanner(`Wave ${event.wave + 1} of ${state.level.waves.length}`, 900);
+      return waveStartFx(event, state);
+    case "sharpEye":
+      heroPose.value = "victory";
+      playSfx("reward");
+      float("SHARP EYE!", find(".tiles"), "ko", -1.2);
+      float(`${event.swapped} new numbers`, find(".tiles"), "good", 1);
+      await wait(620);
+      heroPose.value = "idle";
+      return;
+    case "lookAgain":
+      playSfx("miss", 0.8);
+      shake(find(".tiles"), 240);
+      showToast("These numbers could make it. Look again!");
+      return wait(200);
     case "deal":
       playSfx("deal", 0.6);
       return wait(120);

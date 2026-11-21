@@ -26,7 +26,11 @@ const FAMILY_INTROS: Record<OpFamily, Intro> = {
         speaker: "enemy",
         text: "Well, the shield number is how hard I hit! Make THAT number and you parry me. As if you could!",
       },
-      { speaker: "hero", text: "More numbers in one sum means a bigger hit. Let's go!", sum: "2+2+3=7" },
+      { speaker: "hero", text: "More numbers in one sum means a bigger hit.", sum: "2+2+3=7" },
+      {
+        speaker: "hero",
+        text: "And if the numbers left can't make it, I shout IMPOSSIBLE! and swap them for new ones. Let's go!",
+      },
     ],
   },
   sub: {

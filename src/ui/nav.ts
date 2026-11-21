@@ -2,7 +2,7 @@ import { signal } from "@preact/signals";
 import { introFor, type Intro } from "../content/intros";
 import { findLevel, type Level } from "../engine/levels";
 import { markSeen } from "../engine/progress";
-import { playMusic } from "./audio";
+import { playMusic, playSfx } from "./audio";
 import { save, updateSave } from "./save";
 import { leaveBattle, startBattle } from "./store";
 
@@ -18,6 +18,24 @@ export const settingsOpen = signal(false);
 /** The scene playing before a battle, and the level it leads into. */
 export const intro = signal<{ scene: Intro; level: Level } | null>(null);
 
+/** The curtain that sweeps across between screens: closing, then opening on the new one. */
+export const curtain = signal<"closing" | "opening" | null>(null);
+
+const CURTAIN_MS = 260;
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/** Swaps the screen behind a closed curtain. Taps made while it is moving are ignored. */
+const transit = async (swap: () => void) => {
+  if (curtain.value) return;
+  curtain.value = "closing";
+  playSfx("deal", 0.5);
+  await wait(CURTAIN_MS);
+  swap();
+  curtain.value = "opening";
+  await wait(CURTAIN_MS);
+  curtain.value = null;
+};
+
 const beginBattle = (level: Level) => {
   intro.value = null;
   screen.value = "battle";
@@ -25,14 +43,15 @@ const beginBattle = (level: Level) => {
 };
 
 /** Meets the level's monsters first if they are new, then fights. */
-export const enterBattle = (level: Level) => {
-  leaveBattle();
-  const scene = introFor(level, save.value.seen);
-  if (!scene) return beginBattle(level);
-  intro.value = { scene, level };
-  screen.value = "intro";
-  playMusic("music_battle");
-};
+export const enterBattle = (level: Level) =>
+  transit(() => {
+    leaveBattle();
+    const scene = introFor(level, save.value.seen);
+    if (!scene) return beginBattle(level);
+    intro.value = { scene, level };
+    screen.value = "intro";
+    playMusic("music_battle");
+  });
 
 export const finishIntro = () => {
   const current = intro.value;
@@ -41,11 +60,12 @@ export const finishIntro = () => {
   enterBattle(current.level);
 };
 
-export const goTo = (next: Exclude<Screen, "battle" | "intro">) => {
-  leaveBattle();
-  settingsOpen.value = false;
-  screen.value = next;
-};
+export const goTo = (next: Exclude<Screen, "battle" | "intro">) =>
+  transit(() => {
+    leaveBattle();
+    settingsOpen.value = false;
+    screen.value = next;
+  });
 
 /** `?level=` skips the title, map and intro scenes and opens straight into that battle. */
 export const startFromUrl = () => {

@@ -17,7 +17,17 @@ const levelRuns = [
 const MAX_TURNS = 200;
 const MIN_TOUCH = 48;
 
-const tap = (page, selector) => page.locator(selector).first().click({ force: true });
+/** Taps are ignored while the curtain between screens is moving, so wait for it to clear first. */
+const tap = async (page, selector) => {
+  await page.waitForFunction(() => !document.querySelector(".curtain"), null, { timeout: 5000 });
+  await page.locator(selector).first().click({ force: true });
+};
+
+const appears = (page, selector, timeout = 1500) =>
+  page
+    .waitForSelector(selector, { timeout })
+    .then(() => true)
+    .catch(() => false);
 
 const onScreen = (page, name) =>
   page.waitForFunction((wanted) => window.__axiom?.screen() === wanted, name, { timeout: 15000 });
@@ -78,6 +88,7 @@ const passIntro = async (page, problems, shot) => {
   await onScreen(page, "intro");
   await checkScreen(page, problems, shot, { name: "intro", settleMs: 400 });
   const step = async (beats) => {
+    await page.waitForFunction(() => !document.querySelector(".curtain"));
     if ((await page.evaluate(() => window.__axiom.screen())) !== "intro") return beats;
     await tap(page, "[data-screen=intro]");
     await page.waitForTimeout(150);
@@ -139,9 +150,11 @@ const planMove = (page, { parries = true } = {}) =>
     const values = s.hand.map((t) => t.value);
     const used = s.hand.flatMap((t, i) => (t.used ? [i] : []));
     const tryFor = (target, max) => solve(values, s.level.ops, target, { maxTiles: max, exclude: used });
+    const DAMAGE = [0, 0, 20, 35];
     const planFor = (kind, enemy, answer) => ({
       aim: `${kind}-${enemy.id}`,
       kind,
+      lethal: kind === "strike" && DAMAGE[answer.tiles.length] >= enemy.hp,
       tiles: answer.tiles.map((i) => s.hand[i].id),
       ops: answer.ops,
       multi: s.level.ops.length > 1,
@@ -155,8 +168,21 @@ const planMove = (page, { parries = true } = {}) =>
       const a = tryFor(e.weakness, 3);
       if (a) return planFor("strike", e, a);
     }
-    return { end: true };
+    return { end: true, canCall: !s.called };
   }, parries);
+
+/** Calls "Impossible!" and reports whether the game agreed: "right", "wrong", or "silent" if it said nothing. */
+const callImpossible = async (page, shotOnce) => {
+  const before = (await readState(page)).hand.map((tile) => tile.id);
+  await tap(page, "[data-action=impossible]");
+  const answered = await appears(page, "#fx .float-good, .toast");
+  await shotOnce("call");
+  await idle(page);
+  if (!answered) return "silent";
+  // A right call trades the leftover tiles for new ones; a wrong one leaves the hand as it was.
+  const { hand } = await readState(page);
+  return hand.some((tile) => !before.includes(tile.id)) ? "right" : "wrong";
+};
 
 const endTurn = async (page, shotOnce) => {
   await tap(page, "[data-action=end-turn]");
@@ -175,30 +201,40 @@ const castMove = async (page, plan, shotOnce) => {
   const key = `w${plan.wave}n${plan.n}${plan.kind}t${plan.tiles.length}`;
   await shotOnce(`eq_${key}`);
   await tap(page, "[data-action=cast]");
-  const showedDamage = await page
-    .waitForSelector("#fx .float-damage", { timeout: 1500 })
-    .then(() => true)
-    .catch(() => false);
+  const showedDamage = await appears(page, "#fx .float-damage");
   await shotOnce(`fx_${key}`);
+  const celebrated =
+    !plan.lethal || ((await appears(page, "#fx .float-ko")) && (await appears(page, "#fx .burst-star")));
+  if (plan.lethal) await shotOnce("ko");
   await idle(page);
-  return showedDamage;
+  return { showedDamage, celebrated };
 };
 
 /** Plays until the battle ends, or until `until` says to stop. Counts casts and keeps any that showed no damage number. */
-const playTurns = async (page, shotOnce, options = {}, tally = { turns: 0, casts: 0, silentCasts: [] }) => {
+const NEW_TALLY = { turns: 0, casts: 0, silentCasts: [], flatDefeats: 0, calls: { right: 0, wrong: 0, silent: 0 } };
+
+const playTurns = async (page, shotOnce, options = {}, tally = NEW_TALLY) => {
   if (tally.turns >= MAX_TURNS) return { ...tally, timeout: true };
   if (options.until && (await options.until())) return { ...tally, stopped: true };
   const plan = await planMove(page, options);
   if (plan.done) return { ...tally, plan };
+  // Out of answers: say so first, as a player would, and only then give the turn away.
+  if (plan.end && plan.canCall && !options.neverCalls) {
+    const verdict = await callImpossible(page, shotOnce);
+    const calls = { ...tally.calls, [verdict]: tally.calls[verdict] + 1 };
+    return playTurns(page, shotOnce, options, { ...tally, turns: tally.turns + 1, calls });
+  }
   if (plan.end) {
     await endTurn(page, shotOnce);
     return playTurns(page, shotOnce, options, { ...tally, turns: tally.turns + 1 });
   }
-  const showedDamage = await castMove(page, plan, shotOnce);
+  const { showedDamage, celebrated } = await castMove(page, plan, shotOnce);
   return playTurns(page, shotOnce, options, {
+    ...tally,
     turns: tally.turns + 1,
     casts: tally.casts + 1,
     silentCasts: showedDamage ? tally.silentCasts : [...tally.silentCasts, plan],
+    flatDefeats: tally.flatDefeats + (celebrated ? 0 : 1),
   });
 };
 
@@ -208,6 +244,8 @@ const playLevel = async (page, prefix, open, { timed = true } = {}) => {
   const problems = [];
   const { shot, shotOnce } = screenshots(page, prefix);
   await open(problems, shot);
+  if (!(await appears(page, "[data-say=enemy]", 5000))) problems.push("no monster spoke as the wave arrived");
+  await shot("taunt");
   await idle(page);
   // Tiles scale in as they are dealt, so sizes are only meaningful once that has finished.
   await page.waitForTimeout(700);
@@ -228,6 +266,8 @@ const playLevel = async (page, prefix, open, { timed = true } = {}) => {
       `${outcome.silentCasts.length} casts showed no damage number: ${JSON.stringify(outcome.silentCasts)}`,
     );
   }
+  if (outcome.flatDefeats > 0) problems.push(`${outcome.flatDefeats} defeats had no KO burst`);
+  if (outcome.calls.silent > 0) problems.push(`${outcome.calls.silent} Impossible calls got no answer`);
   if (errors.length) problems.push(`console errors ${JSON.stringify(errors)}`);
   if (!(perf.frames > 100)) problems.push(`only ${perf.frames} frames sampled`);
   // Taking full-resolution screenshots stalls the page, so timings only count on runs without them.
@@ -247,12 +287,18 @@ const winFirstLevel = async ({ page, problems, shot, shotOnce }) => {
   expectThat(problems, first.plan?.done === "won", `first level ended ${first.plan?.done}`);
   await page.waitForTimeout(900);
   expectThat(problems, (await readSave(page)).stories === 1, "a win did not light the campfire");
+  expectThat(
+    problems,
+    await appears(page, "[data-result=won] [data-prizes]"),
+    "the victory panel does not show the story prize",
+  );
 };
 
 const readAtCampfire = async ({ page, problems, shot }) => {
   await tap(page, "[data-action=campfire]");
   await onScreen(page, "campfire");
   await checkScreen(page, problems, shot, { name: "fire_read", where: "campfire passage", settleMs: 400 });
+  expectThat(problems, await appears(page, "[data-phase=read] [data-prizes]"), "the story does not show its prize");
   await tap(page, "[data-action=read-done]");
   await checkScreen(page, problems, shot, { name: "fire_ask", where: "campfire question", settleMs: 300 });
   await tap(page, "[data-action=read-again]");
@@ -400,6 +446,8 @@ results.push({ name: "journey", ...(await withPage(journey)) });
 await browser.close();
 
 const problems = results.flatMap((result) => result.problems.map((problem) => `${result.name}: ${problem}`));
+const rightCalls = results.reduce((sum, result) => sum + (result.outcome?.calls.right ?? 0), 0);
+if (rightCalls === 0) problems.push("no Impossible call was ever right, so its reward was never seen");
 console.log(JSON.stringify(results, null, 1));
 if (problems.length) {
   console.error("FAILED\n" + problems.join("\n"));

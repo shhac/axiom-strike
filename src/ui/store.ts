@@ -1,10 +1,10 @@
 import { signal } from "@preact/signals";
-import { createBattle, reduce, type Action, type BattleState, type Step } from "../engine/battle";
+import { answerLeft, createBattle, reduce, type Action, type BattleState, type Step } from "../engine/battle";
 import { FIRST_LEVEL, tuneLevel, type Level } from "../engine/levels";
 import { kitFor, recordCast, recordLoss, recordWin, spendItems, tierFor } from "../engine/progress";
 import { battleDifficulty, castResult, castScore } from "../engine/skill";
 import { playMusic } from "./audio";
-import { afterEvent, beforeEvent, heroPose } from "./fx";
+import { afterEvent, beforeEvent, heroPose, hush, showToast } from "./fx";
 import { save, updateSave } from "./save";
 
 const randomSeed = () => Math.floor(Math.random() * 2 ** 31);
@@ -49,10 +49,17 @@ const play = async (steps: readonly Step[]) => {
   busy.value = false;
 };
 
+/**
+ * Casts that could have been exact move the rating. One thrown at a number the tiles could not
+ * make is not held against the player; it points at the way out instead of leaving them stuck.
+ */
 const rateCast = (state: BattleState) => {
   const result = castResult(state);
-  if (!result) return;
-  updateSave((current) => recordCast(current, state.level.region, session.difficulty, castScore(result)));
+  if (result) {
+    updateSave((current) => recordCast(current, state.level.region, session.difficulty, castScore(result)));
+    return;
+  }
+  if (!state.called && !answerLeft(state)) showToast("Stuck? If the number can't be made, tap Impossible!");
 };
 
 const landed = (steps: readonly Step[]) =>
@@ -74,6 +81,7 @@ export const startBattle = (level: Level, seed = randomSeed()) => {
   const tier = tierFor(save.value, level);
   const steps = createBattle(tuneLevel(level, tier), seed, kitFor(save.value));
   session.run += 1;
+  hush();
   session.difficulty = battleDifficulty(level, tier);
   heroPose.value = "idle";
   playMusic("music_battle");
@@ -84,5 +92,6 @@ export const startBattle = (level: Level, seed = randomSeed()) => {
 /** Walks away from the battle in progress; nothing more from it is shown or saved. */
 export const leaveBattle = () => {
   session.run += 1;
+  hush();
   busy.value = false;
 };

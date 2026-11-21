@@ -149,6 +149,23 @@
   text-shadow: 0 0.12rem 0 rgb(0 0 0 / 0.4);
 }
 
+.btn-call {
+  flex-direction: column;
+  gap: 0;
+  width: 5rem;
+  font-size: 0.72rem;
+  background: #3b356f;
+}
+
+.btn-call img {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.btn-call.is-empty {
+  filter: saturate(0.3) brightness(0.7);
+}
+
 .btn-cast-parry {
   background: var(--parry);
 }

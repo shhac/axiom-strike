@@ -5,7 +5,7 @@ import { applyStep, evaluate, type Op } from "../src/engine/equation";
 import { findLevel, LEVELS, TIERS, tuneLevel } from "../src/engine/levels";
 import { createRng } from "../src/engine/rng";
 import { solve } from "../src/engine/solver";
-import { applyActions, masherBot, openingState, solverBot, winRate } from "./bots";
+import { applyActions, callerBot, mashAndCallBot, masherBot, openingState, solverBot, winRate } from "./bots";
 
 const [addLevel, subLevel] = [findLevel("add_1"), findLevel("sub_1")];
 
@@ -258,6 +258,51 @@ describe("battle rules", () => {
     expect(reason({ ...base, aim: null }, { type: "hint" })).toBe("noAim");
     expect(reason(base, { type: "potion" })).toBe("noPotions");
     expect(reason({ ...base, potions: 1 }, { type: "potion" })).toBe("fullHealth");
+    expect(reason({ ...base, called: true }, { type: "impossible" })).toBe("alreadyCalled");
+    expect(reason({ ...base, aim: null }, { type: "impossible" })).toBe("noAim");
+  });
+
+  describe("calling Impossible", () => {
+    const call: Action = { type: "impossible" };
+    const countdowns = (state: BattleState) => state.enemies.map((enemy) => enemy.intent.turns);
+
+    it("a right call trades the unspent tiles for ones that can make the number, and costs no turn", () => {
+      const stuck = rig(start(), [3, 4, 9, 9, 9], { weakness: 7, hp: 40 });
+      const struck = act(stuck, tap(0), tap(1), { type: "cast" });
+      const target = struck.enemies[0]!.weakness;
+      const rigged = { ...struck, hand: struck.hand.map((tile) => (tile.used ? tile : { ...tile, value: 30 })) };
+      const steps = reduce(rigged, call);
+      const after = steps.at(-1)!.state;
+      expect(steps.map((step) => step.event?.type)).toEqual(["sharpEye"]);
+      expect(after.hand.map((tile) => tile.used)).toEqual(rigged.hand.map((tile) => tile.used));
+      expect(
+        solve(
+          after.hand.map((t) => t.value),
+          after.level.ops,
+          target,
+          { exclude: [0, 1], maxTiles: 2 },
+        ),
+      ).not.toBeNull();
+      expect([after.turn, countdowns(after), after.called]).toEqual([rigged.turn, countdowns(rigged), true]);
+    });
+
+    it("a wrong call changes nothing but uses up the call", () => {
+      const fine = rig(start(), [3, 4, 9], { weakness: 7 });
+      const steps = reduce(act(fine, tap(2)), call);
+      expect(steps.map((step) => step.event?.type)).toEqual(["lookAgain"]);
+      expect(steps[0]?.state).toEqual({ ...fine, called: true });
+    });
+
+    it("tiles thrown away on a wrong answer still count, so wasting them cannot earn a call", () => {
+      const wasteful = act(rig(start(), [3, 4, 1, 1], { weakness: 7 }), tap(0), tap(2), { type: "cast" });
+      expect(reduce(wasteful, call)[0]?.event?.type).toBe("lookAgain");
+    });
+
+    it("the call comes back when the next turn is dealt", () => {
+      const called = act(rig(start(), [9, 9, 9], { weakness: 7 }), call);
+      expect(called.called).toBe(true);
+      expect(act(called, { type: "endTurn" }).called).toBe(false);
+    });
   });
 
   it("a potion heals 30, never past full health, and is used up", () => {
@@ -311,6 +356,20 @@ describe("simulated players", () => {
 
   it.each(TUNED)("$name is not winnable by mashing", ({ level }) => {
     expect(winRate(level, masherBot, 60).rate).toBeLessThan(0.3);
+  });
+
+  it("calling Impossible when stuck finishes sooner, never later", () => {
+    [addLevel, findLevel("div_5")].forEach((level) => {
+      const plain = winRate(level, solverBot(2), 200);
+      const calling = winRate(level, callerBot(solverBot(2)), 200);
+      expect(calling.rate).toBeGreaterThanOrEqual(plain.rate);
+      expect(calling.meanTurns).toBeLessThan(plain.meanTurns);
+    });
+  });
+
+  // Looser than plain mashing: a blind call is right now and then and hands over an easy pair.
+  it.each(TUNED)("$name is not winnable by mashing and calling Impossible blindly", ({ level }) => {
+    expect(winRate(level, mashAndCallBot, 60).rate).toBeLessThan(0.45);
   });
 
   it("changes every level's numbers in both directions, and nothing else", () => {
