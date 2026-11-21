@@ -1,0 +1,72 @@
+import { HERO_MAX_HP, type AimKind, type BattleState, type Enemy } from "../../engine/battle";
+import { enemySprite, icon } from "../assets";
+import { Num } from "../common";
+import { act } from "./act";
+
+const HpBar = ({ hp, max, tone }: { hp: number; max: number; tone: "hero" | "enemy" }) => (
+  <div class={`hp hp-${tone}`}>
+    <div class="hp-fill" style={{ transform: `scaleX(${Math.max(0, hp) / max})` }} />
+    <span class="hp-text">{hp}</span>
+  </div>
+);
+
+const AimChip = ({ enemy, kind, state }: { enemy: Enemy; kind: AimKind; state: BattleState }) => {
+  const selected = state.aim?.enemyId === enemy.id && state.aim.kind === kind;
+  const { intent } = enemy;
+  const urgent = kind === "parry" && intent.turns === 1;
+  const softened = kind === "parry" && intent.remaining < intent.damage;
+  const number = kind === "strike" ? enemy.weakness : intent.damage;
+  const label =
+    kind === "strike"
+      ? `Weakness ${number}`
+      : `Attack ${number}, lands ${urgent ? "this turn" : `in ${intent.turns} turns`}`;
+  return (
+    <button
+      class={`chip chip-${kind} ${selected ? "is-aimed" : ""} ${urgent ? "is-urgent" : ""} ${softened ? "is-softened" : ""}`}
+      data-aim={`${kind}-${enemy.id}`}
+      aria-label={label}
+      aria-pressed={selected}
+      onClick={act("aim", { type: "aim", aim: { enemyId: enemy.id, kind } })}
+    >
+      <img class="chip-icon" src={icon(kind === "strike" ? "sword" : "shield")} alt="" />
+      <Num class="chip-number" key={number} value={number} />
+      {kind === "parry" && <span class="chip-when">{urgent ? "NOW!" : `in ${intent.turns}`}</span>}
+    </button>
+  );
+};
+
+export const EnemyView = ({ enemy, state }: { enemy: Enemy; state: BattleState }) => {
+  const alive = enemy.hp > 0;
+  return (
+    <div class={`enemy enemy-${enemy.kind} ${alive ? "" : "is-down"}`} data-enemy={enemy.id}>
+      <div class="chips">
+        {alive && <AimChip enemy={enemy} kind="strike" state={state} />}
+        {alive && <AimChip enemy={enemy} kind="parry" state={state} />}
+      </div>
+      <img class="sprite" src={enemySprite(enemy.family, enemy.kind, !alive)} alt="" draggable={false} />
+      {alive ? <HpBar hp={enemy.hp} max={enemy.maxHp} tone="enemy" /> : <div class="hp hp-gone" />}
+    </div>
+  );
+};
+
+const pipClass = (index: number, wave: number) => {
+  if (index < wave) return "pip is-done";
+  return index === wave ? "pip is-now" : "pip";
+};
+
+export const Hud = ({ state }: { state: BattleState }) => (
+  <div class="hud">
+    <div class="hud-hero">
+      <img class="hud-heart" src={icon("heart")} alt="Health" />
+      <HpBar hp={state.heroHp} max={HERO_MAX_HP} tone="hero" />
+    </div>
+    <div class="hud-level">
+      <span class="hud-name">{state.level.name}</span>
+      <span class="pips" aria-label={`Wave ${state.wave + 1} of ${state.level.waves.length}`}>
+        {state.level.waves.map((_, index) => (
+          <i class={pipClass(index, state.wave)} />
+        ))}
+      </span>
+    </div>
+  </div>
+);

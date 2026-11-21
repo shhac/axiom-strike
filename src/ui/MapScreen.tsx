@@ -2,7 +2,8 @@ import { useEffect } from "preact/hooks";
 import { LEVELS, REGIONS, type Level, type Region } from "../engine/levels";
 import { isUnlocked, starsFor, type Save } from "../engine/progress";
 import { playMusic, playSfx, unlockAudio } from "./audio";
-import { icon, Num, RotatePrompt } from "./common";
+import { icon } from "./assets";
+import { Num, RotatePrompt } from "./common";
 import { enterBattle, goTo } from "./nav";
 import { save } from "./save";
 
@@ -31,7 +32,7 @@ const NodeButton = ({ level, current, progress }: { level: Level; current: boole
       disabled={!open}
       onClick={() => {
         playSfx("button");
-        enterBattle(level.id);
+        enterBattle(level);
       }}
     >
       {open ? <Num value={level.step + 1} /> : <img class="node-lock" src={icon("lock")} alt="" />}

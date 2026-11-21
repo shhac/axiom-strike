@@ -1,0 +1,80 @@
+:root {
+  --ink: #14122b;
+  --panel: #1d1a3f;
+  --panel-edge: #3a3478;
+  --cream: #fff6dc;
+  --tile: #fff1c4;
+  --tile-edge: #c98a3b;
+  --strike: #ff5a4f;
+  --strike-deep: #a3241f;
+  --parry: #3d9bff;
+  --parry-deep: #14509e;
+  --gold: #ffd23f;
+  --good: #58e07b;
+
+  /* Everything is sized in rem, and one rem is whichever is smaller: 1/22.5 of the height or
+     1/40 of the width. The layout is drawn for a 40 x 22.5 box and simply gains room beyond it. */
+  font-size: min(calc(100dvh / 22.5), calc(100dvw / 40));
+  font-family: "Fredoka Variable", "Trebuchet MS", system-ui, sans-serif;
+  font-weight: 600;
+  color: var(--cream);
+  background: var(--ink);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+img {
+  image-rendering: pixelated;
+  -webkit-user-drag: none;
+}
+
+.screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  width: 100dvw;
+  overflow: hidden;
+}
+
+.num {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.num img {
+  height: 1em;
+  width: auto;
+  margin: 0 -0.04em;
+}
+
+.num-long img {
+  height: 0.8em;
+  margin: 0 -0.07em;
+}

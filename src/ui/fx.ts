@@ -1,8 +1,7 @@
 import { signal } from "@preact/signals";
 import type { BattleEvent, BattleState } from "../engine/battle";
+import { glyphFile, glyphSrc, type HeroPose } from "./assets";
 import { playMusic, playSfx } from "./audio";
-
-export type HeroPose = "idle" | "attack" | "hurt" | "victory";
 
 export const heroPose = signal<HeroPose>("idle");
 export const banner = signal<string | null>(null);
@@ -41,14 +40,12 @@ const flash = (node: HTMLElement | null) =>
     duration: 300,
   });
 
-const GLYPH_FILES: Record<string, string> = { "-": "minus", "+": "plus", "!": "bang" };
-
 /** Numbers in floating text use the game's glyphs; words stay as text. */
 const glyphNodes = (text: string): (Node | string)[] => {
   if (!/^[-+]?\d+$/.test(text)) return [text];
   return [...text].map((char) => {
     const img = document.createElement("img");
-    img.src = `./assets/glyphs/${GLYPH_FILES[char] ?? char}.png`;
+    img.src = glyphSrc(glyphFile(char) ?? char);
     img.alt = "";
     return img;
   });
@@ -87,13 +84,15 @@ const showBanner = async (text: string, ms: number) => {
 
 const toastTimer: { id: ReturnType<typeof setTimeout> | null } = { id: null };
 
-export const showToast = (text: string) => {
+const showToast = (text: string) => {
   toast.value = text;
   if (toastTimer.id) clearTimeout(toastTimer.id);
   toastTimer.id = setTimeout(() => (toast.value = null), 1800);
 };
 
-const REJECTIONS: Record<Extract<BattleEvent, { type: "rejected" }>["reason"], string> = {
+type EventOf<T extends BattleEvent["type"]> = Extract<BattleEvent, { type: T }>;
+
+const REJECTIONS: Record<EventOf<"rejected">["reason"], string> = {
   needOperator: "Pick a sign first",
   badStep: "That can't go below zero or split unevenly",
   tooShort: "Use at least two numbers",
@@ -119,66 +118,86 @@ export const beforeEvent = async (event: BattleEvent) => {
   }
 };
 
+const strikeFx = async (event: EventOf<"strike">) => {
+  const target = enemyNode(event.enemyId);
+  if (event.damage > 0) {
+    playSfx(event.exact && event.power >= 3 ? "hit_heavy" : "hit_light");
+    shake(target);
+    flash(target);
+    float(`-${event.damage}`, target, "damage");
+    const combo = event.exact ? COMBO_NAMES[Math.min(event.power, 5)] : "";
+    if (combo) {
+      playSfx("combo", 0.8);
+      float(combo, target, "good", -1.6);
+    }
+    if (!event.exact) float("So close!", target, "miss", -1.6);
+  } else {
+    playSfx("miss", 0.8);
+    float("MISS", target, "miss");
+  }
+  await wait(480);
+  heroPose.value = "idle";
+};
+
+const parryFeedback = (event: EventOf<"parry">, target: HTMLElement | null) => {
+  if (event.exact) {
+    playSfx("parry");
+    float("PARRIED!", target, "good", -1.6);
+    float(`-${event.counter}`, target, "damage");
+    shake(target);
+    return;
+  }
+  if (event.blocked > 0) {
+    playSfx("block", 0.8);
+    float(`Blocked ${event.blocked}`, target, "good");
+    return;
+  }
+  playSfx("miss", 0.8);
+  float("Too far off", target, "miss");
+};
+
+const parryFx = (event: EventOf<"parry">) => {
+  parryFeedback(event, enemyNode(event.enemyId));
+  return wait(480);
+};
+
+const enemyAttackFx = async (event: EventOf<"enemyAttack">) => {
+  const hero = heroNode();
+  if (event.damage > 0) {
+    heroPose.value = "hurt";
+    playSfx("hero_hurt");
+    shake(hero);
+    shake(find(".stage"), 260);
+    float(`-${event.damage}`, hero, "hurt");
+  } else {
+    playSfx("block");
+    float("BLOCKED!", hero, "good");
+  }
+  await wait(520);
+  heroPose.value = "idle";
+};
+
+const wonFx = (event: EventOf<"won">) => {
+  heroPose.value = "victory";
+  playMusic(null);
+  playSfx("jingle_victory");
+  // One ding per star, in time with the stars popping in on the result panel.
+  Array.from({ length: event.stars }, (_, index) => setTimeout(() => playSfx("star"), 480 + index * 180));
+};
+
 export const afterEvent = async (event: BattleEvent, state: BattleState) => {
   switch (event.type) {
-    case "strike": {
-      const target = enemyNode(event.enemyId);
-      if (event.damage > 0) {
-        playSfx(event.exact && event.power >= 3 ? "hit_heavy" : "hit_light");
-        shake(target);
-        flash(target);
-        float(`-${event.damage}`, target, "damage");
-        const combo = event.exact ? COMBO_NAMES[Math.min(event.power, 5)] : "";
-        if (combo) {
-          playSfx("combo", 0.8);
-          float(combo, target, "good", -1.6);
-        }
-        if (!event.exact) float("So close!", target, "miss", -1.6);
-      } else {
-        playSfx("miss", 0.8);
-        float("MISS", target, "miss");
-      }
-      await wait(480);
-      heroPose.value = "idle";
-      return;
-    }
-    case "parry": {
-      const target = enemyNode(event.enemyId);
-      if (event.exact) {
-        playSfx("parry");
-        float("PARRIED!", target, "good", -1.6);
-        float(`-${event.counter}`, target, "damage");
-        shake(target);
-      } else if (event.blocked > 0) {
-        playSfx("block", 0.8);
-        float(`Blocked ${event.blocked}`, target, "good");
-      } else {
-        playSfx("miss", 0.8);
-        float("Too far off", target, "miss");
-      }
-      return wait(480);
-    }
+    case "strike":
+      return strikeFx(event);
+    case "parry":
+      return parryFx(event);
     case "defeated":
       playSfx("enemy_defeat");
       return wait(380);
     case "weaknessShift":
       return wait(260);
-    case "enemyAttack": {
-      const hero = heroNode();
-      if (event.damage > 0) {
-        heroPose.value = "hurt";
-        playSfx("hero_hurt");
-        shake(hero);
-        shake(find(".stage"), 260);
-        float(`-${event.damage}`, hero, "hurt");
-      } else {
-        playSfx("block");
-        float("BLOCKED!", hero, "good");
-      }
-      await wait(520);
-      heroPose.value = "idle";
-      return;
-    }
+    case "enemyAttack":
+      return enemyAttackFx(event);
     case "waveStart":
       if (event.wave > 0) playSfx("jingle_wave", 0.7);
       return showBanner(`Wave ${event.wave + 1} of ${state.level.waves.length}`, 900);
@@ -186,12 +205,7 @@ export const afterEvent = async (event: BattleEvent, state: BattleState) => {
       playSfx("deal", 0.6);
       return wait(120);
     case "won":
-      heroPose.value = "victory";
-      playMusic(null);
-      playSfx("jingle_victory");
-      // One ding per star, in time with the stars popping in on the result panel.
-      Array.from({ length: event.stars }, (_, index) => setTimeout(() => playSfx("star"), 480 + index * 180));
-      return;
+      return wonFx(event);
     case "lost":
       playMusic(null);
       playSfx("jingle_defeat");

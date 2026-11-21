@@ -1,16 +1,17 @@
 import { signal } from "@preact/signals";
 import { createBattle, reduce, type Action, type BattleState, type Step } from "../engine/battle";
-import { findLevel } from "../engine/levels";
+import { FIRST_LEVEL, type Level } from "../engine/levels";
 import { playMusic } from "./audio";
 import { afterEvent, beforeEvent, heroPose } from "./fx";
 import { saveWin } from "./save";
 
 const randomSeed = () => Math.floor(Math.random() * 2 ** 31);
 
-const opening = (levelId: string | null, seed: number) => createBattle(findLevel(levelId), seed);
-
-/** What is on screen. It trails the engine while animations play, one step at a time. */
-export const battle = signal<BattleState>(opening(null, 1)[0]!.state);
+/**
+ * What is on screen. It trails the engine while animations play, one step at a time. Until a
+ * level is picked it holds a stand-in battle, so there is always a board to draw.
+ */
+export const battle = signal<BattleState>(createBattle(FIRST_LEVEL, 1)[0].state);
 export const busy = signal(false);
 
 const play = async (steps: readonly Step[]) => {
@@ -27,17 +28,18 @@ const play = async (steps: readonly Step[]) => {
 export const dispatch = (action: Action) => {
   if (busy.value) return;
   const steps = reduce(battle.value, action);
-  if (steps.length === 0) return;
+  const last = steps.at(-1);
+  if (!last) return;
   const instant = steps.every((step) => step.event === null);
   if (!instant) return void play(steps);
-  battle.value = steps.at(-1)!.state;
+  battle.value = last.state;
 };
 
-export const startBattle = (levelId: string | null, seed = randomSeed()) => {
+export const startBattle = (level: Level, seed = randomSeed()) => {
   if (busy.value) return;
-  const steps = opening(levelId, seed);
+  const steps = createBattle(level, seed);
   heroPose.value = "idle";
   playMusic("music_battle");
-  battle.value = steps[0]!.state;
+  battle.value = steps[0].state;
   void play(steps);
 };

@@ -1,4 +1,4 @@
-// Plays a whole battle through the real UI with the solver choosing moves, on an emulated
+// Plays whole battles through the real UI with the solver choosing moves, on an emulated
 // Galaxy S21 in landscape with the CPU slowed 4x, and reports frame times and layout problems.
 import { mkdirSync } from "node:fs";
 import { chromium } from "playwright";
@@ -13,25 +13,45 @@ const runs = [
   { name: "division-1", level: "div_1", query: "?seed=3" },
 ];
 
-const playLevel = async (page, url, prefix, level) => {
+const MAX_TURNS = 200;
+
+const tap = (page, selector) => page.locator(selector).click({ force: true });
+
+const idle = (page) => page.waitForFunction(() => window.__axiom && !window.__axiom.busy(), null, { timeout: 15000 });
+
+const watchErrors = (page) => {
   const errors = [];
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
   page.on("pageerror", (e) => errors.push(String(e)));
+  return errors;
+};
+
+const screenshots = (page, prefix) => {
+  const taken = new Set();
   const shot = async (name) => shotDir && page.screenshot({ path: `${shotDir}/${prefix}_${name}.png` });
+  const shotOnce = async (name) => {
+    if (taken.has(name)) return;
+    taken.add(name);
+    await shot(name);
+  };
+  return { shot, shotOnce };
+};
+
+const openLevel = async (page, url, level, shot) => {
   await page.goto(url);
   await page.waitForTimeout(1500);
   await shot("title");
-  await page.locator("[data-action=play]").click({ force: true });
+  await tap(page, "[data-action=play]");
   await page.waitForTimeout(600);
   await shot("map");
-  await page.locator(`[data-level=${level}]`).click({ force: true });
-  const idle = async () => {
-    await page.waitForFunction(() => window.__axiom && !window.__axiom.busy(), null, { timeout: 15000 });
-  };
-  await idle();
+  await tap(page, `[data-level=${level}]`);
+  await idle(page);
   // Tiles scale in as they are dealt, so sizes are only meaningful once that has finished.
   await page.waitForTimeout(700);
-  const small = await page.evaluate(() =>
+};
+
+const smallTouchTargets = (page) =>
+  page.evaluate(() =>
     [...document.querySelectorAll("button")]
       .map((b) => ({
         label: b.getAttribute("aria-label") ?? b.textContent,
@@ -40,13 +60,12 @@ const playLevel = async (page, url, prefix, level) => {
       }))
       .filter((b) => b.w < 48 || b.h < 48),
   );
-  // Sampling starts once the first hand is on screen: this measures play, not page load.
-  await page.evaluate(() => {
-    const frames = [];
-    let last = performance.now();
+
+const startPerfSampling = (page) =>
+  page.evaluate(() => {
+    const stamps = [performance.now()];
     const tick = (now) => {
-      frames.push(now - last);
-      last = now;
+      stamps.push(now);
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
@@ -54,100 +73,109 @@ const playLevel = async (page, url, prefix, level) => {
     new PerformanceObserver((list) => list.getEntries().forEach((e) => longTasks.push(Math.round(e.duration)))).observe(
       { entryTypes: ["longtask"] },
     );
-    window.__perf = { frames, longTasks };
+    window.__perf = { stamps, longTasks };
   });
-  const seen = new Set();
-  let casts = 0;
-  for (let i = 0; i < 200; i++) {
-    const plan = await page.evaluate(() => {
-      const { state, solve } = window.__axiom;
-      const s = state();
-      if (s.phase !== "player") return { done: s.phase, stars: s.stars, hp: s.heroHp };
-      const alive = s.enemies.filter((e) => e.hp > 0);
-      const values = s.hand.map((t) => t.value);
-      const used = s.hand.flatMap((t, i) => (t.used ? [i] : []));
-      const landing = alive.find((e) => e.intent.turns === 1 && e.intent.remaining > 0);
-      const tryFor = (target, max) => solve(values, s.level.ops, target, { maxTiles: max, exclude: used });
-      const parry = landing && tryFor(landing.intent.damage, 2);
-      if (parry)
-        return {
-          aim: `parry-${landing.id}`,
-          tiles: parry.tiles.map((i) => s.hand[i].id),
-          ops: parry.ops,
-          multi: s.level.ops.length > 1,
-          wave: s.wave,
-          n: alive.length,
-        };
-      for (const e of alive) {
-        const a = tryFor(e.weakness, 3);
-        if (a)
-          return {
-            aim: `strike-${e.id}`,
-            tiles: a.tiles.map((i) => s.hand[i].id),
-            ops: a.ops,
-            multi: s.level.ops.length > 1,
-            wave: s.wave,
-            n: alive.length,
-          };
-      }
-      return { end: true };
+
+const readPerf = (page) =>
+  page.evaluate(() => {
+    const { stamps, longTasks } = window.__perf;
+    const f = stamps
+      .slice(1)
+      .map((stamp, i) => stamp - stamps[i])
+      .sort((a, b) => a - b);
+    return {
+      frames: f.length,
+      p50: f[Math.floor(f.length * 0.5)],
+      p95: f[Math.floor(f.length * 0.95)],
+      p99: f[Math.floor(f.length * 0.99)],
+      max: f[f.length - 1],
+      longTasks,
+    };
+  });
+
+const readLayout = (page) =>
+  page.evaluate(() => ({
+    scrollW: document.documentElement.scrollWidth,
+    scrollH: document.documentElement.scrollHeight,
+    vw: innerWidth,
+    vh: innerHeight,
+  }));
+
+/** Runs in the page: parry what lands this turn, else strike the first enemy with an exact answer. */
+const planMove = (page) =>
+  page.evaluate(() => {
+    const { state, solve } = window.__axiom;
+    const s = state();
+    if (s.phase !== "player") return { done: s.phase, stars: s.stars, hp: s.heroHp };
+    const alive = s.enemies.filter((e) => e.hp > 0);
+    const values = s.hand.map((t) => t.value);
+    const used = s.hand.flatMap((t, i) => (t.used ? [i] : []));
+    const tryFor = (target, max) => solve(values, s.level.ops, target, { maxTiles: max, exclude: used });
+    const planFor = (kind, enemy, answer) => ({
+      aim: `${kind}-${enemy.id}`,
+      tiles: answer.tiles.map((i) => s.hand[i].id),
+      ops: answer.ops,
+      multi: s.level.ops.length > 1,
+      wave: s.wave,
+      n: alive.length,
     });
-    if (plan.done) {
-      await page.waitForTimeout(900);
-      await shot("z_result");
-      const perf = await page.evaluate(() => {
-        const f = [...window.__perf.frames].sort((a, b) => a - b);
-        return {
-          frames: f.length,
-          p50: f[Math.floor(f.length * 0.5)],
-          p95: f[Math.floor(f.length * 0.95)],
-          p99: f[Math.floor(f.length * 0.99)],
-          max: f[f.length - 1],
-          longTasks: window.__perf.longTasks,
-        };
-      });
-      const layout = await page.evaluate(() => {
-        const vw = innerWidth,
-          vh = innerHeight;
-        return {
-          scrollW: document.documentElement.scrollWidth,
-          scrollH: document.documentElement.scrollHeight,
-          vw,
-          vh,
-        };
-      });
-      return { plan, casts, perf, layout, small, errors };
+    const landing = alive.find((e) => e.intent.turns === 1 && e.intent.remaining > 0);
+    const parry = landing && tryFor(landing.intent.damage, 2);
+    if (parry) return planFor("parry", landing, parry);
+    for (const e of alive) {
+      const a = tryFor(e.weakness, 3);
+      if (a) return planFor("strike", e, a);
     }
-    if (plan.end) {
-      await page.locator("[data-action=end-turn]").click({ force: true });
-      await page.waitForTimeout(250);
-      if (!seen.has("attack")) {
-        seen.add("attack");
-        await shot("attack");
-      }
-      await idle();
-      continue;
-    }
-    await page.locator(`[data-aim="${plan.aim}"]`).click({ force: true });
-    for (let t = 0; t < plan.tiles.length; t++) {
-      if (t > 0 && plan.multi) await page.locator(`[data-op="${plan.ops[t - 1]}"]`).click({ force: true });
-      await page.locator(`[data-tile="${plan.tiles[t]}"]`).click({ force: true });
-    }
-    const key = `w${plan.wave}n${plan.n}${plan.aim.split("-")[0]}t${plan.tiles.length}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      await shot(`eq_${key}`);
-    }
-    await page.locator("[data-action=cast]").click({ force: true });
-    casts++;
-    await page.waitForTimeout(420);
-    if (!seen.has("fx" + key)) {
-      seen.add("fx" + key);
-      await shot(`fx_${key}`);
-    }
-    await idle();
+    return { end: true };
+  });
+
+const endTurn = async (page, shotOnce) => {
+  await tap(page, "[data-action=end-turn]");
+  await page.waitForTimeout(250);
+  await shotOnce("attack");
+  await idle(page);
+};
+
+const castMove = async (page, plan, shotOnce) => {
+  await tap(page, `[data-aim="${plan.aim}"]`);
+  for (const [t, tileId] of plan.tiles.entries()) {
+    if (t > 0 && plan.multi) await tap(page, `[data-op="${plan.ops[t - 1]}"]`);
+    await tap(page, `[data-tile="${tileId}"]`);
   }
-  return { timeout: true, errors };
+  const key = `w${plan.wave}n${plan.n}${plan.aim.split("-")[0]}t${plan.tiles.length}`;
+  await shotOnce(`eq_${key}`);
+  await tap(page, "[data-action=cast]");
+  await page.waitForTimeout(420);
+  await shotOnce(`fx_${key}`);
+  await idle(page);
+};
+
+const playTurns = async (page, shotOnce, turn = 0, casts = 0) => {
+  if (turn >= MAX_TURNS) return { timeout: true };
+  const plan = await planMove(page);
+  if (plan.done) return { plan, casts };
+  if (plan.end) {
+    await endTurn(page, shotOnce);
+    return playTurns(page, shotOnce, turn + 1, casts);
+  }
+  await castMove(page, plan, shotOnce);
+  return playTurns(page, shotOnce, turn + 1, casts + 1);
+};
+
+const playLevel = async (page, url, prefix, level) => {
+  const errors = watchErrors(page);
+  const { shot, shotOnce } = screenshots(page, prefix);
+  await openLevel(page, url, level, shot);
+  const small = await smallTouchTargets(page);
+  // Sampling starts once the first hand is on screen: this measures play, not page load.
+  await startPerfSampling(page);
+  const { plan, casts, timeout } = await playTurns(page, shotOnce);
+  if (timeout) return { timeout: true, errors };
+  await page.waitForTimeout(900);
+  await shot("z_result");
+  const perf = await readPerf(page);
+  const layout = await readLayout(page);
+  return { plan, casts, perf, layout, small, errors };
 };
 
 const browser = await chromium.launch();

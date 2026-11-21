@@ -1,16 +1,10 @@
-const FAMILIES = ["add", "sub", "mul", "div"] as const;
-const HERO_POSES = ["idle", "attack", "hurt", "victory"] as const;
-
-const SPRITES = [
-  ...HERO_POSES.map((pose) => `hero_${pose}`),
-  ...FAMILIES.flatMap((family) => [`enemy_${family}`, `enemy_${family}_ko`, `boss_${family}`]),
-];
+import { ALL_SPRITES } from "./assets";
 
 /** Decode every character sprite up front so the first attack or defeat never waits on one. */
 export const preloadSprites = () => {
-  SPRITES.forEach((name) => {
+  ALL_SPRITES.forEach((src) => {
     const image = new Image();
-    image.src = `./assets/chars/${name}.png`;
+    image.src = src;
     image.decode().catch(() => undefined);
   });
 };

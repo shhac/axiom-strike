@@ -1,0 +1,69 @@
+/* ---------- Motion ---------- */
+
+@keyframes bob {
+  to {
+    transform: translateY(-0.28rem);
+  }
+}
+
+@keyframes arrive {
+  from {
+    transform: translateX(14rem);
+    opacity: 0;
+  }
+}
+
+@keyframes deal {
+  from {
+    transform: translateY(1.4rem) scale(0.5);
+    opacity: 0;
+  }
+}
+
+@keyframes pop {
+  from {
+    transform: scale(1.45);
+  }
+}
+
+@keyframes throb {
+  to {
+    transform: scale(1.07);
+  }
+}
+
+@keyframes hint {
+  to {
+    transform: translateY(-0.3rem);
+  }
+}
+
+@keyframes banner {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  20%,
+  75% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.1);
+    opacity: 0;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sprite,
+  .chip.is-urgent,
+  .btn-cast.is-exact {
+    animation: none;
+  }
+}

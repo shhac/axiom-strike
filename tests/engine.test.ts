@@ -1,17 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { createBattle, equationTotal, hintNext, reduce, type Action, type BattleState } from "../src/engine/battle";
+import { equationTotal, hintNext, reduce, type Action, type BattleState } from "../src/engine/battle";
 import { dealHand, HAND_SIZE } from "../src/engine/deal";
 import { applyStep, evaluate, type Op } from "../src/engine/equation";
 import { findLevel, LEVELS } from "../src/engine/levels";
 import { createRng } from "../src/engine/rng";
 import { solve } from "../src/engine/solver";
-import { masherBot, solverBot, winRate } from "./bots";
+import { applyActions, masherBot, openingState, solverBot, winRate } from "./bots";
 
 const [addLevel, subLevel] = [findLevel("add_1"), findLevel("sub_1")];
 
-const start = (seed = 7, level = addLevel) => createBattle(level, seed).at(-1)!.state;
-const act = (state: BattleState, ...actions: Action[]) =>
-  actions.reduce((current, action) => reduce(current, action).at(-1)?.state ?? current, state);
+const start = (seed = 7, level = addLevel) => openingState(level, seed);
+const act = (state: BattleState, ...actions: Action[]) => applyActions(state, actions);
 
 /** Rigs the hand and first enemy so a test can state its sum outright. */
 const rig = (
@@ -66,6 +65,14 @@ describe("solver", () => {
   });
   it("returns null when no exact answer exists", () => {
     expect(solve([2, 2, 2], ["+"], 5)).toBeNull();
+  });
+  it("skips excluded tiles and keeps answers as indices into the full hand", () => {
+    expect(solve([5, 3, 4], ["+"], 7, { exclude: [0] })?.tiles).toEqual([1, 2]);
+    expect(solve([3, 4, 9], ["+"], 7, { exclude: [1] })).toBeNull();
+  });
+  it("skips excluded tiles when continuing an equation", () => {
+    const answer = solve([4, 1, 2, 3], ["+"], 7, { prefix: { tiles: [0], ops: [] }, exclude: [3] });
+    expect(answer?.tiles).toEqual([0, 1, 2]);
   });
 });
 

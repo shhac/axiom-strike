@@ -1,4 +1,5 @@
 import { goTo } from "./nav";
+import { glyphSrc } from "./assets";
 import { RotatePrompt } from "./common";
 import { playMusic, playSfx, unlockAudio } from "./audio";
 import { useEffect } from "preact/hooks";
@@ -13,6 +14,11 @@ const drifterStyle = (index: number) => ({
   width: `${1.3 + (index % 3) * 0.5}rem`,
 });
 
+const openMap = () => {
+  playSfx("button");
+  goTo("map");
+};
+
 export const TitleScreen = () => {
   useEffect(() => playMusic("music_title"), []);
   return (
@@ -21,11 +27,11 @@ export const TitleScreen = () => {
       <div class="title-shade" />
       <div class="drifters" aria-hidden="true">
         {DRIFTERS.map((name, index) => (
-          <img class="drifter" src={`./assets/glyphs/${name}.png`} alt="" style={drifterStyle(index)} />
+          <img class="drifter" src={glyphSrc(name)} alt="" style={drifterStyle(index)} />
         ))}
       </div>
       <img class="logo" src="./assets/title/logo.png" alt="Axiom Strike" draggable={false} />
-      <button class="play" data-action="play" onClick={() => (playSfx("button"), goTo("map"))}>
+      <button class="play" data-action="play" onClick={openMap}>
         <span>PLAY</span>
       </button>
       <p class="tagline">Add it up. Strike it down.</p>

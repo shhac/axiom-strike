@@ -4,8 +4,10 @@ export type Solution = { tiles: number[]; ops: Op[] };
 
 type Frontier = { total: number; tiles: number[]; ops: Op[] };
 
-const extend = (node: Frontier, values: readonly number[], ops: readonly Op[]): Frontier[] =>
-  values.flatMap((value, index) =>
+type Candidate = { index: number; value: number };
+
+const extend = (node: Frontier, candidates: readonly Candidate[], ops: readonly Op[]): Frontier[] =>
+  candidates.flatMap(({ index, value }) =>
     node.tiles.includes(index)
       ? []
       : ops.flatMap((op) => {
@@ -37,12 +39,12 @@ export const solve = (
   const minTiles = options.minTiles ?? 2;
   const maxTiles = Math.min(options.maxTiles ?? 4, values.length);
   const excluded = new Set(options.exclude ?? []);
-  const usable = (index: number) => !excluded.has(index);
+  const candidates = values.flatMap((value, index) => (excluded.has(index) ? [] : [{ index, value }]));
   const prefix = options.prefix;
 
   const start: Frontier[] = prefix?.tiles.length
-    ? [prefixFrontier(values, prefix)].filter((node): node is Frontier => node !== null)
-    : values.flatMap((value, index) => (usable(index) ? [{ total: value, tiles: [index], ops: [] }] : []));
+    ? prefixStart(values, prefix)
+    : candidates.map(({ index, value }) => ({ total: value, tiles: [index], ops: [] }));
 
   const search = (frontier: Frontier[]): Solution | null => {
     if (frontier.length === 0) return null;
@@ -52,21 +54,21 @@ export const solve = (
       if (hit) return { tiles: hit.tiles, ops: hit.ops };
     }
     if (depth >= maxTiles) return null;
-    const allowed = values.map((value, index) => (usable(index) ? value : Number.NaN));
-    return search(dedupe(frontier.flatMap((node) => extend(node, allowed, ops))));
+    return search(dedupe(frontier.flatMap((node) => extend(node, candidates, ops))));
   };
   return search(start);
 };
 
-const prefixFrontier = (values: readonly number[], prefix: Solution): Frontier | null => {
+/** The single node an equation already on the board starts from, or nothing if it does not add up. */
+const prefixStart = (values: readonly number[], prefix: Solution): Frontier[] => {
   const [firstIndex, ...rest] = prefix.tiles;
   const first = firstIndex === undefined ? undefined : values[firstIndex];
-  if (first === undefined) return null;
+  if (first === undefined) return [];
   const total = rest.reduce<number | null>((sum, tileIndex, i) => {
     const value = values[tileIndex];
     const op = prefix.ops[i];
     if (sum === null || value === undefined || op === undefined) return null;
     return applyStep(sum, { op, value });
   }, first);
-  return total === null ? null : { total, tiles: [...prefix.tiles], ops: [...prefix.ops] };
+  return total === null ? [] : [{ total, tiles: [...prefix.tiles], ops: [...prefix.ops] }];
 };

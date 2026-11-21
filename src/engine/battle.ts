@@ -78,24 +78,32 @@ const COUNTER_PER_POWER = 5;
 const NEAR_MISS_DAMAGE = 1;
 /** The deal can only promise exact parries for this many attacks in one turn. */
 const MAX_LANDING_TOGETHER = 2;
+const RAGE_STEP = 2;
+const MAX_RAGE = 3;
 
 const EMPTY_EQUATION: Equation = { tiles: [], ops: [], pendingOp: null };
 
 const living = (state: BattleState) => state.enemies.filter((enemy) => enemy.hp > 0);
 
-const tileValue = (state: BattleState, tileId: number) => state.hand.find((tile) => tile.id === tileId)?.value;
+export const lastState = (steps: readonly Step[], fallback: BattleState) => steps.at(-1)?.state ?? fallback;
+
+/** Runs each phase on the state the steps so far ended in, and joins all their steps. */
+const chain = (state: BattleState, ...phases: readonly ((current: BattleState) => Step[])[]): Step[] =>
+  phases.reduce<Step[]>((steps, phase) => [...steps, ...phase(lastState(steps, state))], []);
+
+/** The numbers placed in the equation so far, in order. */
+export const equationValues = (state: BattleState): number[] =>
+  state.equation.tiles.map((id) => state.hand.find((tile) => tile.id === id)?.value ?? 0);
 
 /** Running totals after each tile of the equation; empty if nothing is placed. */
-export const runningTotals = (state: BattleState): number[] => {
-  const values = state.equation.tiles.map((id) => tileValue(state, id) ?? 0);
-  return values.reduce<number[]>((totals, value, index) => {
+export const runningTotals = (state: BattleState): number[] =>
+  equationValues(state).reduce<number[]>((totals, value, index) => {
     if (index === 0) return [value];
     const op = state.equation.ops[index - 1];
     const previous = totals[totals.length - 1];
     if (op === undefined || previous === undefined) return totals;
     return [...totals, applyStep(previous, { op, value }) ?? previous];
   }, []);
-};
 
 export const equationTotal = (state: BattleState): number | null => runningTotals(state).at(-1) ?? null;
 
@@ -124,15 +132,17 @@ const withRng = <T>(state: BattleState, use: (rng: Rng) => T): [T, number] => {
 const rollTurns = (others: readonly Enemy[]): number =>
   others.filter((enemy) => enemy.intent.turns === 2).length >= MAX_LANDING_TOGETHER ? 3 : 2;
 
-const RAGE_STEP = 2;
-const MAX_RAGE = 3;
-
 const rollIntent = (rng: Rng, level: Level, others: readonly Enemy[], rage: number): Intent => {
   // Ignored attacks get bigger, but never beyond what two added tiles can still answer.
   const ceiling = level.tileMax * 2 - 1;
   const base = rng.pick(level.attack);
   const damage = level.rage ? Math.max(base, Math.min(ceiling, base + RAGE_STEP * rage)) : base;
   return { damage, remaining: damage, turns: rollTurns(others) };
+};
+
+const rerollIntent = (state: BattleState, enemyId: number, rage: number): [Intent, number] => {
+  const others = living(state).filter((other) => other.id !== enemyId);
+  return withRng(state, (rng) => rollIntent(rng, state.level, others, rage));
 };
 
 const rollWeakness = (rng: Rng, level: Level, avoid?: number): number =>
@@ -194,7 +204,13 @@ const waveStep = (state: BattleState, wave: number): Step => {
   };
 };
 
-export const createBattle = (level: Level, seed: number): Step[] => {
+const openWave = (state: BattleState, wave: number): [Step, Step] => {
+  const arrival = waveStep(state, wave);
+  return [arrival, dealStep(arrival.state)];
+};
+
+/** Always two steps: the first wave arriving, then the first hand being dealt. */
+export const createBattle = (level: Level, seed: number): readonly [Step, Step] => {
   const blank: BattleState = {
     level,
     seed,
@@ -211,8 +227,7 @@ export const createBattle = (level: Level, seed: number): Step[] => {
     nextId: 1,
     stars: 0,
   };
-  const wave = waveStep(blank, 0);
-  return [wave, dealStep(wave.state)];
+  return openWave(blank, 0);
 };
 
 const reject = (state: BattleState, reason: Extract<BattleEvent, { type: "rejected" }>["reason"]): Step[] => [
@@ -268,7 +283,11 @@ const updateEnemy = (state: BattleState, enemyId: number, change: (enemy: Enemy)
   enemies: state.enemies.map((enemy) => (enemy.id === enemyId ? change(enemy) : enemy)),
 });
 
-const starsFor = (heroHp: number) => (heroHp >= HERO_MAX_HP * 0.7 ? 3 : heroHp >= HERO_MAX_HP * 0.35 ? 2 : 1);
+const starsFor = (heroHp: number) => {
+  if (heroHp >= HERO_MAX_HP * 0.7) return 3;
+  if (heroHp >= HERO_MAX_HP * 0.35) return 2;
+  return 1;
+};
 
 /** After damage: mark defeats, then move to the next wave or victory if the field is clear. */
 const settle = (state: BattleState, enemyId: number): Step[] => {
@@ -282,14 +301,18 @@ const settle = (state: BattleState, enemyId: number): Step[] => {
     const stars = starsFor(state.heroHp);
     return [defeated, { state: { ...defeated.state, phase: "won", stars }, event: { type: "won", stars } }];
   }
-  const wave = waveStep({ ...defeated.state, turn: 0 }, nextWave);
-  return [defeated, wave, dealStep(wave.state)];
+  return [defeated, ...openWave({ ...defeated.state, turn: 0 }, nextWave)];
+};
+
+const strikeDamage = (distance: number, power: number): number => {
+  if (distance === 0) return STRIKE_DAMAGE[Math.min(power, 5)] ?? 0;
+  return distance === 1 ? NEAR_MISS_DAMAGE : 0;
 };
 
 const strike = (state: BattleState, enemy: Enemy, total: number, power: number): Step[] => {
   const distance = Math.abs(total - enemy.weakness);
   const exact = distance === 0;
-  const damage = exact ? (STRIKE_DAMAGE[Math.min(power, 5)] ?? 0) : distance === 1 ? NEAR_MISS_DAMAGE : 0;
+  const damage = strikeDamage(distance, power);
   const hit = updateEnemy(state, enemy.id, (e) => ({ ...e, hp: Math.max(0, e.hp - damage) }));
   const struck: Step = { state: hit, event: { type: "strike", enemyId: enemy.id, damage, exact, power } };
 
@@ -301,67 +324,68 @@ const strike = (state: BattleState, enemy: Enemy, total: number, power: number):
   return [struck, { state: shifted, event: { type: "weaknessShift", enemyId: enemy.id } }];
 };
 
-const parry = (state: BattleState, enemy: Enemy, total: number, power: number): Step[] => {
-  const { damage, remaining } = enemy.intent;
-  const exact = total === damage;
-  if (exact) {
-    const counter = COUNTER_PER_POWER * power;
-    const others = living(state).filter((other) => other.id !== enemy.id);
-    const [intent, seed] = withRng(state, (rng) => rollIntent(rng, state.level, others, 0));
-    const next = updateEnemy({ ...state, seed }, enemy.id, (e) => ({
-      ...e,
-      hp: Math.max(0, e.hp - counter),
-      intent,
-      rage: 0,
-    }));
-    return [
-      { state: next, event: { type: "parry", enemyId: enemy.id, exact, blocked: remaining, counter } },
-      ...settle(next, enemy.id),
-    ];
-  }
-  // A near miss softens the blow but never by more than half: only an exact answer stops it.
-  const floor = Math.ceil(damage / 2);
-  const softened = Math.min(remaining, Math.max(floor, Math.min(damage, Math.abs(total - damage))));
-  const next = updateEnemy(state, enemy.id, (e) => ({ ...e, intent: { ...e.intent, remaining: softened } }));
+const exactParry = (state: BattleState, enemy: Enemy, power: number): Step[] => {
+  const counter = COUNTER_PER_POWER * power;
+  const [intent, seed] = rerollIntent(state, enemy.id, 0);
+  const next = updateEnemy({ ...state, seed }, enemy.id, (e) => ({
+    ...e,
+    hp: Math.max(0, e.hp - counter),
+    intent,
+    rage: 0,
+  }));
   return [
-    { state: next, event: { type: "parry", enemyId: enemy.id, exact, blocked: remaining - softened, counter: 0 } },
+    { state: next, event: { type: "parry", enemyId: enemy.id, exact: true, blocked: enemy.intent.remaining, counter } },
+    ...settle(next, enemy.id),
   ];
 };
 
-const lastState = (steps: readonly Step[], fallback: BattleState) => steps.at(-1)?.state ?? fallback;
-
-const enemyPhase = (state: BattleState): Step[] => {
-  const steps = living(state).reduce<Step[]>((acc, { id }) => {
-    const current = lastState(acc, state);
-    if (current.phase !== "player") return acc;
-    const enemy = current.enemies.find((candidate) => candidate.id === id);
-    if (!enemy) return acc;
-    const turns = enemy.intent.turns - 1;
-    if (turns > 0) {
-      return [
-        ...acc,
-        { state: updateEnemy(current, id, (e) => ({ ...e, intent: { ...e.intent, turns } })), event: null },
-      ];
-    }
-    const damage = enemy.intent.remaining;
-    const heroHp = Math.max(0, current.heroHp - damage);
-    const others = living(current).filter((other) => other.id !== id);
-    const ignored = damage === enemy.intent.damage;
-    const rage = ignored ? Math.min(MAX_RAGE, enemy.rage + 1) : enemy.rage;
-    const [intent, seed] = withRng(current, (rng) => rollIntent(rng, current.level, others, rage));
-    const after = updateEnemy({ ...current, seed, heroHp }, id, (e) => ({ ...e, intent, rage }));
-    const attack: Step = { state: after, event: { type: "enemyAttack", enemyId: id, damage } };
-    if (heroHp > 0) return [...acc, attack];
-    return [...acc, attack, { state: { ...after, phase: "lost" }, event: { type: "lost" } }];
-  }, []);
-  const end = lastState(steps, state);
-  return end.phase === "player" ? [...steps, dealStep(end)] : steps;
+/** A near miss softens the blow but never by more than half: only an exact answer stops it. */
+const softenedBlow = ({ damage, remaining }: Intent, total: number): number => {
+  const floor = Math.ceil(damage / 2);
+  return Math.min(remaining, Math.max(floor, Math.min(damage, Math.abs(total - damage))));
 };
 
-const endTurn = (state: BattleState): Step[] => {
-  const cleared = clear(state);
-  return [...cleared, ...enemyPhase(lastState(cleared, state))];
+const nearParry = (state: BattleState, enemy: Enemy, total: number): Step[] => {
+  const softened = softenedBlow(enemy.intent, total);
+  const blocked = enemy.intent.remaining - softened;
+  const next = updateEnemy(state, enemy.id, (e) => ({ ...e, intent: { ...e.intent, remaining: softened } }));
+  return [{ state: next, event: { type: "parry", enemyId: enemy.id, exact: false, blocked, counter: 0 } }];
 };
+
+const parry = (state: BattleState, enemy: Enemy, total: number, power: number): Step[] =>
+  total === enemy.intent.damage ? exactParry(state, enemy, power) : nearParry(state, enemy, total);
+
+const enemyTurn = (state: BattleState, enemyId: number): Step[] => {
+  if (state.phase !== "player") return [];
+  const enemy = state.enemies.find((candidate) => candidate.id === enemyId);
+  if (!enemy) return [];
+  const turns = enemy.intent.turns - 1;
+  if (turns > 0) return quiet(updateEnemy(state, enemyId, (e) => ({ ...e, intent: { ...e.intent, turns } })));
+
+  const damage = enemy.intent.remaining;
+  const heroHp = Math.max(0, state.heroHp - damage);
+  const ignored = damage === enemy.intent.damage;
+  const rage = ignored ? Math.min(MAX_RAGE, enemy.rage + 1) : enemy.rage;
+  const [intent, seed] = rerollIntent(state, enemyId, rage);
+  const after = updateEnemy({ ...state, seed, heroHp }, enemyId, (e) => ({ ...e, intent, rage }));
+  const attack: Step = { state: after, event: { type: "enemyAttack", enemyId, damage } };
+  if (heroHp > 0) return [attack];
+  return [attack, { state: { ...after, phase: "lost" }, event: { type: "lost" } }];
+};
+
+/** Every enemy alive when the phase starts takes its turn in order, then a new hand is dealt. */
+const enemyPhase = (state: BattleState): Step[] =>
+  chain(
+    state,
+    ...living(state).map(
+      ({ id }) =>
+        (current: BattleState) =>
+          enemyTurn(current, id),
+    ),
+    (end) => (end.phase === "player" ? [dealStep(end)] : []),
+  );
+
+const endTurn = (state: BattleState): Step[] => chain(state, clear, enemyPhase);
 
 const cast = (state: BattleState): Step[] => {
   const totals = runningTotals(state);
@@ -398,8 +422,9 @@ const hint = (state: BattleState): Step[] => {
   if (!fresh) return reject(state, "noExact");
 
   // If what is on the board cannot lead to the answer, the hint starts the equation over.
-  const base = continued ? state : (clear(state).at(-1)?.state ?? state);
-  const path: Solution = { tiles: fresh.tiles.map((index) => state.hand[index]?.id ?? -1), ops: fresh.ops };
+  const base = continued ? state : lastState(clear(state), state);
+  const tiles = fresh.tiles.flatMap((index) => state.hand[index]?.id ?? []);
+  const path: Solution = { tiles, ops: fresh.ops };
   return quiet({ ...base, hints: state.hints - 1, hintPath: path });
 };
 
