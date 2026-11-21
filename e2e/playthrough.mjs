@@ -143,18 +143,17 @@ const readPerf = (page) =>
 /** Runs in the page: parry what lands this turn, else strike the first enemy with an exact answer. */
 const planMove = (page, { parries = true } = {}) =>
   page.evaluate((parries) => {
-    const { state, solve } = window.__axiom;
+    const { state, solve, strikeDamage } = window.__axiom;
     const s = state();
     if (s.phase !== "player") return { done: s.phase, stars: s.stars, hp: s.heroHp };
     const alive = s.enemies.filter((e) => e.hp > 0);
     const values = s.hand.map((t) => t.value);
     const used = s.hand.flatMap((t, i) => (t.used ? [i] : []));
     const tryFor = (target, max) => solve(values, s.level.ops, target, { maxTiles: max, exclude: used });
-    const DAMAGE = [0, 0, 20, 35];
     const planFor = (kind, enemy, answer) => ({
       aim: `${kind}-${enemy.id}`,
       kind,
-      lethal: kind === "strike" && DAMAGE[answer.tiles.length] >= enemy.hp,
+      lethal: kind === "strike" && strikeDamage[answer.tiles.length] >= enemy.hp,
       tiles: answer.tiles.map((i) => s.hand[i].id),
       ops: answer.ops,
       multi: s.level.ops.length > 1,

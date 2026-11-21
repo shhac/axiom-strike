@@ -3,6 +3,7 @@ import { introFor, type Intro } from "../content/intros";
 import { findLevel, type Level } from "../engine/levels";
 import { markSeen } from "../engine/progress";
 import { playMusic, playSfx } from "./audio";
+import { wait } from "./motion";
 import { save, updateSave } from "./save";
 import { leaveBattle, startBattle } from "./store";
 
@@ -22,7 +23,6 @@ export const intro = signal<{ scene: Intro; level: Level } | null>(null);
 export const curtain = signal<"closing" | "opening" | null>(null);
 
 const CURTAIN_MS = 260;
-const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /** Swaps the screen behind a closed curtain. Taps made while it is moving are ignored. */
 const transit = async (swap: () => void) => {

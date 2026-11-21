@@ -1,4 +1,4 @@
-import { dealHand, pairFor } from "./deal";
+import { dealHand, dealSwap } from "./deal";
 import { applyStep, type Op } from "./equation";
 import { ENEMY_HP, type EnemyKind, type Level, type OpFamily } from "./levels";
 import { createRng, type Rng } from "./rng";
@@ -12,7 +12,13 @@ export const POTION_HEAL = 30;
 export type Kit = { scrolls: number; potions: number };
 export const NO_KIT: Kit = { scrolls: 0, potions: 0 };
 
-export type Tile = { id: number; value: number; used: boolean };
+export type Tile = {
+  id: number;
+  value: number;
+  used: boolean;
+  /** Thrown away on an answer that was not exact. It still counts against an "Impossible!" call. */
+  wasted?: boolean;
+};
 
 export type Intent = { damage: number; remaining: number; turns: number };
 
@@ -51,8 +57,6 @@ export type BattleState = {
   hintPath: Solution | null;
   /** Whether "Impossible!" has been called this turn; one call a turn, right or wrong. */
   called: boolean;
-  /** Tiles thrown away this turn on answers that were not exact. They still count against a call. */
-  misspent: number[];
   nextId: number;
   stars: number;
 };
@@ -146,10 +150,13 @@ const equationPower = (totals: readonly number[]): number => {
   return final === undefined ? 0 : Math.max(MIN_POWER, totals.indexOf(final) + 1);
 };
 
+/** The number an aim of this kind at this enemy has to make. */
+export const targetOf = (enemy: Enemy, kind: AimKind): number =>
+  kind === "strike" ? enemy.weakness : enemy.intent.damage;
+
 export const aimTarget = (state: BattleState): number | null => {
   const enemy = state.enemies.find((candidate) => candidate.id === state.aim?.enemyId);
-  if (!enemy || !state.aim) return null;
-  return state.aim.kind === "strike" ? enemy.weakness : enemy.intent.damage;
+  return enemy && state.aim ? targetOf(enemy, state.aim.kind) : null;
 };
 
 const withRng = <T>(state: BattleState, use: (rng: Rng) => T): [T, number] => {
@@ -204,7 +211,6 @@ const dealStep = (state: BattleState): Step => {
       equation: EMPTY_EQUATION,
       hintPath: null,
       called: false,
-      misspent: [],
       aim,
       turn: state.turn + 1,
     },
@@ -258,7 +264,6 @@ export const createBattle = (level: Level, seed: number, kit: Kit = NO_KIT): rea
     potions: kit.potions,
     hintPath: null,
     called: false,
-    misspent: [],
     nextId: 1,
     stars: 0,
   };
@@ -429,9 +434,11 @@ const cast = (state: BattleState): Step[] => {
   const enemy = living(state).find((candidate) => candidate.id === state.aim?.enemyId);
   if (!enemy || !state.aim) return reject(state, "noAim");
 
-  const target = state.aim.kind === "strike" ? enemy.weakness : enemy.intent.damage;
-  const misspent = total === target ? state.misspent : [...state.misspent, ...state.equation.tiles];
-  const spent: BattleState = { ...state, equation: EMPTY_EQUATION, hintPath: null, misspent };
+  const wasted = total !== targetOf(enemy, state.aim.kind);
+  const hand = wasted
+    ? state.hand.map((tile) => (state.equation.tiles.includes(tile.id) ? { ...tile, wasted } : tile))
+    : state.hand;
+  const spent: BattleState = { ...state, hand, equation: EMPTY_EQUATION, hintPath: null };
   const power = equationPower(totals);
   const steps = state.aim.kind === "strike" ? strike(spent, enemy, total, power) : parry(spent, enemy, total, power);
 
@@ -443,8 +450,11 @@ const cast = (state: BattleState): Step[] => {
 };
 
 /** Hand positions of tiles spent on earlier casts this turn; tiles sitting in the equation are not spent yet. */
-const spentTiles = (state: BattleState): number[] =>
-  state.hand.flatMap((tile, index) => (tile.used && !state.equation.tiles.includes(tile.id) ? [index] : []));
+const spentTiles = (state: BattleState, options: { wastedCount?: boolean } = {}): number[] =>
+  state.hand.flatMap((tile, index) => {
+    const spent = tile.used && !state.equation.tiles.includes(tile.id);
+    return spent && !(options.wastedCount && tile.wasted) ? [index] : [];
+  });
 
 const searchAnswer = (state: BattleState, target: number, options: { prefix?: Solution; exclude: number[] }) =>
   solve(
@@ -466,7 +476,7 @@ export const answerLeft = (state: BattleState): Solution | null => {
  */
 const wasMakeable = (state: BattleState): boolean => {
   const target = aimTarget(state);
-  const wellSpent = spentTiles(state).filter((index) => !state.misspent.includes(state.hand[index]?.id ?? -1));
+  const wellSpent = spentTiles(state, { wastedCount: true });
   return target !== null && searchAnswer(state, target, { exclude: wellSpent }) !== null;
 };
 
@@ -489,22 +499,24 @@ const hint = (state: BattleState): Step[] => {
   return quiet({ ...base, hints: state.hints - 1, hintPath: path });
 };
 
-/** Trades every unspent tile for a new one; the new ones always include an exact pair for `target`. */
+/** Hand positions of the tiles still free to use. */
+const unspentPlaces = (state: BattleState): number[] => state.hand.flatMap((tile, index) => (tile.used ? [] : [index]));
+
+/**
+ * Trades every unspent tile for a new one that can help make `target`. New tiles take the places
+ * of the ones traded in, so the spent ones do not jump about.
+ */
 const swapUnspent = (state: BattleState, target: number): BattleState => {
-  const count = state.hand.filter((tile) => !tile.used).length;
-  const [values, seed] = withRng(state, (rng) => {
-    const pair = pairFor(rng, state.level, target) ?? [];
-    const filler = Array.from({ length: Math.max(0, count - pair.length) }, () => rng.int(1, state.level.tileMax));
-    return rng.shuffle([...pair, ...filler]).slice(0, count);
-  });
-  // New tiles take the places of the ones traded in, so the spent ones do not jump about.
-  const places = state.hand.flatMap((tile, index) => (tile.used ? [] : [index]));
-  const hand = state.hand.map((tile, index) => {
-    const order = places.indexOf(index);
-    const value = values[order];
-    return order < 0 || value === undefined ? tile : { id: state.nextId + order, value, used: false };
-  });
-  return { ...state, seed, hand, nextId: state.nextId + count };
+  const places = unspentPlaces(state);
+  const [values, seed] = withRng(state, (rng) => dealSwap(rng, state.level, target, places.length));
+  const fresh = new Map(
+    places.map((place, order): [number, Tile] => [
+      place,
+      { id: state.nextId + order, value: values[order] ?? 1, used: false },
+    ]),
+  );
+  const hand = state.hand.map((tile, index) => fresh.get(index) ?? tile);
+  return { ...state, seed, hand, nextId: state.nextId + places.length };
 };
 
 /**
@@ -519,7 +531,7 @@ const impossible = (state: BattleState): Step[] => {
 
   const called: BattleState = { ...lastState(clear(state), state), called: true, hintPath: null };
   if (wasMakeable(called)) return [{ state: called, event: { type: "lookAgain" } }];
-  const swapped = called.hand.filter((tile) => !tile.used).length;
+  const swapped = unspentPlaces(called).length;
   return [{ state: swapUnspent(called, target), event: { type: "sharpEye", swapped } }];
 };
 

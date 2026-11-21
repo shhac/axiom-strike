@@ -1,4 +1,4 @@
-import { HERO_MAX_HP, type AimKind, type BattleState, type Enemy } from "../../engine/battle";
+import { HERO_MAX_HP, targetOf, type AimKind, type BattleState, type Enemy } from "../../engine/battle";
 import { enemyStrip, icon, knockedOutSprite } from "../assets";
 import { playSfx } from "../audio";
 import { Num, Sprite } from "../common";
@@ -18,7 +18,7 @@ const AimChip = ({ enemy, kind, state }: { enemy: Enemy; kind: AimKind; state: B
   const { intent } = enemy;
   const urgent = kind === "parry" && intent.turns === 1;
   const softened = kind === "parry" && intent.remaining < intent.damage;
-  const number = kind === "strike" ? enemy.weakness : intent.damage;
+  const number = targetOf(enemy, kind);
   const label =
     kind === "strike"
       ? `Weakness ${number}`

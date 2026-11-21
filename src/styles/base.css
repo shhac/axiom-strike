@@ -149,21 +149,3 @@ img {
   animation-direction: reverse;
   animation-timing-function: ease-in;
 }
-
-@keyframes curtain-left {
-  from {
-    transform: translateX(-105%) skewX(-9deg);
-  }
-}
-
-@keyframes curtain-right {
-  from {
-    transform: translateX(105%) skewX(-9deg);
-  }
-}
-
-@keyframes curtain-star {
-  from {
-    transform: scale(0) rotate(-200deg);
-  }
-}

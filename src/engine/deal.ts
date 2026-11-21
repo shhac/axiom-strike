@@ -36,7 +36,7 @@ const PAIR_FOR: Record<Op, (rng: Rng, target: number, tileMax: number) => Pair |
 };
 
 /** Two tiles that make `target`, with the level's focus operator if it can, or null if none can. */
-export const pairFor = (rng: Rng, level: Level, target: number): Pair | null => {
+const pairFor = (rng: Rng, level: Level, target: number): Pair | null => {
   const others = rng.shuffle(level.ops.filter((op) => op !== level.focus));
   const candidates = [level.focus, ...others];
   return candidates.reduce<Pair | null>((found, op) => found ?? PAIR_FOR[op](rng, target, level.tileMax), null);
@@ -65,4 +65,14 @@ export const dealHand = (rng: Rng, level: Level, strikeTarget: number, parryTarg
   const fixed = [...guaranteed, ...combo];
   const filler = Array.from({ length: HAND_SIZE - fixed.length }, () => rng.int(1, level.tileMax));
   return rng.shuffle([...fixed, ...filler]);
+};
+
+/**
+ * `count` replacement tiles for an "Impossible!" call that was right. They include an exact
+ * two-tile answer for `target` whenever there is room for one.
+ */
+export const dealSwap = (rng: Rng, level: Level, target: number, count: number): number[] => {
+  const pair = pairFor(rng, level, target) ?? [];
+  const filler = Array.from({ length: Math.max(0, count - pair.length) }, () => rng.int(1, level.tileMax));
+  return rng.shuffle([...pair, ...filler]).slice(0, count);
 };

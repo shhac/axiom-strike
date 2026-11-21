@@ -1,5 +1,5 @@
 import { signal } from "@preact/signals";
-import { answerLeft, createBattle, reduce, type Action, type BattleState, type Step } from "../engine/battle";
+import { createBattle, reduce, type Action, type BattleState, type Step } from "../engine/battle";
 import { FIRST_LEVEL, tuneLevel, type Level } from "../engine/levels";
 import { kitFor, recordCast, recordLoss, recordWin, spendItems, tierFor } from "../engine/progress";
 import { battleDifficulty, castResult, castScore } from "../engine/skill";
@@ -55,11 +55,12 @@ const play = async (steps: readonly Step[]) => {
  */
 const rateCast = (state: BattleState) => {
   const result = castResult(state);
-  if (result) {
-    updateSave((current) => recordCast(current, state.level.region, session.difficulty, castScore(result)));
+  if (!result) {
+    // A cast that landed is only unrated when no exact answer was left to find.
+    if (!state.called) showToast("Stuck? If the number can't be made, tap Impossible!");
     return;
   }
-  if (!state.called && !answerLeft(state)) showToast("Stuck? If the number can't be made, tap Impossible!");
+  updateSave((current) => recordCast(current, state.level.region, session.difficulty, castScore(result)));
 };
 
 const landed = (steps: readonly Step[]) =>

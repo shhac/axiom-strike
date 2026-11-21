@@ -298,6 +298,45 @@ describe("battle rules", () => {
       expect(reduce(wasteful, call)[0]?.event?.type).toBe("lookAgain");
     });
 
+    it("tiles spent on a right answer do not count, even if they could make the number again", () => {
+      const first = rig(start(), [3, 4, 9, 9], { weakness: 7, hp: 40 });
+      const struck = act(first, tap(0), tap(1), { type: "cast" });
+      const sameTarget = rig(
+        struck,
+        struck.hand.map((tile) => tile.value),
+        { weakness: 7 },
+      );
+      const again = { ...sameTarget, hand: struck.hand };
+      expect(reduce(again, call)[0]?.event?.type).toBe("sharpEye");
+    });
+
+    it("tiles thrown away on a wrong parry count too, and so do two wrong answers in a row", () => {
+      const base = rig(start(), [3, 4, 1, 1, 2, 2], { weakness: 30 });
+      const enemy = base.enemies[0]!;
+      const parrying = {
+        ...base,
+        aim: { enemyId: enemy.id, kind: "parry" as const },
+        enemies: base.enemies.map((e) =>
+          e.id === enemy.id ? { ...e, intent: { ...e.intent, damage: 7, remaining: 7 } } : e,
+        ),
+      };
+      const once = act(parrying, tap(0), tap(2), { type: "cast" });
+      const twice = act(once, tap(1), tap(3), { type: "cast" });
+      expect(twice.enemies[0]!.intent.damage).toBe(7);
+      expect(reduce(twice, call)[0]?.event?.type).toBe("lookAgain");
+    });
+
+    it("a swap hands out fresh tile ids and is the same for the same seed", () => {
+      const stuck = rig(start(), [9, 9, 9, 9], { weakness: 7 });
+      const after = act(stuck, call);
+      const ids = after.hand.map((tile) => tile.id);
+      expect(new Set(ids).size).toBe(ids.length);
+      expect(ids.every((id) => id >= stuck.nextId)).toBe(true);
+      expect(after.nextId).toBe(stuck.nextId + 4);
+      expect(after.seed).not.toBe(stuck.seed);
+      expect(act(stuck, call)).toEqual(after);
+    });
+
     it("the call comes back when the next turn is dealt", () => {
       const called = act(rig(start(), [9, 9, 9], { weakness: 7 }), call);
       expect(called.called).toBe(true);

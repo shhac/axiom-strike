@@ -12,16 +12,19 @@ export const Num = ({ value, class: className = "" }: { value: number | string; 
   </span>
 );
 
+type SpriteProps = ({ strip: string; once?: boolean } | { still: string }) & { class?: string };
+
 /**
  * A character drawn from a four-frame strip. `once` plays the frames a single time and holds the
  * last one (an attack, a flinch); otherwise they loop. `still` shows a single picture instead.
  */
-export const Sprite = (props: { strip?: string; still?: string; once?: boolean; class?: string }) => (
-  <div
-    class={`sprite ${props.strip ? "sprite-frames" : "sprite-still"} ${props.once ? "is-once" : ""} ${props.class ?? ""}`}
-    style={{ backgroundImage: `url(${props.strip ?? props.still})` }}
-  />
-);
+export const Sprite = (props: SpriteProps) => {
+  const look =
+    "strip" in props
+      ? { src: props.strip, kind: `sprite-frames ${props.once ? "is-once" : ""}` }
+      : { src: props.still, kind: "sprite-still" };
+  return <div class={`sprite ${look.kind} ${props.class ?? ""}`} style={{ backgroundImage: `url(${look.src})` }} />;
+};
 
 /** What a story can win, shown wherever a story is on offer so the prize is never a surprise. */
 export const Prizes = ({ lead }: { lead: string }) => (

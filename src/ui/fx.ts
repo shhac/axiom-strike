@@ -139,6 +139,17 @@ const wonFx = (event: EventOf<"won">) => {
   Array.from({ length: event.stars }, (_, index) => setTimeout(() => playSfx("star"), 480 + index * 180));
 };
 
+/** The hero celebrates for `ms`, and for whatever `then` adds, before settling again. */
+const cheer = async (ms: number, then?: () => Promise<void>) => {
+  heroPose.value = "victory";
+  await wait(ms);
+  await then?.();
+  heroPose.value = "idle";
+};
+
+const anotherWaveComing = (state: BattleState) =>
+  state.enemies.every((enemy) => enemy.hp <= 0) && state.wave + 1 < state.level.waves.length;
+
 const KO_WORDS = ["KO!", "POW!", "BAM!", "ZAP!"];
 
 const defeatedFx = async (event: EventOf<"defeated">, state: BattleState) => {
@@ -149,12 +160,23 @@ const defeatedFx = async (event: EventOf<"defeated">, state: BattleState) => {
   burst(target);
   shake(find(".stage"), 220);
   float(KO_WORDS[event.enemyId % KO_WORDS.length] ?? "KO!", target, "ko", -0.6);
-  heroPose.value = "victory";
-  await wait(560);
-  const waveCleared = state.enemies.every((enemy) => enemy.hp <= 0);
-  const moreWaves = state.wave + 1 < state.level.waves.length;
-  if (waveCleared && moreWaves) await say({ who: "hero", name: "You", text: cheerFor(state.seed) }, 650, 0);
-  heroPose.value = "idle";
+  await cheer(560, async () => {
+    if (anotherWaveComing(state)) await say({ who: "hero", name: "You", text: cheerFor(state.seed) }, 650, 0);
+  });
+};
+
+const sharpEyeFx = (event: EventOf<"sharpEye">) => {
+  playSfx("reward");
+  float("SHARP EYE!", find(".tiles"), "ko", -1.2);
+  float(`${event.swapped} new numbers`, find(".tiles"), "good", 1);
+  return cheer(620);
+};
+
+const lookAgainFx = () => {
+  playSfx("miss", 0.8);
+  shake(find(".tiles"), 240);
+  showToast("These numbers could make it. Look again!");
+  return wait(200);
 };
 
 const waveStartFx = async (event: EventOf<"waveStart">, state: BattleState) => {
@@ -182,28 +204,16 @@ export const afterEvent = async (event: BattleEvent, state: BattleState) => {
     case "waveStart":
       return waveStartFx(event, state);
     case "sharpEye":
-      heroPose.value = "victory";
-      playSfx("reward");
-      float("SHARP EYE!", find(".tiles"), "ko", -1.2);
-      float(`${event.swapped} new numbers`, find(".tiles"), "good", 1);
-      await wait(620);
-      heroPose.value = "idle";
-      return;
+      return sharpEyeFx(event);
     case "lookAgain":
-      playSfx("miss", 0.8);
-      shake(find(".tiles"), 240);
-      showToast("These numbers could make it. Look again!");
-      return wait(200);
+      return lookAgainFx();
     case "deal":
       playSfx("deal", 0.6);
       return wait(120);
     case "healed":
-      heroPose.value = "victory";
       playSfx("potion");
       float(`+${event.amount}`, heroNode(), "good");
-      await wait(520);
-      heroPose.value = "idle";
-      return;
+      return cheer(520);
     case "won":
       return wonFx(event);
     case "lost":

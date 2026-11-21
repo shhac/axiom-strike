@@ -71,6 +71,7 @@ const RegionColumn = ({ region, progress }: { region: Region; progress: Save }) 
 export const MapScreen = () => {
   useEffect(() => playMusic("music_calm"), []);
   const { stories, potions, scrolls } = save.value;
+  const lit = stories > 0;
   return (
     <div class="screen map">
       <div class="map-art" />
@@ -84,23 +85,30 @@ export const MapScreen = () => {
       </button>
       <div class="map-tools">
         <button
-          class={`btn map-fire ${stories > 0 ? "is-lit" : ""}`}
+          class={`btn map-fire ${lit ? "is-lit" : ""}`}
           data-action="campfire"
           aria-label={`Campfire, ${stories} stories waiting. Read one to win a potion and a hint scroll. You have ${potions} potions and ${scrolls} hint scrolls`}
           onClick={press(() => goTo("campfire"))}
         >
           <img src={icon("campfire")} alt="" />
           <span class="map-fire-text">
-            {stories > 0 ? "Story time!" : "Campfire"}
-            <small>
-              {stories > 0 && "Win"}
-              <img src={icon("potion")} alt="" />
-              {stories === 0 && <span data-bag="potions">{potions}</span>}
-              <img src={icon("hint")} alt="" />
-              {stories === 0 && <span data-bag="scrolls">{scrolls}</span>}
-            </small>
+            {lit ? "Story time!" : "Campfire"}
+            {lit ? (
+              <small>
+                Win
+                <img src={icon("potion")} alt="" />
+                <img src={icon("hint")} alt="" />
+              </small>
+            ) : (
+              <small>
+                <img src={icon("potion")} alt="" />
+                <span data-bag="potions">{potions}</span>
+                <img src={icon("hint")} alt="" />
+                <span data-bag="scrolls">{scrolls}</span>
+              </small>
+            )}
           </span>
-          {stories > 0 && <b class="badge">{stories}</b>}
+          {lit && <b class="badge">{stories}</b>}
         </button>
         <button
           class="btn btn-icon"

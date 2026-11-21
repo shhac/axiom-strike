@@ -1,3 +1,4 @@
+import { STRIKE_DAMAGE } from "../engine/battle";
 import { solve } from "../engine/solver";
 import { screen } from "./nav";
 import { save } from "./save";
@@ -12,6 +13,7 @@ export const exposeDebug = () => {
       screen: () => screen.value,
       save: () => save.value,
       solve,
+      strikeDamage: STRIKE_DAMAGE,
     },
   });
 };

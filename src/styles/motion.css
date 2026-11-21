@@ -1,11 +1,5 @@
 /* ---------- Motion ---------- */
 
-@keyframes bob {
-  to {
-    transform: translateY(-0.28rem);
-  }
-}
-
 @keyframes arrive {
   from {
     transform: translateX(14rem);
@@ -57,6 +51,24 @@
 @keyframes fade {
   from {
     opacity: 0;
+  }
+}
+
+@keyframes curtain-left {
+  from {
+    transform: translateX(-105%) skewX(-9deg);
+  }
+}
+
+@keyframes curtain-right {
+  from {
+    transform: translateX(105%) skewX(-9deg);
+  }
+}
+
+@keyframes curtain-star {
+  from {
+    transform: scale(0) rotate(-200deg);
   }
 }
 

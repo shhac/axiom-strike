@@ -1,4 +1,5 @@
 import type { Level, OpFamily } from "../engine/levels";
+import { MONSTER_NAMES } from "./taunts";
 
 export type Beat = {
   speaker: "enemy" | "hero";
@@ -14,7 +15,7 @@ const FAMILY_INTROS: Record<OpFamily, Intro> = {
     id: "add",
     family: "add",
     boss: false,
-    name: "Blobbert",
+    name: MONSTER_NAMES.add.standard,
     beats: [
       { speaker: "enemy", text: "BLORP! I am Blobbert, and this is MY grove!" },
       {
@@ -37,7 +38,7 @@ const FAMILY_INTROS: Record<OpFamily, Intro> = {
     id: "sub",
     family: "sub",
     boss: false,
-    name: "Sir Prickle",
+    name: MONSTER_NAMES.sub.standard,
     beats: [
       { speaker: "enemy", text: "HALT! Sir Prickle guards these peaks. Adding alone will not save you here!" },
       {
@@ -52,7 +53,7 @@ const FAMILY_INTROS: Record<OpFamily, Intro> = {
     id: "mul",
     family: "mul",
     boss: false,
-    name: "Crystamul",
+    name: MONSTER_NAMES.mul.standard,
     beats: [
       { speaker: "enemy", text: "MWAHAHA! You thought adding was tough? I am CRYSTAMUL, master of MULTIPLICATION!" },
       { speaker: "enemy", text: "My weakness is far too BIG to reach by adding. You would need... times tables!" },
@@ -64,7 +65,7 @@ const FAMILY_INTROS: Record<OpFamily, Intro> = {
     id: "div",
     family: "div",
     boss: false,
-    name: "Dribble",
+    name: MONSTER_NAMES.div.standard,
     beats: [
       { speaker: "enemy", text: "Drip... drop... I am Dribble, and I split everything I touch." },
       { speaker: "enemy", text: "My weakness is small. Your numbers are huge. However will you share them out?" },
@@ -74,27 +75,19 @@ const FAMILY_INTROS: Record<OpFamily, Intro> = {
   },
 };
 
-const boss = (family: OpFamily, name: string, text: string): Intro => ({
+const boss = (family: OpFamily, text: string): Intro => ({
   id: `${family}_boss`,
   family,
   boss: true,
-  name,
+  name: MONSTER_NAMES[family].boss,
   beats: [{ speaker: "enemy", text }],
 });
 
 const BOSS_INTROS: Record<OpFamily, Intro> = {
-  add: boss(
-    "add",
-    "King Glob",
-    "WHO DARES squelch into my throne room? I have ONE HUNDRED health. Bring your biggest sums!",
-  ),
-  sub: boss("sub", "Lord Thornax", "Every number you take away, I take personally. Now face the Peak Warden!"),
-  mul: boss(
-    "mul",
-    "Archmage Multiplix",
-    "Two times two times TROUBLE! My magic multiplies, and so will your problems!",
-  ),
-  div: boss("div", "The Deep Divider", "I will split you from your stars! Only the sharpest sharing can sink me."),
+  add: boss("add", "WHO DARES squelch into my throne room? I have ONE HUNDRED health. Bring your biggest sums!"),
+  sub: boss("sub", "Every number you take away, I take personally. Now face the Peak Warden!"),
+  mul: boss("mul", "Two times two times TROUBLE! My magic multiplies, and so will your problems!"),
+  div: boss("div", "I will split you from your stars! Only the sharpest sharing can sink me."),
 };
 
 /** The scene to play before this level, if the player has not met its monsters yet. */
