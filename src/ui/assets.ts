@@ -24,12 +24,19 @@ const strip = (name: string) => `./assets/chars/anim/${name}.png`;
 
 export const heroStrip = (pose: HeroPose) => strip(`hero_${pose}`);
 
-export const enemyStrip = (family: OpFamily, kind: EnemyKind) =>
-  strip(`${kind === "boss" ? "boss" : "enemy"}_${family}`);
+/** `hurt` is the same monster after taking a hit it survived: dizzy, plastered and worried. */
+export const enemyStrip = (family: OpFamily, kind: EnemyKind, hurt = false) =>
+  strip(`${kind === "boss" ? "boss" : "enemy"}_${family}${hurt ? "_hurt" : ""}`);
 
 export const knockedOutSprite = (family: OpFamily) => `./assets/chars/enemy_${family}_ko.png`;
 
 export const ALL_SPRITES = [
   ...HERO_POSES.map(heroStrip),
-  ...REGIONS.flatMap(({ id }) => [enemyStrip(id, "standard"), enemyStrip(id, "boss"), knockedOutSprite(id)]),
+  ...REGIONS.flatMap(({ id }) => [
+    enemyStrip(id, "standard"),
+    enemyStrip(id, "standard", true),
+    enemyStrip(id, "boss"),
+    enemyStrip(id, "boss", true),
+    knockedOutSprite(id),
+  ]),
 ];

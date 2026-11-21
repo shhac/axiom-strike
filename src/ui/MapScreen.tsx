@@ -1,4 +1,4 @@
-import { useEffect } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import { LEVELS, REGIONS, type Level, type Region } from "../engine/levels";
 import { isUnlocked, starsFor, type Save } from "../engine/progress";
 import { playMusic } from "./audio";
@@ -34,6 +34,7 @@ const NodeButton = ({ level, current, progress }: { level: Level; current: boole
       onClick={press(() => enterBattle(level))}
     >
       {open ? <Num value={level.step + 1} /> : <img class="node-lock" src={icon("lock")} alt="" />}
+      {current && <i class="node-arrow" />}
       {stars > 0 && (
         <span class="node-stars">
           {[1, 2, 3].map((n) => (
@@ -50,9 +51,13 @@ const RegionColumn = ({ region, progress }: { region: Region; progress: Save }) 
   const current = levels.find((level) => isUnlocked(progress, level) && starsFor(progress, level) === 0);
   const earned = levels.reduce((sum, level) => sum + starsFor(progress, level), 0);
   return (
-    <section class={`region region-${region.id}`}>
+    <section class={`region region-${region.id}`} aria-label={region.name}>
+      <Num class="region-symbol" value={region.focus} />
       <header class="region-title">
-        <span>{region.name}</span>
+        <span class="region-name">
+          <Num value={region.focus} />
+          {region.label}
+        </span>
         <span class="region-stars">
           <img src={icon("star")} alt="" />
           {earned}/{levels.length * 3}
@@ -68,18 +73,42 @@ const RegionColumn = ({ region, progress }: { region: Region; progress: Save }) 
   );
 };
 
+/** How long the map can sit untouched before it points at the levels that can be played. */
+const NUDGE_AFTER_MS = 15000;
+
+/** True once nothing has been touched for a while; any touch clears it and starts the wait again. */
+const useIdleNudge = () => {
+  const [nudging, setNudging] = useState(false);
+  const [touches, setTouches] = useState(0);
+  useEffect(() => {
+    const timer = setTimeout(() => setNudging(true), NUDGE_AFTER_MS);
+    return () => clearTimeout(timer);
+  }, [touches]);
+  const touched = () => {
+    setNudging(false);
+    setTouches((count) => count + 1);
+  };
+  return { nudging, touched };
+};
+
 export const MapScreen = () => {
   useEffect(() => playMusic("music_calm"), []);
+  const { nudging, touched } = useIdleNudge();
   const { stories, potions, scrolls } = save.value;
   const lit = stories > 0;
   return (
-    <div class="screen map">
+    <div class={`screen map ${nudging ? "is-nudging" : ""}`} data-screen="map" onPointerDown={touched}>
       <div class="map-art" />
       <div class="regions">
         {REGIONS.map((region) => (
           <RegionColumn key={region.id} region={region} progress={save.value} />
         ))}
       </div>
+      {nudging && (
+        <div class="map-nudge" data-nudge>
+          Tap a glowing number to play!
+        </div>
+      )}
       <button class="btn btn-icon map-back" data-action="back" aria-label="Back to title" onClick={() => goTo("title")}>
         <img src={icon("undo")} alt="" />
       </button>

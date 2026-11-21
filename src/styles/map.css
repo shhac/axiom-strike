@@ -198,3 +198,78 @@
   background: #e0762a;
   animation: throb 650ms ease-in-out infinite alternate;
 }
+
+/* ---------- Land signs and the idle nudge ---------- */
+
+.region-name {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.region-name .num {
+  font-size: 1.15rem;
+}
+
+/* The land's sign, huge and faint behind its levels, so the sign and the place go together. */
+.region-symbol {
+  position: absolute;
+  top: 57%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 7.5rem;
+  opacity: 0.62;
+  filter: drop-shadow(0 0 1rem rgb(255 255 255 / 0.55));
+  pointer-events: none;
+}
+
+.node-arrow {
+  display: none;
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  width: 0;
+  height: 0;
+  margin: 0 0 0.35rem -0.9rem;
+  border: 0.9rem solid transparent;
+  border-top: 1.2rem solid var(--gold);
+  border-bottom: 0;
+  filter: drop-shadow(0 0.15rem 0 var(--ink));
+  animation: point 520ms ease-in-out infinite alternate;
+}
+
+.map.is-nudging .node-arrow {
+  display: block;
+}
+
+.map.is-nudging .node.is-current {
+  animation: throb 380ms ease-in-out infinite alternate;
+  box-shadow:
+    inset 0 -0.3rem 0 var(--tile-edge),
+    0 0.3rem 0 var(--ink),
+    0 0 0 0.45rem var(--gold),
+    0 0 1.6rem 0.6rem rgb(255 210 63 / 0.75);
+}
+
+.map.is-nudging .node.is-locked,
+.map.is-nudging .node.is-done:not(.is-current) {
+  filter: brightness(0.6);
+}
+
+.map-nudge {
+  position: absolute;
+  left: 50%;
+  /* Just under the land titles: the one strip no level ever sits in. */
+  top: 2.9rem;
+  transform: translateX(-50%);
+  padding: 0.3rem 1.1rem;
+  border-radius: 0.8rem;
+  background: var(--gold);
+  color: var(--ink);
+  border: 0.16rem solid var(--ink);
+  box-shadow: 0 0.25rem 0 var(--ink);
+  font-size: 1.1rem;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: nudge 700ms ease-in-out infinite alternate;
+}

@@ -40,14 +40,15 @@ const AimChip = ({ enemy, kind, state }: { enemy: Enemy; kind: AimKind; state: B
 
 export const EnemyView = ({ enemy, state }: { enemy: Enemy; state: BattleState }) => {
   const alive = enemy.hp > 0;
+  const hurt = alive && enemy.hp < enemy.maxHp;
   return (
-    <div class={`enemy enemy-${enemy.kind} ${alive ? "" : "is-down"}`} data-enemy={enemy.id}>
+    <div class={`enemy enemy-${enemy.kind} ${alive ? "" : "is-down"} ${hurt ? "is-hurt" : ""}`} data-enemy={enemy.id}>
       <div class="chips">
         {alive && <AimChip enemy={enemy} kind="strike" state={state} />}
         {alive && <AimChip enemy={enemy} kind="parry" state={state} />}
       </div>
       {alive ? (
-        <Sprite strip={enemyStrip(enemy.family, enemy.kind)} />
+        <Sprite strip={enemyStrip(enemy.family, enemy.kind, hurt)} />
       ) : (
         <Sprite still={knockedOutSprite(enemy.family)} />
       )}
@@ -74,7 +75,10 @@ export const Hud = ({ state }: { state: BattleState }) => (
       <HpBar hp={state.heroHp} max={HERO_MAX_HP} tone="hero" />
     </div>
     <div class="hud-level">
-      <span class="hud-name">{state.level.name}</span>
+      <span class="hud-name" aria-label={state.level.name}>
+        <Num value={state.level.focus} />
+        Level {state.level.step + 1}
+      </span>
       <span class="pips" aria-label={`Wave ${state.wave + 1} of ${state.level.waves.length}`}>
         {state.level.waves.map((_, index) => (
           <i class={pipClass(index, state.wave)} />

@@ -153,6 +153,7 @@ const planMove = (page, { parries = true } = {}) =>
     const planFor = (kind, enemy, answer) => ({
       aim: `${kind}-${enemy.id}`,
       kind,
+      enemy: enemy.id,
       lethal: kind === "strike" && strikeDamage[answer.tiles.length] >= enemy.hp,
       tiles: answer.tiles.map((i) => s.hand[i].id),
       ops: answer.ops,
@@ -206,11 +207,22 @@ const castMove = async (page, plan, shotOnce) => {
     !plan.lethal || ((await appears(page, "#fx .float-ko")) && (await appears(page, "#fx .burst-star")));
   if (plan.lethal) await shotOnce("ko");
   await idle(page);
-  return { showedDamage, celebrated };
+  // A monster that took a hit and survived has to look it.
+  const survivedAHit = plan.kind === "strike" && !plan.lethal;
+  const looksHurt = !survivedAHit || (await page.locator(`[data-enemy="${plan.enemy}"].is-hurt`).count()) > 0;
+  if (survivedAHit) await shotOnce("hurt");
+  return { showedDamage, celebrated, looksHurt };
 };
 
 /** Plays until the battle ends, or until `until` says to stop. Counts casts and keeps any that showed no damage number. */
-const NEW_TALLY = { turns: 0, casts: 0, silentCasts: [], flatDefeats: 0, calls: { right: 0, wrong: 0, silent: 0 } };
+const NEW_TALLY = {
+  turns: 0,
+  casts: 0,
+  silentCasts: [],
+  flatDefeats: 0,
+  unmarkedHits: 0,
+  calls: { right: 0, wrong: 0, silent: 0 },
+};
 
 const playTurns = async (page, shotOnce, options = {}, tally = NEW_TALLY) => {
   if (tally.turns >= MAX_TURNS) return { ...tally, timeout: true };
@@ -227,13 +239,14 @@ const playTurns = async (page, shotOnce, options = {}, tally = NEW_TALLY) => {
     await endTurn(page, shotOnce);
     return playTurns(page, shotOnce, options, { ...tally, turns: tally.turns + 1 });
   }
-  const { showedDamage, celebrated } = await castMove(page, plan, shotOnce);
+  const { showedDamage, celebrated, looksHurt } = await castMove(page, plan, shotOnce);
   return playTurns(page, shotOnce, options, {
     ...tally,
     turns: tally.turns + 1,
     casts: tally.casts + 1,
     silentCasts: showedDamage ? tally.silentCasts : [...tally.silentCasts, plan],
     flatDefeats: tally.flatDefeats + (celebrated ? 0 : 1),
+    unmarkedHits: tally.unmarkedHits + (looksHurt ? 0 : 1),
   });
 };
 
@@ -266,6 +279,7 @@ const playLevel = async (page, prefix, open, { timed = true } = {}) => {
     );
   }
   if (outcome.flatDefeats > 0) problems.push(`${outcome.flatDefeats} defeats had no KO burst`);
+  if (outcome.unmarkedHits > 0) problems.push(`${outcome.unmarkedHits} monsters survived a hit without looking hurt`);
   if (outcome.calls.silent > 0) problems.push(`${outcome.calls.silent} Impossible calls got no answer`);
   if (errors.length) problems.push(`console errors ${JSON.stringify(errors)}`);
   if (!(perf.frames > 100)) problems.push(`only ${perf.frames} frames sampled`);
@@ -316,6 +330,12 @@ const readAtCampfire = async ({ page, problems, shot }) => {
 const useCarriedItems = async ({ page, problems, shot, shotOnce }) => {
   await tap(page, "[data-action=map]");
   await onScreen(page, "map");
+  // Left alone, the map points at the levels that can be played; a touch clears it.
+  expectThat(problems, (await page.locator("[data-nudge]").count()) === 0, "the map nudged straight away");
+  expectThat(problems, await appears(page, "[data-nudge]", 17000), "the idle map never pointed at a level");
+  await shot("map_nudge");
+  await page.locator("[data-screen=map]").click({ position: { x: 400, y: 20 }, force: true });
+  expectThat(problems, (await page.locator("[data-nudge]").count()) === 0, "a touch did not clear the map nudge");
   await tap(page, "[data-level=add_2]");
   await idle(page);
   const opening = await readState(page);

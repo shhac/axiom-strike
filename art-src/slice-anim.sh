@@ -72,6 +72,14 @@ monster art-src/anim_b.png 1 boss_add 1
 monster art-src/anim_b.png 2 boss_sub 1
 monster art-src/anim_b.png 3 boss_mul 1
 monster art-src/anim_c.png 0 boss_div 1 24
+monster art-src/anim_d.png 0 enemy_add_hurt 1
+monster art-src/anim_d.png 1 enemy_sub_hurt 1
+monster art-src/anim_d.png 2 enemy_mul_hurt 0
+monster art-src/anim_d.png 3 enemy_div_hurt 1
+monster art-src/anim_e.png 0 boss_add_hurt 1
+monster art-src/anim_e.png 1 boss_sub_hurt 1
+monster art-src/anim_e.png 2 boss_mul_hurt 1
+monster art-src/anim_e.png 3 boss_div_hurt 1
 hero art-src/anim_c.png 1 hero_victory 0 100 30
 hero art-src/anim_c.png 2 hero_attack 1 100
 hero art-src/anim_c.png 3 hero_hurt 1 100

@@ -86,6 +86,21 @@
   }
 }
 
+@keyframes point {
+  to {
+    transform: translateY(-0.5rem);
+  }
+}
+
+@keyframes nudge {
+  from {
+    transform: translateX(-50%) scale(1);
+  }
+  to {
+    transform: translateX(-50%) scale(1.08);
+  }
+}
+
 @keyframes say {
   from {
     transform: scale(0.3);

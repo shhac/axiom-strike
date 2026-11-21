@@ -34,13 +34,14 @@ export type Level = {
   waves: readonly (readonly EnemySpec[])[];
 };
 
-export type Region = { id: OpFamily; name: string; focus: Op; ops: readonly Op[] };
+/** `name` is the land's full name; `label` is the one word shown beside its sign on the map. */
+export type Region = { id: OpFamily; name: string; label: string; focus: Op; ops: readonly Op[] };
 
 export const REGIONS: readonly Region[] = [
-  { id: "add", name: "Addition Grove", focus: "+", ops: ["+"] },
-  { id: "sub", name: "Subtraction Peaks", focus: "-", ops: ["+", "-"] },
-  { id: "mul", name: "Multiplication Caverns", focus: "×", ops: ["+", "×"] },
-  { id: "div", name: "Division Depths", focus: "÷", ops: ["+", "×", "÷"] },
+  { id: "add", name: "Addition Grove", label: "Addition", focus: "+", ops: ["+"] },
+  { id: "sub", name: "Subtraction Peaks", label: "Subtraction", focus: "-", ops: ["+", "-"] },
+  { id: "mul", name: "Multiplication Caverns", label: "Multiplication", focus: "×", ops: ["+", "×"] },
+  { id: "div", name: "Division Depths", label: "Division", focus: "÷", ops: ["+", "×", "÷"] },
 ];
 
 export const ENEMY_HP: Record<EnemyKind, number> = { minion: 20, standard: 40, boss: 100 };

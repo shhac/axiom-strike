@@ -29,6 +29,16 @@
   height: 1.9rem;
 }
 
+.hud-name {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.hud-name .num {
+  font-size: 1.1rem;
+}
+
 .hud-level {
   display: flex;
   align-items: center;

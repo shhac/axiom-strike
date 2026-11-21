@@ -173,7 +173,8 @@ Opened from the title, the map and the pause button: music on/off, sounds on/off
 
 ### World map
 
-- Regions are operation types (Addition Grove, Subtraction Peaks, Multiplication Caverns, Division Depths).
+- Regions are operation types (Addition Grove, Subtraction Peaks, Multiplication Caverns, Division Depths). On the map each is labelled with its sign and one word ("+ Addition"), and the sign is drawn huge and faint behind its levels, so a child who cannot read the word still learns which sign lives where. In battle the level is labelled the same way: sign and "Level 3".
+- **A map left alone for fifteen seconds points the way:** arrows bounce over every level that can be played next, those levels glow, the rest dim, and a banner says "Tap a glowing number to play!". Any touch clears it and starts the wait again.
 - Nodes inside a region unlock in order and grow in number size and in the signs available.
 - A player can start in any region, so they can begin at the right difficulty.
 
@@ -212,6 +213,7 @@ Feel is a requirement, not polish.
 - **Sound:** every tap, hit, parry, miss and win has its own sound; music for title, battle and campfire. Sound stops when the app is in the background. All audio is CC0, credited in `public/assets/audio/CREDITS.md`.
 - **Motion:** attacks have a wind-up before numbers change; hits shake and flash; results pop.
 - **Characters are animated frame by frame.** The hero has four-frame idle, attack, hurt and cheer animations; every monster and boss has a four-frame idle. Sheets are in `art-src/anim_*.png` and are cut into strips by `art-src/slice-anim.sh`.
+- **A hit that does not finish a monster still shows:** from its first lost health until it is beaten it switches to an injured animation (dizzy, plastered, sweating), so "I hurt it" is visible without reading the health bar.
 - **Beating a monster is an event:** it pops and spins out, stars and coins burst from it, a comic-book word lands (KO!, POW!, BAM!, ZAP!), the stage shakes and the hero cheers.
 - **Screens change behind a curtain:** striped panels sweep shut with a spinning star and open on the next screen, about half a second in all.
 
@@ -226,7 +228,7 @@ Feel is a requirement, not polish.
 - **Sizing:** one rem is the smaller of 1/22.5 of the screen height or 1/40 of its width, so the whole layout scales together. Touch targets are at least 48 CSS px on an S21.
 - **Checks:**
   - `pnpm test`: rules, the dealing promise and simulated players at every tier, saved progress, ratings, campfire rewards.
-  - `pnpm e2e`: plays whole levels through the real interface on an emulated S21 with the CPU slowed 4×, and fails on console errors, overflow, small touch targets, slow frames, long stalls, a strike with no damage number, a defeat with no burst, a wave with no opening line, or an Impossible call that gets no answer. It also walks one journey: win, read at the campfire, carry the reward into the next battle, drink it, pause, leave, change settings, start over.
+  - `pnpm e2e`: plays whole levels through the real interface on an emulated S21 with the CPU slowed 4×, and fails on console errors, overflow, small touch targets, slow frames, long stalls, a strike with no damage number, a defeat with no burst, a monster that survived a hit without looking hurt, an idle map that never points at a level, a wave with no opening line, or an Impossible call that gets no answer. It also walks one journey: win, read at the campfire, carry the reward into the next battle, drink it, pause, leave, change settings, start over.
 
 ## Related documents
 
