@@ -1,45 +1,37 @@
 # Axiom Strike
 
-A 2D turn-based educational math fighting game for tablets and phones. Players construct equations to attack enemies and defend against them. Built with [Defold](https://defold.com/).
+A turn-based maths fighting game for phones and tablets, for ages 6-12. Build sums from number tiles to strike monsters and to parry their attacks.
 
-**Target audience:** Ages 6-12
-**Platforms:** Android, iOS
-**Art style:** Manga medieval with steampunk elements (placeholder graphics for now)
+**Platforms:** Android, iOS (landscape). **Device floor:** Samsung Galaxy S21.
 
-## Getting Started
+## Getting started
 
-1. Install the [Defold editor](https://defold.com/download/) (v1.12+)
-2. Open the project: File > Open Project > select `game.project`
-3. Build and run: Project > Build (Cmd+B / Ctrl+B)
-
-## Project Structure
-
-```
-game.project              Defold config (1280x720 landscape)
-main/                     Bootstrap collection + screen controller
-menu/                     Title screen
-battle/                   Battle screen (GUI + state machine)
-modules/                  Shared Lua logic
-  equation.lua              Equation evaluation (left-to-right)
-  tiles.lua                 Solvable tile hand generation
-  damage.lua                Closeness-based damage calculation
-  constants.lua             Shared config values
-docs/                     Design documentation
-  GAME_DESIGN.md            Full game design document
-  WAVE_STRUCTURE.md         Session pacing + enemy counts
-  ADAPTIVE_DIFFICULTY.md    Elo-based difficulty algorithm
-  READING_CORPUS_PIPELINE.md  Public domain text sourcing
-  ART_DIRECTION_RESEARCH.md   Visual style research
-  RECOVERY_BALANCE.md       HP recovery mechanic balancing
-  mockups/                  SVG concept mockups
+```sh
+pnpm install
+pnpm dev        # then open the printed URL in a phone-sized landscape window
 ```
 
-## Current State
+Useful URL parameters while developing: `?level=add_1` or `?level=sub_1` to jump straight into a battle, `?seed=7` for a repeatable game.
 
-**Phase 1 complete:** Single-enemy battle prototype with title screen. Tap number/operator tiles to build equations, strike to deal damage based on closeness to enemy weakness, defend by matching the enemy's attack number.
+## Checks
 
-**Upcoming:**
-- Phase 2: Multiple enemies per wave, 3 waves per level
-- Phase 3: World map with progression nodes
-- Phase 4: Reading comprehension recovery mechanic
-- Phase 5: Adaptive difficulty (Elo per skill)
+```sh
+pnpm test         # rules, dealing promise, simulated players
+pnpm typecheck
+pnpm build && pnpm preview --port 5198
+BASE_URL=http://localhost:5198/ pnpm e2e   # full playthroughs on an emulated S21, 4x CPU throttle
+```
+
+## Where things are
+
+```
+src/engine/     pure game rules (seeded, no DOM)
+src/ui/         screens, animation, sound
+tests/          vitest, including simulated players that guard balance
+e2e/            Playwright playthrough
+public/assets/  images and audio
+art-src/        original generated art before slicing
+docs/           design documentation; start with GAME_DESIGN.md
+```
+
+The original Defold/Lua version is kept as the git tag `defold-final`.

@@ -1,14 +1,6 @@
-/.editor_settings
-/.internal
-/build
 .DS_Store
 Thumbs.db
-# Raw Kenney asset downloads (extracted into assets/)
-assets/kenney/
-dist/android/*.apk
-dist/android/Axiom Strike/
-debug.keystore
-debug.keystore.pass.txt
-manifest.private.der
-manifest.public.der
-dist/
+node_modules
+dist
+.ai-cache
+.playwright-mcp

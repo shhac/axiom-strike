@@ -2,140 +2,173 @@
 
 ## Overview
 
-A 2D turn-based educational fighting game for tablets and phones. Players build math equations to attack enemies and defend against them. A secondary mechanic trains attention span through timed reading comprehension during recovery phases.
+A 2D turn-based educational fighting game for phones and tablets. Players build sums from number tiles to strike monsters and to parry their attacks. Between fights, a campfire reading scene trains attention and comprehension and pays out items for the next battle.
 
-- **Target audience:** Ages ~6–12
-- **Platforms:** Android + iOS (native app stores)
-- **Engine:** Defold (Lua scripting, ~2-5MB APK, MIT-like license, optimised for 2D mobile)
-- **Device assumptions:** Low-end hand-me-down or school devices — weak CPU, limited storage, poor battery
-- **Art style:** Mix of manga and pixel art, 2D with perspective
-- **Monetisation:** Upfront paid. Structured for future operation-type DLC packs (e.g. "Negative Numbers", "Fractions") but nothing gated in v1.
+- **Target audience:** ages ~6–12
+- **Platforms:** Android + iOS (native app stores), landscape only
+- **Stack:** web app (TypeScript, Vite, Preact, DOM/CSS rendering) packaged with Capacitor. See "Technology" below.
+- **Device floor:** base Samsung Galaxy S21 and newer
+- **Art style:** bright pixel art with manga energy; one generated, consistent set
+- **Monetisation:** upfront paid. Structured for future operation-type packs (e.g. "Negative Numbers", "Fractions") but nothing gated in v1.
 
-## Core Combat Loop
+The first version of this game was built in Defold and is preserved as the git tag `defold-final`. This document describes the rebuild; where it differs from the first version, the first version was wrong.
 
-### Player's Turn (Attack)
+## Design pillars
 
-1. Enemy has a visible **weakness number** communicated through their character design.
-2. Player is given a hand of colourful, tappable **number tiles** and **operator tiles**.
-3. Player constructs an equation whose result is as close to the weakness as possible.
-4. The result of the equation is always displayed so the player can see and learn.
-5. Damage scales with closeness to the weakness. Minimum damage is always 1.
+1. **One skill, used for everything.** Building a number from tiles is how you attack and how you defend. There is no separate quiz mode.
+2. **Every turn is a decision.** Enemies show what they are about to do. The player chooses what to spend a limited hand on.
+3. **Deeper maths is stronger, never required.** Two-number sums always win a level. Longer equations win it faster and safer.
+4. **Guessing gets nowhere, mistakes are cheap.** A far miss does nothing; it does not punish. A child who is trying always makes progress.
+5. **Reading is a reward loop, not a time-out.** It happens between fights, at the child's pace, and gives things worth having.
 
-### Enemy's Turn (Defense)
+## Core combat
 
-1. Enemy presents an **attack number**.
-2. Player constructs an equation to match it (defensive construction / decomposition).
-3. Exact match = full block. Close = partial block / graze. Miss = full damage taken.
+### What the player sees
 
-### Turn Structure
+- The hero on the left, up to three monsters on the right.
+- Above each monster, two tappable chips:
+  - **Weakness** (sword): the number that hurts it.
+  - **Attack** (shield): the number it will hit for, and how many turns until it lands.
+- A hand of **seven number tiles**, dealt fresh every turn.
+- The level's **operator signs**. Signs are always available and are not used up. A level with one sign (e.g. only `+`) applies it automatically, so the youngest players just tap numbers.
 
-- Turn-based by default. Player taps to end their turn.
-- **Optional time pressure mode:** player can submit multiple equations within a time limit. Tiles are consumed on use (no reuse within a turn).
-- Spamming random answers is not rewarded (typically results in minimum 1 damage each — trivial). No explicit penalty for wrong answers in v1, but the avenue remains open for future tuning.
+### Building an equation
 
-## Tile System
+- Tap a chip to choose what to aim at. The game always starts a turn aimed at a weakness that the hand can make exactly.
+- Tap tiles (and signs, when there is more than one) to build `number sign number sign number …`.
+- Evaluation is **left to right**, and the running total is always on screen.
+- Every running total must be a whole number of zero or more. A tap that would break that is refused with a short message.
+- An equation needs at least two numbers.
 
-- Tiles are **numbers** (not digits — `[33]` is one tile, not `[3][3]`) and **operators**.
-- Hand is dealt fresh each turn. Hand should always be solvable (player may receive new tiles if needed).
-- Tile order is randomised each turn to prevent muscle memory.
-- **"Could be impossible" opt-in mode:** unspent tiles persist between turns, and the hand may not contain a perfect solution. Player must get as close as possible. Off by default.
+### Strike (aimed at a weakness)
 
-## Enemy Design
+| Result | Effect |
+|---|---|
+| Exact, 2 numbers | 20 damage |
+| Exact, 3 numbers | 35 damage |
+| Exact, 4 numbers | 55 damage |
+| Exact, 5+ numbers | 80 damage |
+| One away | 1 damage ("So close!") |
+| Further off | Miss, no damage |
 
-- Enemy **classes** map to mathematical operations:
-  - Addition class — distinct visual style
-  - Subtraction class — different visual feel
-  - Multiplication class — different again
-  - Division / fractions class — yet another look
-  - (Future: negatives, etc.)
-- Character design communicates both the operation type and the weakness number.
-- Classes serve as natural difficulty and content grouping.
+- Only numbers that were needed count. `3 + 4 + 5 − 5` is a two-number seven: adding a number and taking it away again earns nothing.
+- A monster that survives an exact hit **changes its weakness**, so no sum is repeated.
+- Monster health: minion 20, standard 40, boss 100.
 
-### Enemy Encounters
+### Parry (aimed at an attack)
 
-- At most **5 enemies per wave**.
-- **Boss wave** variant: one stronger enemy, or 1 strong + 2 minions.
-- New enemy types are introduced via a conversation scene: the enemy meets the hero and shows off an over-the-top personality. This is the vehicle for teaching new mathematical concepts.
+- **Exact:** the attack is cancelled, the monster is staggered (it starts a new attack from scratch) and takes a counter hit of 5 per number used.
+- **Close:** the attack is softened by how close the answer was, but never by more than half.
+- An attack lands for its number. An attack of 9 that nobody parried costs 9 health.
+- A monster whose attack was ignored completely gets angrier: its next attack number is 2 higher (up to three times).
 
-## Mini-Games
+### Turn structure
 
-**Speed fill-in-the-blank rounds:**
-- `6 + 2 = _`
-- `7 + _ = 10`
-- `_ + 5 = 8`
-- `2 _ 3 = 5`
+- Tiles are used up when cast. The player may cast several equations in a turn.
+- The turn ends when the player taps **End turn**, or automatically when fewer than two tiles are left.
+- Then each monster's countdown drops by one; any that reach zero attack. Monsters attack every two turns, and never on the first turn of a wave. At most two attacks land on the same turn.
+- Hero health is 100 and carries across the waves of a level. It is restored between levels.
 
-Difficulty scales by: operation type, number size, which piece is missing (result, operand, or operator).
+### The dealing promise
 
-## Recovery / Attention Mechanic
+Every hand contains, on separate tiles:
 
-Trains focus and reading comprehension. Framed as HP recovery.
+- an exact two-number answer for the weakness the turn starts aimed at, and
+- an exact two-number answer for each attack landing this turn (at most two).
 
-### How It Works
+Spare tiles first go to a three-number answer for the same weakness, then to random numbers. This is checked by a test over thousands of seeded hands.
 
-1. Player character on the left, a passage of text on the right.
-2. Text stays visible for 30 seconds to 1 minute.
-3. After the timer, a **5-option multiple choice** question appears:
-   - 1 correct answer → full HP recovery
-   - 1 almost-right answer → partial HP recovery
-   - 3 wrong answers → no recovery
+### Hints
 
-### When It Triggers
+- Three hint scrolls per level. More are earned at the campfire.
+- A hint lights up the whole path to the aimed number, one tile at a time. If what is already on the board cannot get there, the hint starts the equation over.
+- If no exact answer is left this turn, the game says so and the scroll is not spent.
+- Nothing is revealed for free by waiting.
 
-- **Once per wave** — player-initiated (strategic choice: rest vs. attack).
-- **Between waves** — available as an interlude.
+### Winning and losing
 
-### Reading Difficulty
+- A level is three waves. Clearing the last wave wins.
+- Stars: 3 for finishing on 70%+ health, 2 for 35%+, otherwise 1.
+- Losing is framed as "So close! Try again" and costs nothing.
 
-- **Auto mode (default):** inferred from the current math difficulty setting.
-- **Overridable:** separate setting for players whose reading and math levels don't match (e.g. a maths prodigy who reads at grade level, or vice versa).
+### Balance targets (checked by simulated players in the test suite)
 
-### Content Source
+- A player who only ever makes exact two-number sums wins the first level at least 90% of the time, even if they never parry.
+- A player who uses longer equations finishes in fewer turns.
+- A player who taps two random tiles and casts loses most of the time.
 
-- Public domain educational corpus across subjects (literature, science, history — not just maths).
-- Must work across UK, Canada, Australia, and USA curricula.
-- Corpus needs to be built and curated (no existing pre-chunked, age-leveled source available).
+## Enemies
+
+- Enemy **families** map to operations and to a look: addition (green slimes), subtraction (red spiky), multiplication (purple wizards), division (blue water drops).
+- Three ranks per family: minion, standard, boss.
+- New families are introduced by a short **intro scene**: the monster meets the hero and shows off an over-the-top personality. This is where a new operation is explained.
+
+## Campfire (reading)
+
+Between levels the hero rests at a campfire and may read a scroll.
+
+1. A short public-domain passage is shown. **There is no forced timer**: the child reads at their own pace and taps when ready. Time taken is recorded for difficulty tuning, not shown as pressure.
+2. A multiple-choice question follows (one right answer, one nearly right, three wrong).
+3. Rewards are items for the next battle: hint scrolls and potions. A right answer gives the most; a nearly right answer gives some; any honest attempt gives a little.
+4. Reading is always optional and never blocks progress.
+
+Reading difficulty follows the maths level by default and can be set separately.
+
+Content pipeline: see [Reading Corpus Pipeline](READING_CORPUS_PIPELINE.md). The 40+ passages written for the first version are in the `defold-final` tag under `data/`.
 
 ## Progression
 
-### World Map
+### World map
 
-- Regions represent operation types (e.g. Addition Highlands, Multiplication Caves).
-- Nodes within a region scale in number complexity (single-digit → double-digit → negatives, etc.).
-- Players can **jump to any region** but nodes within a region unlock sequentially.
-- This supports players starting at the right difficulty for them.
+- Regions are operation types (Addition Grove, Subtraction Peaks, Multiplication Caverns, Division Depths).
+- Nodes inside a region unlock in order and grow in number size and in the signs available.
+- A player can start in any region, so they can begin at the right difficulty.
 
-### Waves and Levels
+### Level definition
 
-- N waves = 1 level/node on the world map.
-- Full HP restore between levels.
+Each level sets: the signs available, the largest tile, the weakness range, the attack range, and its three waves of monsters.
 
-### Session Design
+### Session design
 
-- Designed around **~5-minute intervals** that chain naturally up to ~20 minutes.
-- A more advanced player can do 4 intervals back-to-back as one sitting.
+- A level is roughly ten turns, about five minutes.
+- Levels chain naturally up to about twenty minutes.
 
 ### Unlocks
 
-- **Visual cosmetics** and **consumable items** (e.g. +10 seconds).
-- All math content is reachable without unlocks — no pay-to-progress.
-- Content gated by operation type is structured for future DLC but fully unlocked in v1.
+- Cosmetics and consumable items. All maths content is reachable without them.
 
-## Research & Deep Dives
+## Feel
 
-Each of these areas has been researched and documented in dedicated files:
+Feel is a requirement, not polish.
 
-- [Wave / Level Structure](WAVE_STRUCTURE.md) — session pacing, enemy counts per wave, timing, boss encounters. Key takeaway: 3 waves per level at ~5 minutes, 15 nodes per region, 60 levels / ~5 hours of content in v1.
-- [Adaptive Difficulty](ADAPTIVE_DIFFICULTY.md) — Elo-based algorithm with per-skill dimensions, targeting ~70% success rate. Cold start via age priors, cross-session decay, math-to-reading grade mapping.
-- [Reading Corpus Pipeline](READING_CORPUS_PIPELINE.md) — public domain sources (Gutenberg, US gov), legal safety (author died before 1955), Flesch-Kincaid + Dale-Chall scoring, LLM-assisted question generation. ~3-4 weeks to build, ~2K-5K passages target.
-- [Art Direction](ART_DIRECTION_RESEARCH.md) — manga + pixel art hybrid (Scott Pilgrim as closest reference), operation-specific color palettes, "design for the 10yo, accommodate the 6yo through UX", tonal escalation within a fixed style.
-- [Recovery Balance](RECOVERY_BALANCE.md) — effort-based reward (30% base for reading + 70% comprehension bonus), 40 HP floor even on wrong answers, adaptive timer, positive failure framing.
+- **Title screen:** key art, animated logo, music. It should make a child want to press Play.
+- **Numbers** in play (tiles, chips, damage) use a custom drawn glyph set, not a stock font.
+- **Sound:** every tap, hit, parry, miss and win has its own sound; music for title, battle and campfire. All audio is CC0, credited in `public/assets/audio/CREDITS.md`.
+- **Motion:** attacks have a wind-up before numbers change; hits shake and flash; results pop.
 
-## Remaining Open Questions
+## Technology
 
-1. **Exact enemy HP/damage numbers** — depends on playtesting with the wave structure.
-2. **Reading corpus curation** — pipeline is designed but needs to be built and content reviewed.
-3. **Specific character designs** — art direction principles are set but individual enemy/hero concepts need artist work.
-4. **Sound design** — no research done yet. Music, SFX, and accessibility (hearing-impaired players) need thought.
-5. **Accessibility** — colorblind modes (important given color-coded enemy classes), screen reader support, motor accessibility for tile selection.
-6. **Analytics / telemetry** — what to track for the adaptive difficulty system, privacy considerations for children (COPPA, GDPR-K).
+- **Why web:** the game is a turn-based tile and text interface. DOM/CSS gives crisp text at phone pixel densities, layout that adapts to any aspect ratio, and a build that can be driven and inspected automatically in a browser on every change.
+- **Structure:**
+  - `src/engine/` is pure and deterministic (seeded): equation rules, solver, dealing, and a battle reducer that returns a list of steps (state + what happened).
+  - `src/ui/` renders the current step and plays an animation for each event before showing the next.
+- **Sizing:** one rem is the smaller of 1/22.5 of the screen height or 1/40 of its width, so the whole layout scales together. Touch targets are at least 48 CSS px on an S21.
+- **Checks:**
+  - `pnpm test`: rules, the dealing promise, simulated players.
+  - `pnpm e2e`: plays whole levels through the real interface on an emulated S21 with the CPU slowed 4×, and fails on console errors, overflow, small touch targets, slow frames or long stalls.
+
+## Related documents
+
+- [Wave Structure](WAVE_STRUCTURE.md) — session pacing research (written for the first version; turn timing still applies)
+- [Adaptive Difficulty](ADAPTIVE_DIFFICULTY.md) — Elo-based difficulty selection (not yet rebuilt)
+- [Reading Corpus Pipeline](READING_CORPUS_PIPELINE.md)
+- [Art Direction](ART_DIRECTION_RESEARCH.md)
+- [Recovery Balance](RECOVERY_BALANCE.md) — written for in-battle healing; the effort-based reward idea carries over to campfire items
+- [Kids Game UX](KIDS_GAME_UX_RESEARCH.md), [Mobile UX](MOBILE_TABLET_UX_RESEARCH.md)
+
+## Open questions
+
+1. **Tuning with real children.** The simulated players are perfect or random; real play will sit between. Level length and attack sizes are the first levers.
+2. **Reading corpus curation.** Pipeline designed, content needs review.
+3. **Accessibility.** Colour-blind safety for the red/blue chips (icons already differ), reduced motion, screen readers.
+4. **Analytics and privacy.** What to record for adaptive difficulty under COPPA / GDPR-K.
