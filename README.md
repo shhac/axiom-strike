@@ -35,11 +35,26 @@ pnpm android    # writes android/app/build/outputs/apk/debug/app-debug.apk
 
 Install on a connected phone with `$ANDROID_HOME/platform-tools/adb install -r android/app/build/outputs/apk/debug/app-debug.apk`.
 
+### Release build
+
+`pnpm android:release` writes a signed APK (`android/app/build/outputs/apk/release/app-release.apk`) and a Play Store bundle (`android/app/build/outputs/bundle/release/app-release.aab`).
+
+Signing is read from `android/keystore.properties`, which is not committed:
+
+```
+storeFile=/absolute/path/to/upload.jks
+storePassword=...
+keyAlias=upload
+keyPassword=...
+```
+
+Without that file the release build still compiles but is unsigned. Keep a backup of the keystore and its password: updates to a published app must be signed with the same key. Raise `versionCode` in `android/app/build.gradle` for every upload.
+
 ## Where things are
 
 ```
 src/engine/     pure game rules (seeded, no DOM)
-src/content/    intro scenes and reading passages
+src/content/    intro scenes, wave taunts and reading passages
 src/ui/         screens, animation, sound
 tests/          vitest, including simulated players that guard balance
 e2e/            Playwright playthrough
