@@ -8,12 +8,12 @@ import {
   type BattleState,
   type Enemy,
 } from "../engine/battle";
-import { LEVELS } from "../engine/levels";
+import { nextLevel } from "../engine/levels";
 import { solve } from "../engine/solver";
 import { icon, Num, RotatePrompt } from "./common";
 import { banner, heroPose, toast } from "./fx";
 import { playSfx, unlockAudio } from "./audio";
-import { enterBattle, startLevelId } from "./nav";
+import { enterBattle, goTo, startLevelId } from "./nav";
 import { battle, busy, dispatch, startBattle } from "./store";
 
 const FAMILY_SPRITE = { add: "add", sub: "sub", mul: "mul", div: "div" } as const;
@@ -198,14 +198,10 @@ const Hand = ({ state }: { state: BattleState }) => {
   );
 };
 
-const nextLevelId = (state: BattleState) => {
-  const index = LEVELS.findIndex((level) => level.id === state.level.id);
-  return LEVELS[(index + 1) % LEVELS.length]?.id ?? state.level.id;
-};
-
 const Result = ({ state }: { state: BattleState }) => {
   if (state.phase === "player") return null;
   const won = state.phase === "won";
+  const next = nextLevel(state.level);
   return (
     <div class="overlay" data-result={state.phase}>
       <div class="result">
@@ -224,11 +220,16 @@ const Result = ({ state }: { state: BattleState }) => {
           <p>The monsters won this round. You can beat them!</p>
         )}
         <div class="result-buttons">
-          <button class="btn btn-wide" data-action="retry" onClick={() => startBattle(state.level.id)}>
-            {won ? "Play again" : "Try again"}
+          <button class="btn btn-wide" data-action="map" onClick={() => (playSfx("button"), goTo("map"))}>
+            Map
           </button>
-          {won && (
-            <button class="btn btn-wide btn-go" data-action="next" onClick={() => startBattle(nextLevelId(state))}>
+          {(!won || !next) && (
+            <button class="btn btn-wide btn-go" data-action="retry" onClick={() => startBattle(state.level.id)}>
+              {won ? "Play again" : "Try again"}
+            </button>
+          )}
+          {won && next && (
+            <button class="btn btn-wide btn-go" data-action="next" onClick={() => startBattle(next.id)}>
               Next level
             </button>
           )}
@@ -251,7 +252,7 @@ export const BattleScreen = () => {
   }, []);
   return (
     <div class={`screen ${busy.value ? "is-busy" : ""}`} onPointerDown={unlockAudio}>
-      <div class="stage">
+      <div class={`stage stage-${state.level.region}`}>
         <Hud state={state} />
         <div class="hero" data-hero>
           <img class="sprite" src={`./assets/chars/hero_${heroPose.value}.png`} alt="" draggable={false} />

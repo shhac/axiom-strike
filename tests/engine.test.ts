@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { createBattle, equationTotal, hintNext, reduce, type Action, type BattleState } from "../src/engine/battle";
 import { dealHand, HAND_SIZE } from "../src/engine/deal";
 import { applyStep, evaluate, type Op } from "../src/engine/equation";
-import { LEVELS } from "../src/engine/levels";
+import { findLevel, LEVELS } from "../src/engine/levels";
 import { createRng } from "../src/engine/rng";
 import { solve } from "../src/engine/solver";
 import { masherBot, solverBot, winRate } from "./bots";
 
-const [addLevel, subLevel] = [LEVELS[0]!, LEVELS[1]!];
+const [addLevel, subLevel] = [findLevel("add_1"), findLevel("sub_1")];
 
 const start = (seed = 7, level = addLevel) => createBattle(level, seed).at(-1)!.state;
 const act = (state: BattleState, ...actions: Action[]) =>
@@ -70,11 +70,13 @@ describe("solver", () => {
 });
 
 describe("deal guarantee", () => {
-  it.each([addLevel, subLevel])("always has disjoint exact answers ($id)", (level) => {
-    const failures = Array.from({ length: 2000 }, (_, seed) => {
+  it.each(LEVELS)("always has disjoint exact answers ($id)", (level) => {
+    const failures = Array.from({ length: 600 }, (_, seed) => {
       const rng = createRng(seed + 1);
-      const strike = rng.int(level.weakness[0], level.weakness[1]);
-      const parries = Array.from({ length: seed % 3 }, () => rng.int(level.attack[0], level.attack[1]));
+      const strike = rng.pick(level.weakness);
+      // Rage can push an attack past the level's usual numbers, so the promise is tested there too.
+      const raged = (n: number) => (level.rage ? Math.min(level.tileMax * 2 - 1, n + (seed % 4) * 2) : n);
+      const parries = Array.from({ length: seed % 3 }, () => Math.max(raged(rng.pick(level.attack)), 0));
       const hand = dealHand(rng, level, strike, parries);
       if (hand.length !== HAND_SIZE || hand.some((value) => value < 1 || value > level.tileMax)) return seed;
 
@@ -86,7 +88,7 @@ describe("deal guarantee", () => {
   it("usually offers a three-tile strike when at most one attack lands", () => {
     const hits = Array.from({ length: 500 }, (_, seed) => {
       const rng = createRng(seed + 1);
-      const strike = rng.int(addLevel.weakness[0], addLevel.weakness[1]);
+      const strike = rng.pick(addLevel.weakness);
       const hand = dealHand(rng, addLevel, strike, [rng.int(4, 12)]);
       return solve(hand, addLevel.ops, strike, { minTiles: 3, maxTiles: 3 }) !== null;
     }).filter(Boolean).length;
@@ -251,9 +253,15 @@ describe("simulated players", () => {
     expect(result.rate).toBeLessThan(0.25);
   });
 
-  it("the second level is winnable with exact play", () => {
-    const result = winRate(subLevel, solverBot(3), 300);
-    console.log("three-tile bot, level 2:", JSON.stringify(result));
+  it.each(LEVELS)("$id is winnable with two-number answers", (level) => {
+    const result = winRate(level, solverBot(2), 60);
+    console.log(`two-tile bot, ${level.id}:`, JSON.stringify(result));
     expect(result.rate).toBeGreaterThanOrEqual(0.9);
+  });
+
+  it.each(LEVELS)("$id is not winnable by mashing", (level) => {
+    const result = winRate(level, masherBot, 60);
+    console.log(`masher, ${level.id}:`, JSON.stringify(result));
+    expect(result.rate).toBeLessThan(0.3);
   });
 });

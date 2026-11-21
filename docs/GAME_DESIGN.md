@@ -101,9 +101,9 @@ Spare tiles first go to a three-number answer for the same weakness, then to ran
 
 - Enemy **families** map to operations and to a look: addition (green slimes), subtraction (red spiky), multiplication (purple wizards), division (blue water drops).
 - Three ranks per family: minion, standard, boss.
-- New families are introduced by a short **intro scene**: the monster meets the hero and shows off an over-the-top personality. This is where a new operation is explained.
+- (Not built yet) New families are introduced by a short **intro scene**: the monster meets the hero and shows off an over-the-top personality. This is where a new operation is explained.
 
-## Campfire (reading)
+## Campfire (reading) — designed, not built yet
 
 Between levels the hero rests at a campfire and may read a scroll.
 
@@ -124,9 +124,21 @@ Content pipeline: see [Reading Corpus Pipeline](READING_CORPUS_PIPELINE.md). The
 - Nodes inside a region unlock in order and grow in number size and in the signs available.
 - A player can start in any region, so they can begin at the right difficulty.
 
+- Four regions of five levels each (20 levels). The fifth level of a region ends with its boss.
+- Stars earned are saved on the device and shown on the map; replaying never lowers them.
+
 ### Level definition
 
-Each level sets: the signs available, the largest tile, the weakness range, the attack range, and its three waves of monsters.
+Each level sets: the signs available, the sign it is teaching, the largest tile, the numbers a weakness can be, the numbers an attack can be, and its three waves of monsters.
+
+| Region | Signs | Teaches | Dealt answers |
+|---|---|---|---|
+| Addition Grove | `+` | `+` | sums up to 30 |
+| Subtraction Peaks | `+ −` | `−` | differences, tiles up to 30 |
+| Multiplication Caverns | `+ ×` | `×` | times tables up to 12 × 12 |
+| Division Depths | `+ × ÷` | `÷` | quotients up to 12 |
+
+The dealt two-number answer always uses the sign being taught when it can. Monsters from an earlier region wander into later ones so old skills keep being used. Attacks only grow when ignored in the first two regions, where two added tiles can always answer the bigger number.
 
 ### Session design
 

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Axiom Strike</string>
+    <string name="title_activity_main">Axiom Strike</string>
+    <string name="package_name">com.axiomstrike.game</string>
+    <string name="custom_url_scheme">com.axiomstrike.game</string>
+</resources>

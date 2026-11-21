@@ -35,9 +35,10 @@ const PAIR_FOR: Record<Op, (rng: Rng, target: number, tileMax: number) => Pair |
   },
 };
 
-/** Two tiles that make `target` with one of the level's operators, or null if none can. */
+/** Two tiles that make `target`, with the level's focus operator if it can, or null if none can. */
 export const pairFor = (rng: Rng, level: Level, target: number): Pair | null => {
-  const candidates = rng.shuffle(level.ops);
+  const others = rng.shuffle(level.ops.filter((op) => op !== level.focus));
+  const candidates = [level.focus, ...others];
   return candidates.reduce<Pair | null>((found, op) => found ?? PAIR_FOR[op](rng, target, level.tileMax), null);
 };
 

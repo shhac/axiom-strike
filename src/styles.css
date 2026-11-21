@@ -85,7 +85,7 @@ img {
   position: relative;
   flex: 1;
   min-height: 0;
-  background: #2f7a4f url("/assets/bg/addition_grove.webp") center 74% / cover no-repeat;
+  background: #2f7a4f center 74% / cover no-repeat;
   padding: 0 max(1.2rem, env(safe-area-inset-right)) 0 max(1.2rem, env(safe-area-inset-left));
 }
 
@@ -979,4 +979,170 @@ img {
   to {
     transform: scale(1.06);
   }
+}
+
+.stage-add {
+  background-image: url("/assets/bg/addition_grove.webp");
+}
+
+.stage-sub {
+  background-image: url("/assets/bg/subtraction_peaks.webp");
+}
+
+.stage-mul {
+  background-image: url("/assets/bg/multiplication_caverns.webp");
+}
+
+.stage-div {
+  background-image: url("/assets/bg/division_depths.webp");
+}
+
+/* ---------- Map ---------- */
+
+.map {
+  background: var(--ink);
+}
+
+.map-art {
+  position: absolute;
+  inset: 0;
+  background: url("/assets/bg/world_map.webp") center / cover no-repeat;
+}
+
+.regions {
+  position: relative;
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 0 5%;
+}
+
+.region {
+  position: relative;
+}
+
+.region-title {
+  position: absolute;
+  inset: 0.5rem 0.25rem auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 0.6rem;
+  background: rgb(20 18 43 / 0.78);
+  border: 0.12rem solid rgb(255 255 255 / 0.25);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.region-stars {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  color: var(--gold);
+}
+
+.region-stars img {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.trail {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.trail polyline {
+  fill: none;
+  stroke: var(--cream);
+  stroke-width: 0.5rem;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 0.1rem 0.9rem;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0.12rem 0 rgb(0 0 0 / 0.5));
+}
+
+.node {
+  position: absolute;
+  width: 3.1rem;
+  height: 3.1rem;
+  margin: -1.55rem 0 0 -1.55rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 0.2rem solid var(--ink);
+  background: linear-gradient(#fffbe9, var(--tile));
+  box-shadow:
+    inset 0 -0.3rem 0 var(--tile-edge),
+    0 0.3rem 0 var(--ink);
+  font-size: 1.9rem;
+  padding-bottom: 0.25rem;
+}
+
+.node.is-boss {
+  width: 3.6rem;
+  height: 3.6rem;
+  margin: -1.8rem 0 0 -1.8rem;
+  background: linear-gradient(#ffb0a8, var(--strike));
+  box-shadow:
+    inset 0 -0.3rem 0 var(--strike-deep),
+    0 0.3rem 0 var(--ink);
+}
+
+.node.is-done {
+  background: linear-gradient(#b9ffc7, #4fd873);
+  box-shadow:
+    inset 0 -0.3rem 0 #1f8f45,
+    0 0.3rem 0 var(--ink);
+}
+
+.node.is-locked {
+  background: #4a4670;
+  box-shadow:
+    inset 0 -0.3rem 0 #2e2b4d,
+    0 0.3rem 0 var(--ink);
+}
+
+.node.is-current {
+  animation: throb 650ms ease-in-out infinite alternate;
+  box-shadow:
+    inset 0 -0.3rem 0 var(--tile-edge),
+    0 0.3rem 0 var(--ink),
+    0 0 0 0.3rem var(--gold);
+}
+
+.node:active {
+  transform: translateY(0.2rem);
+}
+
+.node-lock {
+  width: 1.8rem;
+  height: 1.8rem;
+  opacity: 0.85;
+}
+
+.node-stars {
+  position: absolute;
+  bottom: -0.95rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+}
+
+.node-stars img {
+  width: 0.95rem;
+  height: 0.95rem;
+  filter: drop-shadow(0 0.08rem 0 var(--ink));
+}
+
+.map-back {
+  position: absolute;
+  left: max(0.5rem, env(safe-area-inset-left));
+  bottom: 0.5rem;
+  width: 3.2rem;
 }

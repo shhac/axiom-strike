@@ -3,6 +3,7 @@ import { createBattle, reduce, type Action, type BattleState, type Step } from "
 import { findLevel } from "../engine/levels";
 import { playMusic } from "./audio";
 import { afterEvent, beforeEvent, heroPose } from "./fx";
+import { saveWin } from "./save";
 
 const randomSeed = () => Math.floor(Math.random() * 2 ** 31);
 
@@ -17,6 +18,7 @@ const play = async (steps: readonly Step[]) => {
   for (const step of steps) {
     if (step.event) await beforeEvent(step.event);
     battle.value = step.state;
+    if (step.event?.type === "won") saveWin(step.state.level, step.event.stars);
     if (step.event) await afterEvent(step.event, step.state);
   }
   busy.value = false;

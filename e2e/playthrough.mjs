@@ -5,24 +5,26 @@ import { chromium } from "playwright";
 
 const base = process.env.BASE_URL ?? "http://localhost:5199/";
 const shotDir = process.env.SHOT_DIR ?? "";
+// Every run starts at the title screen and picks its level on the map, as a player would.
 const runs = [
-  { name: "from-title", query: "?seed=7" },
-  { name: "level-1", query: "?seed=7&level=add_1" },
-  { name: "level-2", query: "?seed=11&level=sub_1" },
+  { name: "addition-1", level: "add_1", query: "?seed=7" },
+  { name: "subtraction-1", level: "sub_1", query: "?seed=11" },
+  { name: "multiplication-1", level: "mul_1", query: "?seed=5" },
+  { name: "division-1", level: "div_1", query: "?seed=3" },
 ];
 
-const playLevel = async (page, url, prefix) => {
+const playLevel = async (page, url, prefix, level) => {
   const errors = [];
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
   page.on("pageerror", (e) => errors.push(String(e)));
   const shot = async (name) => shotDir && page.screenshot({ path: `${shotDir}/${prefix}_${name}.png` });
   await page.goto(url);
-  const play = page.locator("[data-action=play]");
-  if (await play.count()) {
-    await page.waitForTimeout(1500);
-    await shot("title");
-    await play.click({ force: true });
-  }
+  await page.waitForTimeout(1500);
+  await shot("title");
+  await page.locator("[data-action=play]").click({ force: true });
+  await page.waitForTimeout(600);
+  await shot("map");
+  await page.locator(`[data-level=${level}]`).click({ force: true });
   const idle = async () => {
     await page.waitForFunction(() => window.__axiom && !window.__axiom.busy(), null, { timeout: 15000 });
   };
@@ -162,7 +164,7 @@ for (const run of runs) {
   const page = await context.newPage();
   const cdp = await context.newCDPSession(page);
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
-  results.push({ name: run.name, ...(await playLevel(page, base + run.query, run.name)) });
+  results.push({ name: run.name, ...(await playLevel(page, base + run.query, run.name, run.level)) });
   await page.close();
 }
 await browser.close();
@@ -171,8 +173,9 @@ const problems = results.flatMap((r) => [
   ...(r.timeout ? [`${r.name}: did not finish`] : []),
   ...(r.plan?.done !== "won" ? [`${r.name}: ended ${r.plan?.done}`] : []),
   ...(r.errors?.length ? [`${r.name}: console errors ${JSON.stringify(r.errors)}`] : []),
-  ...(r.perf?.p95 >= 20 ? [`${r.name}: p95 frame ${r.perf.p95.toFixed(1)}ms`] : []),
-  ...(r.perf?.longTasks.some((ms) => ms > 100) ? [`${r.name}: long tasks ${r.perf.longTasks}`] : []),
+  // Taking full-resolution screenshots stalls the page, so timings only count on runs without them.
+  ...(!shotDir && r.perf?.p95 >= 20 ? [`${r.name}: p95 frame ${r.perf.p95.toFixed(1)}ms`] : []),
+  ...(!shotDir && r.perf?.longTasks.some((ms) => ms > 100) ? [`${r.name}: long tasks ${r.perf.longTasks}`] : []),
   ...(r.layout && (r.layout.scrollW > r.layout.vw || r.layout.scrollH > r.layout.vh)
     ? [`${r.name}: page overflows`]
     : []),

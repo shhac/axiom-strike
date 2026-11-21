@@ -127,19 +127,16 @@ const rollTurns = (others: readonly Enemy[]): number =>
 const RAGE_STEP = 2;
 const MAX_RAGE = 3;
 
-/** Ignored attacks get bigger, but never beyond what two tiles can still answer. */
-const attackCeiling = (level: Level) =>
-  level.ops.includes("+") ? Math.min(level.attack[1] + RAGE_STEP * MAX_RAGE, level.tileMax * 2 - 1) : level.attack[1];
-
 const rollIntent = (rng: Rng, level: Level, others: readonly Enemy[], rage: number): Intent => {
-  const damage = Math.min(attackCeiling(level), rng.int(level.attack[0], level.attack[1]) + RAGE_STEP * rage);
+  // Ignored attacks get bigger, but never beyond what two added tiles can still answer.
+  const ceiling = level.tileMax * 2 - 1;
+  const base = rng.pick(level.attack);
+  const damage = level.rage ? Math.max(base, Math.min(ceiling, base + RAGE_STEP * rage)) : base;
   return { damage, remaining: damage, turns: rollTurns(others) };
 };
 
-const rollWeakness = (rng: Rng, level: Level, avoid?: number): number => {
-  const options = Array.from({ length: level.weakness[1] - level.weakness[0] + 1 }, (_, i) => level.weakness[0] + i);
-  return rng.pick(options.filter((value) => value !== avoid));
-};
+const rollWeakness = (rng: Rng, level: Level, avoid?: number): number =>
+  rng.pick(level.weakness.filter((value) => value !== avoid));
 
 const defaultAim = (state: BattleState): Aim | null => {
   const aimed = living(state).find((enemy) => enemy.id === state.aim?.enemyId);
@@ -155,7 +152,7 @@ const dealStep = (state: BattleState): Step => {
     .filter((enemy) => enemy.intent.turns === 1 && enemy.intent.remaining > 0)
     .map((enemy) => enemy.intent.damage);
   const [values, seed] = withRng(state, (rng) =>
-    dealHand(rng, state.level, strikeEnemy?.weakness ?? state.level.weakness[0], landing),
+    dealHand(rng, state.level, strikeEnemy?.weakness ?? state.level.weakness[0] ?? 2, landing),
   );
   const hand = values.map((value, index) => ({ id: state.nextId + index, value, used: false }));
   return {
@@ -177,7 +174,7 @@ const waveStep = (state: BattleState, wave: number): Step => {
   const specs = state.level.waves[wave] ?? [];
   const [enemies, seed] = withRng(state, (rng) =>
     specs.map((spec, index): Enemy => {
-      const damage = rng.int(state.level.attack[0], state.level.attack[1]);
+      const damage = rng.pick(state.level.attack);
       return {
         id: state.nextId + index,
         kind: spec.kind,

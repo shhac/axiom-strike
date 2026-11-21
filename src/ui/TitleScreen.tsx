@@ -1,4 +1,4 @@
-import { enterBattle } from "./nav";
+import { goTo } from "./nav";
 import { RotatePrompt } from "./common";
 import { playMusic, playSfx, unlockAudio } from "./audio";
 import { useEffect } from "preact/hooks";
@@ -25,7 +25,7 @@ export const TitleScreen = () => {
         ))}
       </div>
       <img class="logo" src="./assets/title/logo.png" alt="Axiom Strike" draggable={false} />
-      <button class="play" data-action="play" onClick={() => (playSfx("button"), enterBattle(null))}>
+      <button class="play" data-action="play" onClick={() => (playSfx("button"), goTo("map"))}>
         <span>PLAY</span>
       </button>
       <p class="tagline">Add it up. Strike it down.</p>
