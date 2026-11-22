@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createBattle, equationTotal, hintNext, reduce, type Action, type BattleState } from "../src/engine/battle";
 import { dealHand, HAND_SIZE } from "../src/engine/deal";
-import { applyStep, evaluate, type Op } from "../src/engine/equation";
+import { applyStep, bracketEnds, evaluate, type Op } from "../src/engine/equation";
 import { findLevel, LEVELS, TIERS, tuneLevel } from "../src/engine/levels";
 import { createRng } from "../src/engine/rng";
 import { solve } from "../src/engine/solver";
@@ -45,7 +45,20 @@ const disjointAnswers = (hand: number[], ops: readonly Op[], targets: number[], 
 const tap = (index: number): Action => ({ type: "tapTile", tileId: 100 + index });
 
 describe("equation", () => {
-  it("evaluates left to right without precedence", () => {
+  it("brackets the part so far when times or divide follows plus or minus", () => {
+    expect(bracketEnds(["+", "×"])).toEqual([1]);
+    expect(bracketEnds(["+", "+", "÷"])).toEqual([2]);
+    expect(bracketEnds(["+", "×", "+", "×"])).toEqual([1, 3]);
+    expect(bracketEnds(["-", "÷"])).toEqual([1]);
+  });
+  it("needs no brackets where the usual order already agrees", () => {
+    expect(bracketEnds(["×", "+"])).toEqual([]);
+    expect(bracketEnds(["÷", "×", "÷"])).toEqual([]);
+    expect(bracketEnds(["+", "-", "+"])).toEqual([]);
+    expect(bracketEnds(["×"])).toEqual([]);
+    expect(bracketEnds([])).toEqual([]);
+  });
+  it("applies each step to the total so far", () => {
     expect(
       evaluate(2, [
         { op: "+", value: 3 },

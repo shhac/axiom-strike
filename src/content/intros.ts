@@ -58,7 +58,7 @@ const FAMILY_INTROS: Record<OpFamily, Intro> = {
       { speaker: "enemy", text: "MWAHAHA! You thought adding was tough? I am CRYSTAMUL, master of MULTIPLICATION!" },
       { speaker: "enemy", text: "My weakness is far too BIG to reach by adding. You would need... times tables!" },
       { speaker: "hero", text: "Pick the times sign to multiply two numbers.", sum: "3×4=12" },
-      { speaker: "hero", text: "Sums run left to right, one step at a time.", sum: "2+3×4=20" },
+      { speaker: "hero", text: "Times after a plus wraps the plus in brackets. Brackets go first!", sum: "(2+3)×4=20" },
     ],
   },
   div: {

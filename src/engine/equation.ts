@@ -17,6 +17,21 @@ export const applyStep = (total: number, step: Step): number | null => {
   return isFriendly(next) ? next : null;
 };
 
-/** Left to right, no precedence: the total on screen is always "what you have so far". */
+const isLoose = (op: Op) => op === "+" || op === "-";
+
+/**
+ * Where brackets close when the equation is written down, as positions in the list of numbers.
+ * The total builds up one step at a time, so times or divide after a plus or minus applies to
+ * everything so far. Written without brackets that would break the order of operations, so the
+ * part so far is wrapped: `1 + 1` then `× 2` reads `(1 + 1) × 2`. Each close has an opening
+ * bracket at the very start.
+ */
+export const bracketEnds = (ops: readonly Op[]): number[] =>
+  ops.flatMap((op, index) => {
+    const before = ops[index - 1];
+    return before !== undefined && isLoose(before) && !isLoose(op) ? [index] : [];
+  });
+
+/** One step at a time on the total so far, which `bracketEnds` makes true on screen. */
 export const evaluate = (first: number, steps: readonly Step[]): number | null =>
   steps.reduce<number | null>((total, step) => (total === null ? null : applyStep(total, step)), first);

@@ -1,10 +1,25 @@
+import { useLayoutEffect, useRef } from "preact/hooks";
 import { aimTarget, equationTotal, equationValues, hintNext, type BattleState } from "../../engine/battle";
+import { bracketEnds } from "../../engine/equation";
 import { icon } from "../assets";
 import { Num } from "../common";
 import { dispatch } from "../store";
 import { act } from "./act";
 
 type Hinted = ReturnType<typeof hintNext>;
+
+/** Shrinks a long equation to the room it has, so the total beside it is never pushed out of view. */
+const useShrinkToFit = (content: string) => {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const node = ref.current;
+    const room = node?.parentElement?.clientWidth;
+    if (!node || !room) return;
+    const scale = Math.min(1, room / node.offsetWidth);
+    node.style.transform = scale < 1 ? `scale(${scale})` : "";
+  }, [content]);
+  return ref;
+};
 
 const EquationBar = ({ state }: { state: BattleState }) => {
   const target = aimTarget(state);
@@ -13,6 +28,9 @@ const EquationBar = ({ state }: { state: BattleState }) => {
   const placed = equationValues(state);
   const ready = placed.length >= 2;
   const exact = total !== null && total === target;
+  const { ops, pendingOp } = state.equation;
+  const closes = bracketEnds(pendingOp ? [...ops, pendingOp] : ops);
+  const terms = useShrinkToFit(`${placed.join()} ${ops.join()} ${pendingOp ?? ""}`);
   return (
     <div class="row row-equation">
       <div class={`goal goal-${kind}`}>
@@ -21,13 +39,21 @@ const EquationBar = ({ state }: { state: BattleState }) => {
       </div>
       <div class="equation" aria-live="polite">
         {placed.length === 0 && <span class="equation-empty">Tap numbers to make {target}</span>}
-        {placed.map((value, index) => (
-          <>
-            {index > 0 && <Num class="eq-op" value={state.equation.ops[index - 1] ?? ""} />}
-            <Num class="eq-num" value={value} />
-          </>
-        ))}
-        {state.equation.pendingOp && <Num class="eq-op is-pending" value={state.equation.pendingOp} />}
+        <div class="eq-room">
+          <div class="eq-terms" ref={terms}>
+            {closes.map((close) => (
+              <Num key={`open-${close}`} class="eq-bracket" value="(" />
+            ))}
+            {placed.map((value, index) => (
+              <>
+                {index > 0 && <Num class="eq-op" value={ops[index - 1] ?? ""} />}
+                <Num class="eq-num" value={value} />
+                {closes.includes(index) && <Num class="eq-bracket" value=")" />}
+              </>
+            ))}
+            {pendingOp && <Num class="eq-op is-pending" value={pendingOp} />}
+          </div>
+        </div>
         {total !== null && (
           <span class={`eq-total ${exact ? "is-exact" : ""}`} data-total={total}>
             <Num value={`=${total}`} />

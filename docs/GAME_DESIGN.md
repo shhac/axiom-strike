@@ -36,7 +36,9 @@ The first version of this game was built in Defold and is preserved as the git t
 
 - Tap a chip to choose what to aim at. The game always starts a turn aimed at a weakness that the hand can make exactly.
 - Tap tiles (and signs, when there is more than one) to build `number sign number sign number …`.
-- Evaluation is **left to right**, and the running total is always on screen.
+- Each sign applies to the **total so far**, and the running total is always on screen.
+- The equation is written so that it is true under the usual order of operations: picking `×` or `÷` after a `+` or `−` wraps everything so far in brackets, so `1 + 1` then `× 2` shows `(1 + 1) × 2 = 4`, never `1 + 1 × 2 = 4`. The brackets appear the moment the sign is picked. There is no way to build `1 + (1 × 2)`; the player multiplies first and adds after (`1 × 2 + 1`).
+- Division only ever gives whole numbers: a divide that would leave a fraction is refused, and the hand always holds a pair that divides exactly.
 - Every running total must be a whole number of zero or more. A tap that would break that is refused with a short message.
 - An equation needs at least two numbers.
 
