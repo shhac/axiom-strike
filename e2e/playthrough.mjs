@@ -340,6 +340,18 @@ const useCarriedItems = async ({ page, problems, shot, shotOnce }) => {
   await onScreen(page, "map");
   // Left alone, the map points at the levels that can be played; a touch clears it.
   expectThat(problems, (await page.locator("[data-nudge]").count()) === 0, "the map nudged straight away");
+  // The first level was just beaten, so the hero walks on to the one it opened and stays there.
+  expectThat(
+    problems,
+    await appears(page, "[data-map-hero=add_2]", 4000),
+    "the map hero did not walk to the new level",
+  );
+  await shot("map_hero");
+  const arrived = await page
+    .waitForFunction(() => window.__axiom.save().heroAt === "add_2", null, { timeout: 3000 })
+    .then(() => true)
+    .catch(() => false);
+  expectThat(problems, arrived, "the map hero's new spot was not saved");
   expectThat(problems, await appears(page, "[data-nudge]", 17000), "the idle map never pointed at a level");
   await shot("map_nudge");
   await page.locator("[data-screen=map]").click({ position: { x: 400, y: 20 }, force: true });

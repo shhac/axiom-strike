@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { findLevel } from "../src/engine/levels";
-import { EMPTY_SAVE, recordLoss, recordWin, type Save } from "../src/engine/progress";
+import { EMPTY_SAVE, heroGoal, heroSpot, recordLoss, recordWin, standAt, type Save } from "../src/engine/progress";
 import { parseSave } from "../src/engine/saveParser";
 import { NEW_SKILL } from "../src/engine/skill";
 
@@ -14,6 +14,7 @@ describe("reading a stored save", () => {
       scrolls: 1,
       read: [4, 9],
       seen: ["add"],
+      heroAt: "add_2",
       lastPlayedDay: 20000,
       settings: { music: false, sound: true, difficulty: "tough", reading: "easy" },
     };
@@ -57,5 +58,31 @@ describe("reading a stored save", () => {
       stories: 0,
       settings: { difficulty: "auto", music: true },
     });
+  });
+});
+
+describe("the hero on the map", () => {
+  const boss = findLevel("add_5");
+  it("starts beside the very first level", () => {
+    expect(heroSpot(EMPTY_SAVE)?.id).toBe("add_1");
+    expect(heroGoal(EMPTY_SAVE)?.id).toBe("add_1");
+  });
+  it("stays at a level that is not beaten yet", () => {
+    const lost = recordLoss(standAt(EMPTY_SAVE, add1), add1);
+    expect(heroGoal(lost)?.id).toBe("add_1");
+  });
+  it("walks on to the level a first win opened", () => {
+    const won = recordWin(standAt(EMPTY_SAVE, add1), add1, 2);
+    expect(heroSpot(won)?.id).toBe("add_1");
+    expect(heroGoal(won)?.id).toBe("add_2");
+  });
+  it("stays put after replaying a level whose next one is already beaten, and after a boss", () => {
+    const both = recordWin(recordWin(standAt(EMPTY_SAVE, add1), add1, 1), add2, 1);
+    expect(heroGoal(both)?.id).toBe("add_1");
+    expect(heroGoal(recordWin(standAt(EMPTY_SAVE, boss), boss, 3))?.id).toBe("add_5");
+  });
+  it("falls back to the first level when the stored spot is not a level", () => {
+    expect(heroSpot(parseSave(JSON.stringify({ heroAt: "nowhere" })))?.id).toBe("add_1");
+    expect(parseSave(JSON.stringify({ heroAt: 7 })).heroAt).toBeNull();
   });
 });

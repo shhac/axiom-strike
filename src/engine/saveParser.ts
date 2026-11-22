@@ -78,6 +78,7 @@ export const parseSave = (raw: string | null): Save => {
     scrolls: wholeNumber(parsed.scrolls, 0, MAX_ITEMS, 0),
     stories: wholeNumber(parsed.stories, 0, MAX_STORIES, 0),
     read: list(parsed.read, isIndex),
+    heroAt: typeof parsed.heroAt === "string" ? parsed.heroAt : null,
     seen: list(parsed.seen, isString),
     settings: settings(parsed.settings),
   };

@@ -86,6 +86,12 @@
   }
 }
 
+@keyframes hop {
+  50% {
+    translate: 0 -0.7rem;
+  }
+}
+
 @keyframes point {
   to {
     transform: translateY(-0.5rem);

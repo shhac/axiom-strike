@@ -1,7 +1,7 @@
 import { signal } from "@preact/signals";
 import { introFor, type Intro } from "../content/intros";
 import { findLevel, type Level } from "../engine/levels";
-import { markSeen } from "../engine/progress";
+import { markSeen, standAt } from "../engine/progress";
 import { playMusic, playSfx } from "./audio";
 import { wait } from "./motion";
 import { save, updateSave } from "./save";
@@ -46,6 +46,7 @@ const beginBattle = (level: Level) => {
 export const enterBattle = (level: Level) =>
   transit(() => {
     leaveBattle();
+    updateSave((progress) => standAt(progress, level));
     const scene = introFor(level, save.value.seen);
     if (!scene) return beginBattle(level);
     intro.value = { scene, level };

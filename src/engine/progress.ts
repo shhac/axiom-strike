@@ -24,6 +24,8 @@ export type Save = {
   stories: number;
   /** Passages already read, so stories do not repeat until all have been seen. */
   read: readonly number[];
+  /** The level the hero stands beside on the map: the last one entered or walked to. */
+  heroAt: string | null;
   /** Intro scenes already shown. */
   seen: readonly string[];
   settings: Settings;
@@ -45,6 +47,7 @@ export const EMPTY_SAVE: Save = {
   scrolls: 0,
   stories: 0,
   read: [],
+  heroAt: null,
   seen: [],
   settings: DEFAULT_SETTINGS,
 };
@@ -56,6 +59,24 @@ export const isUnlocked = (save: Save, level: Level): boolean => {
   if (level.step === 0) return true;
   const previous = LEVELS.find((candidate) => candidate.region === level.region && candidate.step === level.step - 1);
   return previous !== undefined && starsFor(save, previous) > 0;
+};
+
+export const standAt = (save: Save, level: Level): Save =>
+  save.heroAt === level.id ? save : { ...save, heroAt: level.id };
+
+/** Where the hero stands on the map; before anything has been played, at the very first level. */
+export const heroSpot = (save: Save): Level | undefined =>
+  LEVELS.find((level) => level.id === save.heroAt) ?? LEVELS[0];
+
+/**
+ * Where the hero should end up: once the level they stand at is beaten they move on to the next
+ * one in that land if it has not been beaten yet, and otherwise stay put.
+ */
+export const heroGoal = (save: Save): Level | undefined => {
+  const spot = heroSpot(save);
+  if (!spot || starsFor(save, spot) === 0) return spot;
+  const next = LEVELS.find((level) => level.region === spot.region && level.step === spot.step + 1);
+  return next && starsFor(save, next) === 0 ? next : spot;
 };
 
 const withoutLosses = (losses: Record<string, number>, levelId: string): Record<string, number> =>

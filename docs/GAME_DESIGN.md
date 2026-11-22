@@ -182,6 +182,7 @@ Opened from the title, the map and the pause button: music on/off, sounds on/off
 
 - Regions are operation types (Addition Grove, Subtraction Peaks, Multiplication Caverns, Division Depths). On the map each is labelled with its sign and one word ("+ Addition"), and the sign is drawn huge and faint behind its levels, so a child who cannot read the word still learns which sign lives where. In battle the level is labelled the same way: sign and "Level 3".
 - **A map left alone for fifteen seconds points the way:** arrows bounce over every level that can be played next, those levels glow, the rest dim, and a banner says "Tap a glowing number to play!". Any touch clears it and starts the wait again.
+- **The hero stands on the map** beside the level last entered (the first level on a new save), on the side nearer the middle of its land. Coming back from a first win, the hero hops along the trail to the level it opened and stays there; the spot is saved.
 - Nodes inside a region unlock in order and grow in number size and in the signs available.
 - A player can start in any region, so they can begin at the right difficulty.
 

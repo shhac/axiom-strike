@@ -273,3 +273,35 @@
   pointer-events: none;
   animation: nudge 700ms ease-in-out infinite alternate;
 }
+
+/* ---------- The hero on the map ---------- */
+
+/* Stands beside its level. Only one small box moves, so sliding it by left/top is cheap. */
+.map-hero {
+  position: absolute;
+  width: 3.4rem;
+  height: 3.73rem;
+  margin: -2.4rem 0 0 -4.6rem;
+  pointer-events: none;
+  transition-property: left, top, margin-left;
+  transition-timing-function: linear;
+  filter: drop-shadow(0 0.15rem 0 rgb(0 0 0 / 0.55));
+  z-index: 1;
+}
+
+.map-hero.is-right {
+  margin-left: 1.2rem;
+}
+
+.map-hero .sprite {
+  width: 100%;
+  height: 100%;
+}
+
+.map-hero.is-facing-left .sprite {
+  transform: scaleX(-1);
+}
+
+.map-hero.is-walking {
+  animation: hop 275ms ease-out 4;
+}

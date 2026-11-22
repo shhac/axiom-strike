@@ -1,12 +1,12 @@
 import { useEffect, useState } from "preact/hooks";
 import { LEVELS, REGIONS, type Level, type Region } from "../engine/levels";
-import { isUnlocked, starsFor, type Save } from "../engine/progress";
+import { heroGoal, heroSpot, isUnlocked, standAt, starsFor, type Save } from "../engine/progress";
 import { playMusic } from "./audio";
-import { icon } from "./assets";
-import { Num } from "./common";
+import { heroStrip, icon } from "./assets";
+import { Num, Sprite } from "./common";
 import { enterBattle, goTo, settingsOpen } from "./nav";
 import { press } from "./press";
-import { save } from "./save";
+import { save, updateSave } from "./save";
 
 /** Where each of a land's five levels sits inside its column, as percentages: a path winding upward. */
 const SPOTS = [
@@ -18,6 +18,45 @@ const SPOTS = [
 ] as const;
 
 const PATH = SPOTS.map((spot) => `${spot.x},${spot.y}`).join(" ");
+
+/** The curtain has to be open before the hero sets off, or the walk is missed. */
+const WALK_STARTS_AFTER_MS = 700;
+const WALK_TAKES_MS = 1100;
+
+/**
+ * The hero on the map, beside the level last played. When that level has just been beaten the
+ * hero hops along the trail to the newly opened one and stays there.
+ */
+const MapHero = ({ from, to }: { from: Level; to: Level }) => {
+  const [at, setAt] = useState(from);
+  const walking = at.id === to.id && from.id !== to.id;
+  useEffect(() => {
+    if (from.id === to.id) return;
+    const setOff = setTimeout(() => setAt(to), WALK_STARTS_AFTER_MS);
+    const arrive = setTimeout(
+      () => updateSave((progress) => standAt(progress, to)),
+      WALK_STARTS_AFTER_MS + WALK_TAKES_MS,
+    );
+    return () => {
+      clearTimeout(setOff);
+      clearTimeout(arrive);
+    };
+  }, [from.id, to.id]);
+  const spot = SPOTS[at.step] ?? SPOTS[0];
+  // Always on the side of its level nearer the middle of the land, so it never hangs off the map.
+  const onTheRight = spot.x < 50;
+  const walksLeft = (SPOTS[to.step]?.x ?? 0) < (SPOTS[from.step]?.x ?? 0);
+  const facesLeft = walking ? walksLeft : onTheRight;
+  return (
+    <div
+      class={`map-hero ${walking ? "is-walking" : ""} ${onTheRight ? "is-right" : ""} ${facesLeft ? "is-facing-left" : ""}`}
+      style={{ left: `${spot.x}%`, top: `${spot.y}%`, transitionDuration: `${WALK_TAKES_MS}ms` }}
+      data-map-hero={at.id}
+    >
+      <Sprite strip={heroStrip("idle")} />
+    </div>
+  );
+};
 
 const NodeButton = ({ level, current, progress }: { level: Level; current: boolean; progress: Save }) => {
   const spot = SPOTS[level.step] ?? SPOTS[0];
@@ -50,6 +89,8 @@ const RegionColumn = ({ region, progress }: { region: Region; progress: Save }) 
   const levels = LEVELS.filter((level) => level.region === region.id);
   const current = levels.find((level) => isUnlocked(progress, level) && starsFor(progress, level) === 0);
   const earned = levels.reduce((sum, level) => sum + starsFor(progress, level), 0);
+  const heroFrom = heroSpot(progress);
+  const heroTo = heroGoal(progress);
   return (
     <section class={`region region-${region.id}`} aria-label={region.name}>
       <Num class="region-symbol" value={region.focus} />
@@ -69,6 +110,7 @@ const RegionColumn = ({ region, progress }: { region: Region; progress: Save }) 
       {levels.map((level) => (
         <NodeButton key={level.id} level={level} current={level.id === current?.id} progress={progress} />
       ))}
+      {heroFrom && heroTo && heroFrom.region === region.id && <MapHero from={heroFrom} to={heroTo} />}
     </section>
   );
 };
