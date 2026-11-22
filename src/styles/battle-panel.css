@@ -306,3 +306,38 @@
   border: 0.12rem solid var(--ink);
   font-size: 0.8rem;
 }
+
+.op {
+  position: relative;
+}
+
+.op.is-banned {
+  filter: saturate(0.3) brightness(0.75);
+}
+
+.row-hand.is-crowded .btn-tool {
+  width: 3.3rem;
+}
+
+.row-hand.is-crowded .btn-tool span {
+  display: none;
+}
+
+/* Tablets and other squarer screens are only 40rem wide, so the tiles get a row to themselves
+   and the hint and signs drop to a third row; there is height to spare for it. */
+@media (max-aspect-ratio: 17/9) {
+  .row-hand {
+    height: auto;
+    flex-wrap: wrap;
+    row-gap: 0.45rem;
+  }
+
+  .row-hand .tiles {
+    order: -1;
+    flex: 1 0 100%;
+  }
+
+  .row-hand .tile {
+    max-width: none;
+  }
+}

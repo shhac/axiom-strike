@@ -23,11 +23,13 @@ Educational math fighting game for phones/tablets (Android + iOS, landscape), ta
 
 - `src/engine/` — pure, seeded, no DOM. `battle.ts` is a reducer returning steps (state + event).
 - `src/engine/progress.ts` is the save (stars, ratings, items, settings) and `saveParser.ts` reads a stored one back, tolerating anything malformed; `skill.ts` the ratings and tiers; `campfire.ts` the reading rules.
-- `src/content/` — intro scenes, wave taunts and reading passages.
-- `art-src/` — generated art sources. `slice-anim.sh` cuts the character animation sheets into the strips in `public/assets/chars/anim/`.
+- `src/engine/board.ts` is the sum being built from a hand of tiles, shared by the battle and the mini games: `lock.ts` (star chests), `practice.ts` (target practice), `cave.ts` ("Impossible or not?"), `words.ts` (word lab).
+- `src/engine/levels.ts` — six lands (`LandId`) of five levels; monster families (`OpFamily`) are a separate thing. `Level.grain` is 0.5 or 0.25 in Fraction Fields.
+- `src/content/` — intro scenes, wave taunts, reading passages, word parts, monster facts, pet and tile-style names.
+- `art-src/` — generated art sources. `slice-anim.sh` cuts the character animation sheets into the strips in `public/assets/chars/anim/`; `slice-glyphs.sh` cuts glyphs, icons and backgrounds.
 - `src/ui/` — Preact components; `save.ts` is the only place that touches storage; `store.ts` plays steps one at a time; `fx.ts` animates each event.
 - `tests/` — vitest, including policy bots in `bots.ts` that guard game balance.
-- `e2e/` — Playwright playthrough: title → map → intro → a level in each region, a direct `?level=` run, and a journey through campfire, items, pause and settings.
+- `e2e/` — Playwright playthrough: title → map → intro → a level in each region, direct `?level=` runs for quirks, a boss and the far lands, a journey through campfire, items, pause and settings, and an "extras" run from a stored save through a chest, a cave, the far map and the camp.
 - `android/` — Capacitor project. `android/local.properties` is machine-specific and not committed.
 
 ## Working rules
@@ -50,4 +52,4 @@ Educational math fighting game for phones/tablets (Android + iOS, landscape), ta
 
 ## Not built yet
 
-iOS project (see "iOS" under Technology in the design doc for what to do first), cosmetics, analytics.
+iOS project (see "iOS" under Technology in the design doc for what to do first), hero outfits (hats, capes), a combo meter, analytics.

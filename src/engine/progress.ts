@@ -26,6 +26,18 @@ export type Save = {
   read: readonly number[];
   /** The level the hero stands beside on the map: the last one entered or walked to. */
   heroAt: string | null;
+  /** How many of each land's three star chests have been opened. */
+  chests: Record<LandId, number>;
+  /** The pet and tile style in use, named by the land whose chest gave them. */
+  pet: LandId | null;
+  tileStyle: LandId | null;
+  /** How many of each monster have been beaten, for the monster book. */
+  beaten: Record<string, number>;
+  /** Days played in a row. A missed day halves it instead of wiping it. */
+  streak: { days: number; lastDay: number | null };
+  /** Which once-a-day camp prizes have been won on `day`. */
+  daily: { day: number | null; practice: boolean; words: boolean };
+  practiceBest: number;
   /** Intro scenes already shown. */
   seen: readonly string[];
   settings: Settings;
@@ -48,6 +60,13 @@ export const EMPTY_SAVE: Save = {
   stories: 0,
   read: [],
   heroAt: null,
+  chests: perLand(() => 0),
+  pet: null,
+  tileStyle: null,
+  beaten: {},
+  streak: { days: 0, lastDay: null },
+  daily: { day: null, practice: false, words: false },
+  practiceBest: 0,
   seen: [],
   settings: DEFAULT_SETTINGS,
 };
@@ -152,4 +171,107 @@ export const startDay = (save: Save, today: number): Save => {
     reading: decay(save.reading, away),
     skill: perLand((land) => decay(save.skill[land], away)),
   };
+};
+
+const gain = (count: number, more: number) => Math.min(MAX_ITEMS, count + more);
+
+export const addPotion = (save: Save): Save => ({ ...save, potions: gain(save.potions, 1) });
+
+/* ---------- Star chests ---------- */
+
+/** Stars in a land that open its three chests, in order. */
+export const GATES = [5, 10, 15] as const;
+
+/** What each chest holds besides a potion and a scroll, in the order they are opened. */
+export const CHEST_PRIZES = ["style", "key", "pet"] as const;
+export type ChestPrize = (typeof CHEST_PRIZES)[number];
+
+export const landStars = (save: Save, land: LandId): number =>
+  LEVELS.filter((level) => level.region === land).reduce((sum, level) => sum + starsFor(save, level), 0);
+
+/** The stars the next chest in a land needs, or null once all three are open. */
+export const nextGate = (save: Save, land: LandId): number | null => GATES[save.chests[land]] ?? null;
+
+export const chestReady = (save: Save, land: LandId): boolean => {
+  const gate = nextGate(save, land);
+  return gate !== null && landIsOpen(save, land) && landStars(save, land) >= gate;
+};
+
+export const ownsStyle = (save: Save, land: LandId) => save.chests[land] >= 1;
+export const hasCaveKey = (save: Save, land: LandId) => save.chests[land] >= 2;
+export const ownsPet = (save: Save, land: LandId) => save.chests[land] >= 3;
+
+/** Opens a land's next chest. A new tile style or pet is put to use straight away. */
+export const openChest = (save: Save, land: LandId): Save => {
+  if (!chestReady(save, land)) return save;
+  const prize = CHEST_PRIZES[save.chests[land]];
+  return {
+    ...save,
+    chests: { ...save.chests, [land]: save.chests[land] + 1 },
+    potions: gain(save.potions, 1),
+    scrolls: gain(save.scrolls, 1),
+    tileStyle: prize === "style" ? land : save.tileStyle,
+    pet: prize === "pet" ? land : save.pet,
+  };
+};
+
+/** Only what has been won can be worn; `null` is always allowed (no pet, classic tiles). */
+export const wear = (save: Save, change: { pet?: LandId | null; tileStyle?: LandId | null }): Save => ({
+  ...save,
+  pet: change.pet === undefined || (change.pet && !ownsPet(save, change.pet)) ? save.pet : change.pet,
+  tileStyle:
+    change.tileStyle === undefined || (change.tileStyle && !ownsStyle(save, change.tileStyle))
+      ? save.tileStyle
+      : change.tileStyle,
+});
+
+/* ---------- Monster book ---------- */
+
+export const recordBeaten = (save: Save, monster: string): Save => ({
+  ...save,
+  beaten: { ...save.beaten, [monster]: (save.beaten[monster] ?? 0) + 1 },
+});
+
+/* ---------- Playing each day ---------- */
+
+const PRACTICE_PRIZE_SCORE = 3;
+const WORDS_PRIZE_SCORE = 4;
+
+/**
+ * Marks `day` (a whole local day number) as played. The first time each day this moves the
+ * streak, one more for a day in a row and half as many after a gap, and resets the daily prizes.
+ */
+export const markPlayed = (save: Save, day: number): Save => {
+  const { days, lastDay } = save.streak;
+  if (lastDay === day) return save;
+  const inARow = lastDay !== null && day - lastDay === 1;
+  const kept = lastDay === null ? 1 : Math.max(1, Math.floor(days / 2));
+  return {
+    ...save,
+    streak: { days: inARow ? days + 1 : kept, lastDay: day },
+    daily: { day, practice: false, words: false },
+  };
+};
+
+/** Best score is kept; the first run of the day that scores well enough wins a potion. */
+export const recordPractice = (save: Save, score: number, day: number): Save => {
+  const played = markPlayed(save, day);
+  const best = { ...played, practiceBest: Math.max(played.practiceBest, score) };
+  if (played.daily.practice || score < PRACTICE_PRIZE_SCORE) return best;
+  return { ...addPotion(best), daily: { ...played.daily, practice: true } };
+};
+
+/** The first word lab of the day with enough right wins a hint scroll. */
+export const recordWords = (save: Save, right: number, day: number): Save => {
+  const played = markPlayed(save, day);
+  if (played.daily.words || right < WORDS_PRIZE_SCORE) return played;
+  return { ...played, scrolls: gain(played.scrolls, 1), daily: { ...played.daily, words: true } };
+};
+
+/** A cave keeps its best stars beside the level stars. Its first clear gives a potion and a scroll. */
+export const recordCave = (save: Save, caveKey: string, stars: number): Save => {
+  const before = save.stars[caveKey] ?? 0;
+  if (stars <= before) return save;
+  const kept = { ...save, stars: { ...save.stars, [caveKey]: stars } };
+  return before > 0 ? kept : { ...kept, potions: gain(kept.potions, 1), scrolls: gain(kept.scrolls, 1) };
 };

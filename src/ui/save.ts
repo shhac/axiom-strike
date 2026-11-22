@@ -16,6 +16,9 @@ const read = (): Save => {
 
 const today = () => Math.floor(Date.now() / MS_PER_DAY);
 
+/** The day where the player is, read when it is needed, so a streak turns over at their midnight. */
+export const localDay = () => Math.floor((Date.now() - new Date().getTimezoneOffset() * 60_000) / MS_PER_DAY);
+
 export const save = signal<Save>(startDay(read(), today()));
 
 /** Every change to progress goes through here, so it is always written straight to the device. */

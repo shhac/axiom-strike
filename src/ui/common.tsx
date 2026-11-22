@@ -1,5 +1,7 @@
 import { FRACTION_DIGITS, showNumber } from "../engine/fractions";
-import { glyphFile, glyphSrc, icon } from "./assets";
+import { PETS } from "../content/gear";
+import type { LandId } from "../engine/levels";
+import { enemyStrip, glyphFile, glyphSrc, icon } from "./assets";
 import { goTo } from "./nav";
 import { press } from "./press";
 
@@ -27,6 +29,14 @@ export const Num = ({ value, class: className = "" }: { value: number | string; 
         <Glyph char={char} />
       ))}
     </span>
+  );
+};
+
+/** A tamed small monster. It faces the way the hero does, so the strip is flipped. */
+export const Pet = ({ land, class: className = "" }: { land: LandId; class?: string }) => {
+  const pet = PETS[land];
+  return (
+    <Sprite class={`pet ${pet.golden ? "is-golden" : ""} ${className}`} strip={enemyStrip(pet.family, "minion")} />
   );
 };
 

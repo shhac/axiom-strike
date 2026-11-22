@@ -1,4 +1,5 @@
-import { HERO_MAX_HP, targetOf, type AimKind, type BattleState, type Enemy } from "../../engine/battle";
+import { HERO_MAX_HP, isLucky, targetOf, type AimKind, type BattleState, type Enemy } from "../../engine/battle";
+import { showNumber } from "../../engine/fractions";
 import { findRegion } from "../../engine/levels";
 import { enemyStrip, icon, knockedOutSprite } from "../assets";
 import { playSfx } from "../audio";
@@ -14,6 +15,12 @@ const HpBar = ({ hp, max, tone }: { hp: number; max: number; tone: "hero" | "ene
   </div>
 );
 
+const QUIRK_LABEL = {
+  none: "",
+  helmet: ", wearing a helmet: use three numbers or hit it twice",
+  noPlus: ", hates the plus sign",
+} as const;
+
 const AimChip = ({ enemy, kind, state }: { enemy: Enemy; kind: AimKind; state: BattleState }) => {
   const selected = state.aim?.enemyId === enemy.id && state.aim.kind === kind;
   const { intent } = enemy;
@@ -22,7 +29,7 @@ const AimChip = ({ enemy, kind, state }: { enemy: Enemy; kind: AimKind; state: B
   const number = targetOf(enemy, kind);
   const label =
     kind === "strike"
-      ? `Weakness ${number}`
+      ? `Weakness ${showNumber(number)}${QUIRK_LABEL[enemy.quirk ?? "none"]}`
       : `Attack ${number}, lands ${urgent ? "this turn" : `in ${intent.turns} turns`}`;
   return (
     <button
@@ -34,6 +41,12 @@ const AimChip = ({ enemy, kind, state }: { enemy: Enemy; kind: AimKind; state: B
     >
       <img class="chip-icon" src={icon(kind === "strike" ? "sword" : "claw")} alt="" />
       <Num class="chip-number" key={number} value={number} />
+      {kind === "strike" && enemy.quirk === "helmet" && <span class="chip-when chip-rule">3 numbers</span>}
+      {kind === "strike" && enemy.quirk === "noPlus" && (
+        <span class="chip-when chip-rule chip-ban">
+          <Num value="+" />
+        </span>
+      )}
       {kind === "parry" && <span class="chip-when">{urgent ? "NOW!" : `in ${intent.turns}`}</span>}
     </button>
   );
@@ -42,12 +55,35 @@ const AimChip = ({ enemy, kind, state }: { enemy: Enemy; kind: AimKind; state: B
 export const EnemyView = ({ enemy, state }: { enemy: Enemy; state: BattleState }) => {
   const alive = enemy.hp > 0;
   const hurt = alive && enemy.hp < enemy.maxHp;
+  const lucky = isLucky(enemy);
   return (
-    <div class={`enemy enemy-${enemy.kind} ${alive ? "" : "is-down"} ${hurt ? "is-hurt" : ""}`} data-enemy={enemy.id}>
+    <div
+      class={`enemy enemy-${enemy.kind} family-${enemy.family} ${alive ? "" : "is-down"} ${hurt ? "is-hurt" : ""} ${lucky ? "is-lucky" : ""}`}
+      data-enemy={enemy.id}
+      data-quirk={enemy.quirk ?? undefined}
+    >
       <div class="chips">
         {alive && <AimChip enemy={enemy} kind="strike" state={state} />}
-        {alive && <AimChip enemy={enemy} kind="parry" state={state} />}
+        {alive && !lucky && <AimChip enemy={enemy} kind="parry" state={state} />}
+        {alive && lucky && (
+          <span class="chip chip-leaving" aria-label={`Lucky monster, leaves in ${enemy.flees} turns`}>
+            <img class="chip-icon" src={icon("potion")} alt="" />
+            <span class="chip-leaving-text">
+              leaves
+              <b>in {enemy.flees}</b>
+            </span>
+          </span>
+        )}
       </div>
+      {alive && enemy.quirk === "helmet" && (
+        <img
+          class="helmet"
+          key={enemy.dents}
+          src={icon(enemy.dents > 0 ? "helmet_dented" : "helmet")}
+          alt=""
+          data-helmet={enemy.dents > 0 ? "dented" : "new"}
+        />
+      )}
       {alive ? (
         <Sprite strip={enemyStrip(enemy.family, enemy.kind, hurt)} />
       ) : (

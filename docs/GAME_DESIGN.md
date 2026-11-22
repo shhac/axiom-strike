@@ -26,6 +26,7 @@ The first version of this game was built in Defold and is preserved as the git t
 ### What the player sees
 
 - The hero on the left, up to three monsters on the right.
+- Sometimes a small pet beside the hero, once one has been won from a chest. It is company only.
 - Above each monster, two tappable chips:
   - **Weakness** (sword): the number that hurts it.
   - **Attack** (claw marks): the number it will hit for, and how many turns until it lands.
@@ -126,15 +127,43 @@ Spare tiles first go to a three-number answer for the same weakness, then to ran
 - A player who only ever makes exact two-number sums wins the first level at least 90% of the time, even if they never parry.
 - A player who uses longer equations finishes in fewer turns.
 - A player who taps two random tiles and casts loses most of the time, and still does if they also call "Impossible!" blindly.
+- Every level at every tier is still won at least nine times in ten by the two-number player, helmets and plus-haters included, and a player who uses longer sums gets through a helmet level in fewer turns.
 - A player who calls "Impossible!" whenever they are truly stuck finishes in about a third fewer turns than one who passes instead. That is the reward for it, in line with pillar 3.
 
 ## Enemies
 
-- Enemy **families** map to operations and to a look: addition (green slimes), subtraction (red spiky), multiplication (purple wizards), division (blue water drops).
+- Enemy **families** map to kinds of sum and to a look: addition (green slimes), subtraction (red spiky), multiplication (purple wizards), division (blue water drops), fractions (pizza slices and a cake).
 - Three ranks per family: minion, standard, boss.
 - Every monster has a name by family and rank (Blobling, Blobbert, King Glob; Spikelet, Sir Prickle, Lord Thornax; Sparkling, Crystamul, Archmage Multiplix; Droplet, Dribble, The Deep Divider).
 - **Every wave opens with a line from its lead monster** in a speech bubble (the highest rank does the talking; bosses have their own lines), and the hero answers with a cheer when a wave is cleared. Play is held for about half a second for each, then carries on underneath. Lines are in `src/content/taunts.ts`.
 - Each family is introduced by a short **intro scene** the first time one of its levels is entered: the monster (Blobbert, Sir Prickle, Crystamul, Dribble) shows off an over-the-top personality, and the hero answers with a worked example of the new sign. The addition scene doubles as the how-to-play. Each boss gets a one-line taunt the first time its level is entered. Tap to advance; Skip is always there. Scenes are in `src/content/intros.ts`.
+
+### Monster quirks
+
+A quirk changes how a number has to be made or when, never which number, because there is only ever one right answer. Each is one picture a child can read. They start at a land's third level, one monster at a time.
+
+- **Helmet.** The monster wears a knight's helmet and its weakness chip says "3 numbers". An exact two-number sum does no damage and dents the helmet ("CLANG!"); a second one knocks it off. An exact sum of three or more numbers knocks it off at once and does its usual damage. Two-number sums still win, only more slowly, so pillar 3 holds. A near miss does nothing to a helmet.
+- **Hates plus.** The monster's weakness chip carries a crossed-out `+`. While it is the strike target the `+` button is crossed out, picking it is refused, and a sum that already contains `+` cannot be cast at it; none of that costs a tile. Its weakness is only ever a number two tiles can make with the land's other signs, and the deal, hints, the "Impossible!" judgement and the cast rating all leave `+` out for it. Where only one other sign is left it is applied without being picked. Blocking its attack is unrestricted. It never appears in Addition Grove, which has no other sign.
+- **Boss phase.** The first time a boss is at half health or less and still standing, it takes on a quirk with a line and a shake of the stage: the helmet for the Addition, Division, Giant Peaks and Fractions bosses, hating plus for Subtraction and Multiplication. Its weakness is rolled again to suit.
+
+### Lucky monster
+
+- One wave in six, where the wave has two monsters or fewer, is not a boss wave and is not a land's first level, is joined by a golden monster. It is rolled from its own stream of the seed, so its turning up changes nothing else about the battle.
+- It never attacks and cannot be blocked. In place of an attack chip it shows "leaves in 3"; after three turns it runs.
+- It never holds a wave up: when the other monsters are beaten it runs, and the next wave arrives.
+- Beating it first puts a potion in the bag (the save, so it is kept even if the battle is abandoned) with a burst of coins.
+
+## Camp
+
+The campfire is a camp with five things to do, each a big button, and a flame showing how many days in a row the game has been played.
+
+- **Story time**: the reading game below. The victory panel's button goes straight to it.
+- **Target practice**: sixty seconds, one number to make after another from a fresh hand of seven, no monsters. The numbers are those of the level the hero stands at, at the tier a battle there would use. An exact sum scores 1, or 2 with three or more numbers; a wrong one hands the tiles back; Skip deals another. The best score is kept. The first run each day that scores 3 or more wins a potion.
+- **Word lab**: five questions. Three words share a part ("TRIangle, TRIcycle, TRIo"); pick what the part means from four choices. Twenty-four parts, mostly ones that turn up in maths (`src/content/wordParts.ts`). The first run each day with four or more right wins a hint scroll.
+- **Monster book**: a page for every monster (three ranks of five families, and the lucky one). An unbeaten monster is a shadow; a beaten one shows its picture, name, a silly line with some real maths in it, and how many have been beaten. Ten beaten gilds the page.
+- **Pets and tiles**: choose the pet that follows the hero and the look of the number tiles, from what the star chests have given. Things not won yet say which chest they are in.
+
+**Days in a row.** Finishing a battle or a practice run or a word lab marks the day (the player's own local day) as played. The next day adds one; after a gap the count is halved, never wiped. The flame is shown on the title screen and at the camp and grows at 3 and 7 days.
 
 ## Campfire (reading)
 
@@ -180,13 +209,19 @@ Opened from the title, the map and the pause button: music on/off, sounds on/off
 
 ### World map
 
-- Regions are operation types (Addition Grove, Subtraction Peaks, Multiplication Caverns, Division Depths). On the map each is labelled with its sign and one word ("+ Addition"), and the sign is drawn huge and faint behind its levels, so a child who cannot read the word still learns which sign lives where. In battle the level is labelled the same way: sign and "Level 3".
+- The first map has the four operation lands (Addition Grove, Subtraction Peaks, Multiplication Caverns, Division Depths). A second map, **Far Lands**, reached by a button at the edge, has **Giant Peaks** (big numbers) and **Fraction Fields**. Giant Peaks opens at 20 stars in total and Fraction Fields at 30; until then the land shows a lock and the stars it needs. Cave stars do not count.
+- Regions are kinds of sum. On the map each is labelled with its sign and one word ("+ Addition"), and the sign is drawn huge and faint behind its levels, so a child who cannot read the word still learns which sign lives where. In battle the level is labelled the same way: sign and "Level 3".
 - **A map left alone for fifteen seconds points the way:** arrows bounce over every level that can be played next, those levels glow, the rest dim, and a banner says "Tap a glowing number to play!". Any touch clears it and starts the wait again.
 - **The hero stands on the map** beside the level last entered (the first level on a new save), on the side nearer the middle of its land. Coming back from a first win, the hero hops along the trail to the level it opened and stays there; the spot is saved.
 - Nodes inside a region unlock in order and grow in number size and in the signs available.
 - A player can start in any region, so they can begin at the right difficulty.
 
-- Four regions of five levels each (20 levels). The fifth level of a region ends with its boss.
+- Six regions of five levels each (30 levels). The fifth level of a region ends with its boss.
+- **The map heals.** A land with no stars is drawn three-quarters grey and gains its colour star by star. At 15 stars its title turns gold with a crown and stars twinkle over it.
+- **Star trail.** Stars newly won are held back from the land's counter until the map is next opened, then fly from the level that earned them into the counter, which counts up as the colour comes in.
+- **Star chests.** Under each land's title is its chest, showing progress to the next one: 5, 10 and 15 stars in that land. When it is ready it glows; tapping it opens its lock. The three chests give, in order, a tile style in the land's colours, the key to the land's cave, and a pet (a small tame one of the land's monsters), each with a potion and a hint scroll. A new style or pet is put to use at once.
+- **The lock.** Three dials, each a number, and one hand of eight tiles that holds a two-number answer for every dial on separate tiles, using the numbers of the land's first, third or fifth level. Pick a dial, build its number, tap Unlock: right opens it and uses the tiles up, wrong hands them back. There is no timer and no way to fail; "New numbers" deals again for the dials still shut.
+- **Caves ("Impossible or not?").** Beside the chest is the land's cave, opened by its key. Eight riddles: five tiles, a number and the land's signs, and the question "Can these make it?" with **Yes!** and **Impossible!**. The truth is the solver's over all five tiles, so a long answer is never marked wrong; about half are possible. After each answer the game shows one way to make the number, or says there is none. Eight right is three stars, six two, four one; the stars are kept beside the level stars and the first clear gives a potion and a scroll.
 - Stars earned are saved on the device and shown on the map; replaying never lowers them.
 - Everything else is saved with them: ratings, items, stories waiting, passages read, intros seen and settings. An older save that only has stars still loads.
 
@@ -200,6 +235,12 @@ Each level sets: the signs available, the sign it is teaching, the largest tile,
 | Subtraction Peaks | `+ −` | `−` | differences, tiles up to 30 |
 | Multiplication Caverns | `+ ×` | `×` | times tables up to 12 × 12 |
 | Division Depths | `+ × ÷` | `÷` | quotients up to 12 |
+| Giant Peaks | `+ − × ÷` | any | tiles up to 50, weaknesses up to 100 |
+| Fraction Fields | `+ −` | `+` | halves, then quarters, tiles up to 7 |
+
+**Giant Peaks** is home to all four of the first lands' monsters, a different pair on each level. A weakness is never more than twice the biggest tile, so two added tiles can always make it.
+
+**Fraction Fields** counts in halves on its first two levels and in quarters after that. Each level has a *grain* (1, a half or a quarter): the smallest step a number may be. Running totals must land on the grain, hands are dealt in units of it, and "one away" for a near miss means one step of it. Attacks are always whole numbers and a softened blow is rounded up, so health never has a fraction in it. Halves and quarters are drawn as two small digits either side of a bar, from the same glyphs as every other number. Its monsters are a pizza slice (Crumb, Slicer) and a cake boss (Baron von Gateau).
 
 The dealt two-number answer always uses the sign being taught when it can. Monsters from an earlier region wander into later ones so old skills keep being used. Attacks only grow when ignored in the first two regions, where two added tiles can always answer the bigger number.
 
@@ -210,7 +251,7 @@ The dealt two-number answer always uses the sign being taught when it can. Monst
 
 ### Unlocks
 
-- Cosmetics and consumable items. All maths content is reachable without them.
+- Tile styles and pets from star chests, cave keys, potions and hint scrolls. All maths content is reachable without them; the two far lands open on stars.
 
 ## Feel
 
@@ -231,7 +272,8 @@ Feel is a requirement, not polish.
 - **iOS:** not built yet, but nothing rules it out. Music volume goes through a gain node (iOS ignores an audio element's volume), sound unlocks on the first touch anywhere, audio is MP3, and layout has a fallback for browsers without dynamic viewport units. To do when iOS is added: move the save from `localStorage` to `@capacitor/preferences`, because WKWebView may evict `localStorage`; all save access is already in `src/ui/save.ts`.
 - **Structure:**
   - `src/engine/` is pure and deterministic (seeded): equation rules, solver, dealing, and a battle reducer that returns a list of steps (state + what happened).
-  - `src/content/` holds the words: intro scenes and reading passages.
+  - `src/content/` holds the words: intro scenes, taunts, reading passages, word parts, monster facts and the names of pets and tile styles.
+  - `src/engine/board.ts` is the sum being built from a hand of tiles; the battle, the chest lock and target practice all use it, and `src/ui/sums/` draws it for all three.
   - `src/ui/` renders the current step and plays an animation for each event before showing the next.
 - **Sizing:** one rem is the smaller of 1/22.5 of the screen height or 1/40 of its width, so the whole layout scales together. Touch targets are at least 48 CSS px on an S21.
 - **Checks:**

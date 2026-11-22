@@ -1,5 +1,5 @@
 import { signal } from "@preact/signals";
-import { cheerFor, leadOf, tauntFor } from "../content/taunts";
+import { cheerFor, leadOf, tauntFor, MONSTER_NAMES } from "../content/taunts";
 import type { BattleEvent, BattleState } from "../engine/battle";
 import type { HeroPose } from "./assets";
 import { playMusic, playSfx } from "./audio";
@@ -53,6 +53,7 @@ const REJECTIONS: Record<EventOf<"rejected">["reason"], string> = {
   noPotions: "No potions left. Earn more at the campfire",
   fullHealth: "You are already at full health",
   alreadyCalled: "One Impossible call each turn",
+  bannedSign: "This monster hates +. Use another sign!",
 };
 
 const COMBO_NAMES = ["", "", "", "COMBO!", "SUPER COMBO!", "MEGA COMBO!"];
@@ -70,10 +71,32 @@ export const beforeEvent = async (event: BattleEvent) => {
     lunge(enemyNode(event.enemyId), "-3rem");
     await wait(170);
   }
+  // It is gone from the board the moment the step shows, so it has to be seen leaving first.
+  if (event.type === "fled") {
+    const runner = enemyNode(event.enemyId);
+    playSfx("miss", 0.6);
+    float("Got away!", runner, "miss", -1.2);
+    lunge(runner, "6rem");
+    await wait(420);
+  }
+};
+
+/** A helmet took the hit. Says what would have worked better, since the sum itself was right. */
+const helmetFx = (event: EventOf<"strike">, target: HTMLElement | null) => {
+  playSfx("block");
+  shake(target, 260);
+  float(event.helmet === "off" ? "HELMET OFF!" : "CLANG!", target, "ko", -1.6);
+  if (event.helmet === "dent") float("3 numbers smash it", target, "good", 0.4);
 };
 
 const strikeFx = async (event: EventOf<"strike">) => {
   const target = enemyNode(event.enemyId);
+  if (event.helmet) helmetFx(event, target);
+  if (event.helmet && event.damage === 0) {
+    await wait(520);
+    heroPose.value = "idle";
+    return;
+  }
   if (event.damage > 0) {
     playSfx(event.exact && event.power >= 3 ? "hit_heavy" : "hit_light");
     shake(target);
@@ -165,6 +188,28 @@ const defeatedFx = async (event: EventOf<"defeated">, state: BattleState) => {
   });
 };
 
+const PHASE_LINES = {
+  helmet: "ENOUGH! Try getting through THIS!",
+  noPlus: "No more plus for YOU!",
+} as const;
+
+const bossPhaseFx = async (event: EventOf<"bossPhase">, state: BattleState) => {
+  const boss = state.enemies.find((enemy) => enemy.id === event.enemyId);
+  if (!boss) return;
+  playSfx("jingle_wave", 0.7);
+  shake(find(".stage"), 320);
+  lunge(enemyNode(boss.id), "-1.4rem");
+  const name = MONSTER_NAMES[boss.family][boss.kind];
+  await say({ who: "enemy", name, text: PHASE_LINES[event.quirk] }, 700, 1500);
+};
+
+const caughtFx = () => {
+  playSfx("reward");
+  float("+1 POTION!", heroNode(), "good", -1.4);
+  burst(heroNode());
+  return cheer(520);
+};
+
 const sharpEyeFx = (event: EventOf<"sharpEye">) => {
   playSfx("reward");
   float("SHARP EYE!", find(".tiles"), "ko", -1.2);
@@ -203,6 +248,12 @@ export const afterEvent = async (event: BattleEvent, state: BattleState) => {
       return enemyAttackFx(event);
     case "waveStart":
       return waveStartFx(event, state);
+    case "bossPhase":
+      return bossPhaseFx(event, state);
+    case "caught":
+      return caughtFx();
+    case "fled":
+      return;
     case "sharpEye":
       return sharpEyeFx(event);
     case "lookAgain":

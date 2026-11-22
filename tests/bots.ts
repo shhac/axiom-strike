@@ -1,11 +1,13 @@
 import {
   aimTarget,
+  bannedOp,
   createBattle,
   lastState,
   reduce,
   STRIKE_DAMAGE,
   type Action,
   type BattleState,
+  type Enemy,
 } from "../src/engine/battle";
 import type { Level } from "../src/engine/levels";
 import { createRng, type Rng } from "../src/engine/rng";
@@ -21,10 +23,13 @@ export const applyActions = (state: BattleState, actions: readonly Action[]) =>
 const tileIndices = (state: BattleState, used: boolean) =>
   state.hand.flatMap((tile, index) => (tile.used === used ? [index] : []));
 
-const exactAnswer = (state: BattleState, target: number, sizes: { minTiles?: number; maxTiles: number }) =>
+type Sizes = { minTiles?: number; maxTiles: number };
+
+/** `enemy` is the one being struck: a monster that hates a sign has to be answered without it. */
+const exactAnswer = (state: BattleState, target: number, sizes: Sizes, enemy?: Enemy) =>
   solve(
     state.hand.map((tile) => tile.value),
-    state.level.ops,
+    state.level.ops.filter((op) => op !== bannedOp(enemy, "strike")),
     target,
     { ...sizes, exclude: tileIndices(state, true), grain: state.level.grain },
   );
@@ -57,7 +62,7 @@ export const solverBot =
       const finisher = sizes.find((size) => (STRIKE_DAMAGE[size] ?? 0) >= enemy.hp) ?? maxTiles;
       const order = [finisher, ...sizes.filter((size) => size !== finisher).reverse()];
       const answer = order.reduce<Solution | null>(
-        (found, size) => found ?? exactAnswer(state, enemy.weakness, { minTiles: size, maxTiles: size }),
+        (found, size) => found ?? exactAnswer(state, enemy.weakness, { minTiles: size, maxTiles: size }, enemy),
         null,
       );
       return answer ? [{ enemy, answer }] : [];

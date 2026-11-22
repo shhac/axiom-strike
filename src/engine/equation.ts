@@ -1,3 +1,4 @@
+import { showNumber } from "./fractions";
 export type Op = "+" | "-" | "×" | "÷";
 
 export type Step = { op: Op; value: number };
@@ -39,3 +40,13 @@ export const bracketEnds = (ops: readonly Op[]): number[] =>
 /** One step at a time on the total so far, which `bracketEnds` makes true on screen. */
 export const evaluate = (first: number, steps: readonly Step[], grain = 1): number | null =>
   steps.reduce<number | null>((total, step) => (total === null ? null : applyStep(total, step, grain)), first);
+
+/** A finished sum written out as text, with the brackets it needs: `(2+3)×4`. */
+export const writeSum = (values: readonly number[], ops: readonly Op[]): string => {
+  const closes = bracketEnds(ops);
+  const terms = values.map((value, index) => {
+    const sign = index === 0 ? "" : (ops[index - 1] ?? "");
+    return `${sign}${showNumber(value)}${closes.includes(index) ? ")" : ""}`;
+  });
+  return `${"(".repeat(closes.length)}${terms.join("")}`;
+};

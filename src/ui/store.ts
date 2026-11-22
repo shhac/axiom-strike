@@ -1,11 +1,22 @@
 import { signal } from "@preact/signals";
-import { createBattle, reduce, type Action, type BattleState, type Step } from "../engine/battle";
-import { FIRST_LEVEL, tuneLevel, type Level } from "../engine/levels";
-import { kitFor, recordCast, recordLoss, recordWin, spendItems, tierFor } from "../engine/progress";
+import { createBattle, isLucky, reduce, type Action, type BattleState, type Step } from "../engine/battle";
+import { FIRST_LEVEL, tuneLevel, type LandId, type Level } from "../engine/levels";
+import {
+  addPotion,
+  kitFor,
+  markPlayed,
+  recordBeaten,
+  recordCast,
+  recordLoss,
+  recordWin,
+  spendItems,
+  starsFor,
+  tierFor,
+} from "../engine/progress";
 import { battleDifficulty, castResult, castScore } from "../engine/skill";
 import { playMusic } from "./audio";
 import { afterEvent, beforeEvent, heroPose, hush, showToast } from "./fx";
-import { save, updateSave } from "./save";
+import { localDay, save, updateSave } from "./save";
 
 const randomSeed = () => Math.floor(Math.random() * 2 ** 31);
 
@@ -27,12 +38,35 @@ const show = (next: BattleState) => {
   if (potionsDrunk > 0 || hintUsed) updateSave((current) => spendItems(current, next.hints, potionsDrunk));
 };
 
+/** Stars just won and not yet seen flying into their land's counter on the map. */
+export const freshStars = signal<{ land: LandId; levelId: string; count: number } | null>(null);
+
+const noteFreshStars = (level: Level, stars: number) => {
+  const gained = stars - starsFor(save.value, level);
+  if (gained <= 0) return;
+  const waiting = freshStars.value?.land === level.region ? freshStars.value.count : 0;
+  freshStars.value = { land: level.region, levelId: level.id, count: waiting + gained };
+};
+
+/** The monster book's name for a beaten monster. */
+const bookKey = (state: BattleState, enemyId: number): string | null => {
+  const enemy = state.enemies.find((candidate) => candidate.id === enemyId);
+  if (!enemy) return null;
+  return isLucky(enemy) ? "lucky" : `${enemy.family}_${enemy.kind}`;
+};
+
 const settle = (step: Step) => {
-  if (step.event?.type === "won") {
-    const { stars } = step.event;
-    updateSave((current) => recordWin(current, step.state.level, stars));
+  const { event, state } = step;
+  if (event?.type === "won") {
+    noteFreshStars(state.level, event.stars);
+    updateSave((current) => markPlayed(recordWin(current, state.level, event.stars), localDay()));
   }
-  if (step.event?.type === "lost") updateSave((current) => recordLoss(current, step.state.level));
+  if (event?.type === "lost") updateSave((current) => markPlayed(recordLoss(current, state.level), localDay()));
+  if (event?.type === "caught") updateSave(addPotion);
+  if (event?.type === "defeated") {
+    const monster = bookKey(state, event.enemyId);
+    if (monster) updateSave((current) => recordBeaten(current, monster));
+  }
 };
 
 const play = async (steps: readonly Step[]) => {

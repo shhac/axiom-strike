@@ -21,3 +21,10 @@ for name in far_map big_peaks fraction_fields; do magick "$name.png" -quality 82
 for name in world_map far_map; do
   magick "$name.png" -colorspace Gray -brightness-contrast -6x-12 -quality 80 "../public/assets/bg/${name}_grey.webp"
 done
+
+# The monster helmet, new and battered, on one shared canvas so swapping them does not shift it.
+for side in "West helmet" "East helmet_dented"; do
+  set -- $side
+  magick helmet_atlas.png -gravity "$1" -crop 50%x100%+0+0 +repage "${KEY[@]}" -trim +repage \
+    -background none -gravity south -extent 560x300 -filter point -resize 160x "../public/assets/icons/$2.png"
+done

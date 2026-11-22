@@ -1,13 +1,13 @@
 import { signal } from "@preact/signals";
 import { introFor, type Intro } from "../content/intros";
-import { findLevel, type Level } from "../engine/levels";
-import { markSeen, standAt } from "../engine/progress";
+import { findLevel, findRegion, type LandId, type Level } from "../engine/levels";
+import { heroSpot, markSeen, standAt } from "../engine/progress";
 import { playMusic, playSfx } from "./audio";
 import { wait } from "./motion";
 import { save, updateSave } from "./save";
 import { leaveBattle, startBattle } from "./store";
 
-export type Screen = "title" | "map" | "intro" | "battle" | "campfire";
+export type Screen = "title" | "map" | "intro" | "battle" | "campfire" | "lock" | "cave";
 
 const params = new URLSearchParams(location.search);
 const seedParam = Number(params.get("seed")) || undefined;
@@ -15,6 +15,16 @@ const levelParam = params.get("level");
 
 export const screen = signal<Screen>(levelParam ? "battle" : "title");
 export const settingsOpen = signal(false);
+
+/** Which map is showing: the first four lands or the far ones. It opens on the hero's. */
+export const mapPage = signal(findRegion(heroSpot(save.value)?.region ?? "add").page);
+
+/** What is open at the camp; null is the camp itself, with a button for each. */
+export type Activity = "story" | "practice" | "words" | "book" | "gear";
+export const campActivity = signal<Activity | null>(null);
+
+/** The land whose chest lock or cave is open. */
+export const visiting = signal<LandId>("add");
 
 /** The scene playing before a battle, and the level it leads into. */
 export const intro = signal<{ scene: Intro; level: Level } | null>(null);
@@ -61,7 +71,22 @@ export const finishIntro = () => {
   enterBattle(current.level);
 };
 
-export const goTo = (next: Exclude<Screen, "battle" | "intro">) =>
+export const visit = (place: "lock" | "cave", land: LandId) =>
+  transit(() => {
+    visiting.value = land;
+    screen.value = place;
+  });
+
+/** Straight to one thing at the camp, as the victory panel does for a waiting story. */
+export const goToCamp = (activity: Activity | null = null) =>
+  transit(() => {
+    leaveBattle();
+    settingsOpen.value = false;
+    campActivity.value = activity;
+    screen.value = "campfire";
+  });
+
+export const goTo = (next: Exclude<Screen, "battle" | "intro" | "lock" | "cave" | "campfire">) =>
   transit(() => {
     leaveBattle();
     settingsOpen.value = false;

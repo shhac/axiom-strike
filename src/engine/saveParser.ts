@@ -1,4 +1,4 @@
-import { perLand } from "./levels";
+import { perLand, REGIONS, type LandId } from "./levels";
 import {
   DEFAULT_SETTINGS,
   DIFFICULTIES,
@@ -54,6 +54,19 @@ const settings = (value: unknown): Settings => {
   };
 };
 
+const land = (value: unknown): LandId | null => REGIONS.find((region) => region.id === value)?.id ?? null;
+
+const dayNumber = (value: unknown): number | null =>
+  typeof value === "number" && Number.isFinite(value) ? value : null;
+
+const streak = (value: unknown): Save["streak"] =>
+  isRecord(value) ? { days: wholeNumber(value.days, 0, 1e5, 0), lastDay: dayNumber(value.lastDay) } : EMPTY_SAVE.streak;
+
+const daily = (value: unknown): Save["daily"] =>
+  isRecord(value)
+    ? { day: dayNumber(value.day), practice: flag(value.practice, false), words: flag(value.words, false) }
+    : EMPTY_SAVE.daily;
+
 const parseJson = (raw: string): unknown => {
   try {
     return JSON.parse(raw);
@@ -79,6 +92,13 @@ export const parseSave = (raw: string | null): Save => {
     stories: wholeNumber(parsed.stories, 0, MAX_STORIES, 0),
     read: list(parsed.read, isIndex),
     heroAt: typeof parsed.heroAt === "string" ? parsed.heroAt : null,
+    chests: perLand((id) => wholeNumber(isRecord(parsed.chests) ? parsed.chests[id] : 0, 0, 3, 0)),
+    pet: land(parsed.pet),
+    tileStyle: land(parsed.tileStyle),
+    beaten: counts(parsed.beaten, 1, 1e6),
+    streak: streak(parsed.streak),
+    daily: daily(parsed.daily),
+    practiceBest: wholeNumber(parsed.practiceBest, 0, 1e4, 0),
     seen: list(parsed.seen, isString),
     settings: settings(parsed.settings),
   };

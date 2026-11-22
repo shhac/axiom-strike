@@ -1,5 +1,5 @@
 import { useRef } from "preact/hooks";
-import { aimTarget, equationTotal, hintNext, type BattleState } from "../../engine/battle";
+import { aimTarget, bannedNow, equationTotal, hintNext, type BattleState } from "../../engine/battle";
 import { showNumber } from "../../engine/fractions";
 import { icon } from "../assets";
 import { Num } from "../common";
@@ -85,10 +85,13 @@ const CastButton = ({ state }: { state: BattleState }) => {
   );
 };
 
+/** With this many signs the hint drops its label, so the tiles stay a fingertip wide. */
+const MANY_SIGNS = 4;
+
 const Hand = ({ state }: { state: BattleState }) => {
   const hinted = hintNext(state);
   return (
-    <div class="row row-hand">
+    <div class={`row row-hand ${state.level.ops.length >= MANY_SIGNS ? "is-crowded" : ""}`}>
       <HintButton hints={state.hints} />
       <TileRow
         hand={state.hand}
@@ -99,6 +102,7 @@ const Hand = ({ state }: { state: BattleState }) => {
         ops={state.level.ops}
         pending={state.equation.pendingOp}
         hinted={hinted?.op}
+        banned={bannedNow(state)}
         onTap={(op) => act("tile_tap", { type: "tapOp", op })()}
       />
     </div>

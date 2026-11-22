@@ -330,3 +330,96 @@
 .stage-frac {
   background-image: url("/assets/bg/fraction_fields.webp");
 }
+
+/* ---------- Monster quirks and the lucky monster ---------- */
+
+.enemy {
+  position: relative;
+}
+
+/* A horned cap pulled down over the monster's head. Each family's head is at a different height in its frame. */
+.helmet {
+  position: absolute;
+  z-index: 1;
+  top: calc(3.5rem + var(--head, 0.6rem));
+  left: calc(50% + var(--head-x, 0rem));
+  width: var(--hat, 4.6rem);
+  height: auto;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 0.15rem 0 rgb(0 0 0 / 0.5));
+  pointer-events: none;
+  animation: pop 260ms ease-out;
+}
+
+.enemy-boss .helmet {
+  width: calc(var(--hat, 4.6rem) * 1.25);
+  top: calc(2.9rem + var(--head, 0.6rem));
+}
+
+.family-mul {
+  --head: 0.2rem;
+}
+
+.family-div {
+  --head: 0.9rem;
+}
+
+.family-sub {
+  --head: 0.5rem;
+}
+
+.family-frac {
+  --head: 0.4rem;
+  --head-x: 0.6rem;
+}
+
+/* Under the weakness number, where an attack chip says when it lands. */
+.chip-rule {
+  background: var(--gold);
+  color: var(--ink);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+/* A plus sign with a red bar through it. */
+.chip-ban {
+  bottom: -0.8rem;
+  background: var(--cream);
+  padding: 0.12rem 0.4rem;
+  font-size: 1rem;
+}
+
+.chip-ban::after,
+.op.is-banned::after {
+  content: "";
+  position: absolute;
+  inset: 45% -8% auto;
+  height: 0.22rem;
+  border-radius: 0.2rem;
+  background: #e5342f;
+  box-shadow: 0 0 0 0.06rem var(--ink);
+  transform: rotate(-38deg);
+}
+
+.is-lucky .sprite {
+  filter: sepia(1) saturate(5) hue-rotate(-12deg) brightness(1.25) drop-shadow(0 0 0.5rem rgb(255 210 63 / 0.9));
+}
+
+.chip-leaving {
+  width: 4.3rem;
+  background: var(--gold);
+  color: var(--ink);
+  box-shadow: 0 0.22rem 0 var(--ink);
+}
+
+.chip-leaving-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.62rem;
+  line-height: 1.05;
+}
+
+.chip-leaving-text b {
+  font-size: 0.95rem;
+}

@@ -1,0 +1,720 @@
+/* ---------- Chest lock ---------- */
+
+.lock,
+.cave {
+  background-size: cover;
+  background-position: center;
+}
+
+.lock-stage {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.6rem;
+  padding-top: 2.2rem;
+  background: rgb(10 8 30 / 0.45);
+}
+
+.lock-back {
+  position: absolute;
+  z-index: 2;
+  top: 0.6rem;
+  left: max(0.6rem, env(safe-area-inset-left));
+}
+
+.lock-title {
+  position: absolute;
+  top: 0.5rem;
+  left: 0;
+  right: 0;
+  text-align: center;
+  text-shadow: 0 0.15rem 0 var(--ink);
+}
+
+.lock-title h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--gold);
+}
+
+.lock-title p {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.lock-chest {
+  width: 7.5rem;
+  height: 7.5rem;
+  filter: drop-shadow(0 0.4rem 0 rgb(0 0 0 / 0.4));
+  animation: arrive 420ms cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+
+.lock-chest.is-open {
+  animation: pop 400ms ease-out;
+}
+
+.dials {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.dial {
+  position: relative;
+  width: 5.4rem;
+  height: 5.4rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 0.22rem solid var(--ink);
+  background: radial-gradient(circle at 35% 30%, #f3d98a, #b9862f);
+  box-shadow:
+    inset 0 -0.4rem 0 #7a5523,
+    0 0.3rem 0 var(--ink);
+  font-size: 2.4rem;
+}
+
+.dial.is-picked {
+  box-shadow:
+    inset 0 -0.4rem 0 #7a5523,
+    0 0.3rem 0 var(--ink),
+    0 0 0 0.3rem var(--gold),
+    0 0 1.2rem 0.3rem rgb(255 210 63 / 0.7);
+  transform: translateY(-0.25rem);
+}
+
+.dial.is-open {
+  background: radial-gradient(circle at 35% 30%, #b9ffc7, #2fa955);
+  box-shadow:
+    inset 0 -0.4rem 0 #1f8f45,
+    0 0.3rem 0 var(--ink);
+  animation: pop 300ms ease-out;
+}
+
+.dial-state {
+  position: absolute;
+  top: -0.6rem;
+  right: -0.4rem;
+  width: 1.9rem;
+  height: 1.9rem;
+  filter: drop-shadow(0 0.1rem 0 var(--ink));
+}
+
+.chest-open {
+  width: 5rem;
+  height: 5rem;
+  margin-bottom: -0.6rem;
+  animation: pop 400ms ease-out;
+}
+
+.result .reward-items {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.prize-tile {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  font-size: 1.9rem;
+  animation: none;
+}
+
+.prize-pet {
+  width: 3rem;
+  height: 3rem;
+}
+
+/* ---------- "Impossible or not?" cave ---------- */
+
+.cave {
+  align-items: center;
+  justify-content: center;
+}
+
+.cave::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgb(8 6 24 / 0.72);
+}
+
+.cave-card {
+  position: relative;
+  width: 34rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.9rem 1.4rem 1.1rem;
+  border-radius: 1rem;
+  background: linear-gradient(#2c2766, var(--panel));
+  border: 0.2rem solid var(--panel-edge);
+  box-shadow: 0 0.5rem 0 rgb(0 0 0 / 0.4);
+}
+
+.cave-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cave-head h1 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--gold);
+}
+
+.cave-ask {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.5rem;
+}
+
+.cave-target {
+  padding: 0.1rem 0.7rem;
+  border-radius: 0.6rem;
+  background: var(--strike-deep);
+  border: 0.16rem solid var(--strike);
+  font-size: 2.6rem;
+}
+
+.cave-tiles {
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.cave-tiles .tile {
+  flex: none;
+  width: 4rem;
+}
+
+.cave-signs {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: 0.6rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.cave-signs .num {
+  font-size: 1.3rem;
+}
+
+.cave-answers {
+  display: flex;
+  gap: 1rem;
+  height: 4.3rem;
+  align-items: center;
+}
+
+.cave-answers .btn {
+  height: 3.6rem;
+  min-width: 10rem;
+  font-size: 1.3rem;
+}
+
+.btn-no {
+  background: var(--strike);
+}
+
+.cave-verdict {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  height: 4.3rem;
+  padding: 0 1rem;
+  border-radius: 0.8rem;
+  background: rgb(0 0 0 / 0.3);
+  animation: pop 220ms ease-out;
+}
+
+.cave-verdict b {
+  font-size: 1.3rem;
+}
+
+.cave-verdict.is-right b {
+  color: var(--good);
+}
+
+.cave-verdict.is-wrong b {
+  color: var(--strike);
+}
+
+.cave-way {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.cave-way .num {
+  font-size: 1.5rem;
+}
+
+/* ---------- Tile styles won from chests ---------- */
+
+[data-tiles="add"] .tile:not([data-tiles]),
+.tile[data-tiles="add"] {
+  --tile: #c9f5a8;
+  --tile-edge: #3f9b3a;
+  background: linear-gradient(#f0ffe0, var(--tile));
+}
+
+[data-tiles="sub"] .tile:not([data-tiles]),
+.tile[data-tiles="sub"] {
+  --tile: #ffc39a;
+  --tile-edge: #c2401f;
+  background: linear-gradient(#fff0dc, var(--tile));
+}
+
+[data-tiles="mul"] .tile:not([data-tiles]),
+.tile[data-tiles="mul"] {
+  --tile: #e2c7ff;
+  --tile-edge: #7a45c9;
+  background: linear-gradient(#f8eeff, var(--tile));
+}
+
+[data-tiles="div"] .tile:not([data-tiles]),
+.tile[data-tiles="div"] {
+  --tile: #b4e9ff;
+  --tile-edge: #1f7fc2;
+  background: linear-gradient(#eafaff, var(--tile));
+}
+
+[data-tiles="big"] .tile:not([data-tiles]),
+.tile[data-tiles="big"] {
+  --tile: #d9dbe4;
+  --tile-edge: #6b6f85;
+  background: linear-gradient(#f6f7fb, var(--tile));
+}
+
+[data-tiles="frac"] .tile:not([data-tiles]),
+.tile[data-tiles="frac"] {
+  --tile: #ffd0d6;
+  --tile-edge: #d24a5f;
+  background: repeating-linear-gradient(45deg, #fff 0 0.5rem, var(--tile) 0.5rem 1rem);
+}
+
+/* ---------- Camp ---------- */
+
+.camp-hub,
+.camp-sheet {
+  position: relative;
+  width: 33rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+}
+
+.camp-cards {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.6rem;
+  width: 100%;
+}
+
+.camp-card {
+  grid-column: span 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  height: 7.2rem;
+  padding: 0.4rem;
+  border-radius: 0.9rem;
+  border: 0.16rem solid var(--ink);
+  background: linear-gradient(#3b356f, var(--panel));
+  box-shadow: 0 0.3rem 0 var(--ink);
+}
+
+/* Two cards on the second row, centred under the three above. */
+.camp-card:nth-child(4) {
+  grid-column: 2 / span 2;
+}
+
+.camp-card:active {
+  transform: translateY(0.2rem);
+  box-shadow: 0 0.1rem 0 var(--ink);
+}
+
+.camp-card > img {
+  width: 3.2rem;
+  height: 3.2rem;
+}
+
+.camp-card b {
+  font-size: 1rem;
+}
+
+.camp-card small {
+  font-size: 0.68rem;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.camp-card .prizes {
+  font-size: 0.68rem;
+}
+
+.camp-card.is-lit {
+  border-color: var(--gold);
+  box-shadow:
+    0 0.3rem 0 var(--ink),
+    0 0 0.9rem rgb(255 210 63 / 0.55);
+}
+
+.camp-sheet {
+  padding: 0.8rem 1.1rem 0.9rem;
+  border-radius: 1rem;
+  background: linear-gradient(#2c2766, var(--panel));
+  border: 0.2rem solid var(--panel-edge);
+}
+
+.camp-sheet h1 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: var(--gold);
+}
+
+.camp-sheet p {
+  margin: 0;
+  font-weight: 500;
+}
+
+.camp-sheet-small {
+  align-self: center;
+  gap: 0.9rem;
+  padding: 1.4rem;
+}
+
+.streak {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  color: var(--gold);
+}
+
+.streak small {
+  font-size: 0.65rem;
+  color: var(--cream);
+}
+
+.streak.is-bright img {
+  transform: scale(1.25);
+}
+
+.streak.is-roaring img {
+  transform: scale(1.5);
+  filter: drop-shadow(0 0 0.4rem var(--gold));
+  animation: throb 600ms ease-in-out infinite alternate;
+}
+
+.title-streak {
+  position: absolute;
+  top: 0.8rem;
+  left: max(0.9rem, env(safe-area-inset-left));
+  padding: 0.3rem 0.7rem;
+  border-radius: 0.6rem;
+  background: rgb(20 18 43 / 0.78);
+  font-size: 1.1rem;
+}
+
+.title-streak:empty {
+  display: none;
+}
+
+.title-streak img {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+/* ---------- Monster book ---------- */
+
+.book-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.book-page {
+  position: relative;
+  height: 4.1rem;
+  display: grid;
+  place-items: center;
+  border-radius: 0.6rem;
+  border: 0.14rem solid var(--ink);
+  background: #fff6dc;
+  box-shadow: 0 0.2rem 0 var(--ink);
+}
+
+.book-page .sprite {
+  width: 3rem;
+  height: 3rem;
+  filter: none;
+}
+
+.book-page.kind-minion .sprite {
+  width: 2.3rem;
+  height: 2.3rem;
+}
+
+.book-page.kind-boss .sprite {
+  width: 3.7rem;
+  height: 3.7rem;
+}
+
+.book-page.is-unknown {
+  background: #b9ad8d;
+}
+
+.book-page.is-unknown .sprite {
+  filter: brightness(0) opacity(0.55);
+  animation: none;
+}
+
+.book-page.is-lucky:not(.is-unknown) .sprite {
+  filter: sepia(1) saturate(5) hue-rotate(-12deg) brightness(1.2);
+}
+
+.book-page.is-gold {
+  border-color: #b8860b;
+  background: linear-gradient(#fff3b0, var(--gold));
+}
+
+.book-page.is-open {
+  box-shadow:
+    0 0.2rem 0 var(--ink),
+    0 0 0 0.2rem var(--gold);
+}
+
+.book-page b {
+  position: absolute;
+  right: -0.25rem;
+  bottom: -0.3rem;
+  min-width: 1.2rem;
+  padding: 0 0.2rem;
+  border-radius: 0.6rem;
+  background: var(--panel);
+  border: 0.1rem solid var(--ink);
+  font-size: 0.65rem;
+}
+
+.book-fact {
+  min-height: 2.3rem;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.book-fact b {
+  color: var(--gold);
+}
+
+/* ---------- Pets and tile styles ---------- */
+
+.gear-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.gear-choice {
+  position: relative;
+  height: 5.1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  border-radius: 0.7rem;
+  border: 0.14rem solid var(--ink);
+  background: #3b356f;
+  box-shadow: 0 0.2rem 0 var(--ink);
+}
+
+.gear-choice .sprite,
+.gear-none {
+  width: 2.7rem;
+  height: 2.7rem;
+}
+
+.gear-choice .pet {
+  transform: none;
+}
+
+.gear-choice small {
+  font-size: 0.56rem;
+  font-weight: 500;
+  line-height: 1.05;
+  text-align: center;
+}
+
+.gear-choice.is-picked {
+  border-color: var(--gold);
+  box-shadow:
+    0 0.2rem 0 var(--ink),
+    0 0 0 0.2rem var(--gold);
+}
+
+.gear-choice.is-locked > :first-child {
+  filter: brightness(0.35) saturate(0.3);
+}
+
+.gear-lock {
+  position: absolute;
+  top: 0.9rem;
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.gear-choice .prize-tile {
+  width: 2.6rem;
+  height: 2.6rem;
+  font-size: 1.6rem;
+}
+
+/* ---------- Word lab ---------- */
+
+.words-top {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.words-examples {
+  display: flex;
+  gap: 1.2rem;
+  font-size: 1.5rem;
+}
+
+.word b {
+  color: var(--gold);
+  text-transform: uppercase;
+}
+
+.words-ask {
+  font-size: 1.1rem;
+}
+
+.words-ask b {
+  color: var(--gold);
+  text-transform: uppercase;
+}
+
+.words-answers {
+  width: 100%;
+  grid-template-columns: 1fr 1fr;
+}
+
+.words-answers .answer {
+  height: 3.2rem;
+  justify-content: center;
+  font-size: 1.05rem;
+}
+
+.answer.is-right {
+  background: var(--good);
+}
+
+.answer.is-wrong {
+  background: var(--strike);
+}
+
+.words-back {
+  height: 3rem;
+  padding: 0 1.2rem;
+}
+
+/* ---------- Target practice ---------- */
+
+.practice {
+  background-size: cover;
+  background-position: center;
+}
+
+.practice-stage {
+  position: relative;
+  flex: 1;
+  display: grid;
+  place-items: center;
+  background: rgb(10 8 30 / 0.35);
+}
+
+.practice-meter {
+  position: absolute;
+  top: 0.7rem;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.practice-clock,
+.practice-points {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 6rem;
+  justify-content: center;
+  padding: 0.2rem 0.9rem;
+  border-radius: 0.7rem;
+  background: rgb(20 18 43 / 0.85);
+  font-size: 1.7rem;
+}
+
+.practice-points {
+  color: var(--gold);
+}
+
+.practice-meter img {
+  width: 1.7rem;
+  height: 1.7rem;
+}
+
+.practice-target {
+  width: 7rem;
+  height: 7rem;
+  margin-top: 2.2rem;
+  filter: drop-shadow(0 0.4rem 0 rgb(0 0 0 / 0.4));
+  animation: pop 320ms ease-out;
+}
+
+.practice-score {
+  font-size: 3.4rem !important;
+  color: var(--gold);
+  line-height: 1;
+}
+
+.practice-best {
+  opacity: 0.8;
+}
+
+.result p {
+  max-width: 24rem;
+  text-align: center;
+}
+
+.practice-points {
+  animation: pop 240ms ease-out;
+}
+
+.practice-clock.is-ending {
+  color: var(--strike);
+  animation: throb 500ms ease-in-out infinite alternate;
+}

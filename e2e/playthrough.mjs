@@ -14,6 +14,12 @@ const levelRuns = [
   { name: "division-1", level: "div_1", query: "?seed=3" },
 ];
 
+const DIRECT_RUNS = [
+  ["add_2&seed=9", "add_3&seed=4"],
+  ["sub_4&seed=2", "div_5&seed=1"],
+  ["big_1&seed=6", "frac_3&seed=8"],
+];
+
 const MAX_TURNS = 200;
 const MIN_TOUCH = 48;
 
@@ -149,12 +155,19 @@ const planMove = (page, { parries = true } = {}) =>
     const alive = s.enemies.filter((e) => e.hp > 0);
     const values = s.hand.map((t) => t.value);
     const used = s.hand.flatMap((t, i) => (t.used ? [i] : []));
-    const tryFor = (target, max) => solve(values, s.level.ops, target, { maxTiles: max, exclude: used });
+    // A monster that hates plus has to be struck without it; blocks are never restricted.
+    const signs = (enemy, kind) =>
+      kind === "strike" && enemy.quirk === "noPlus" ? s.level.ops.filter((op) => op !== "+") : s.level.ops;
+    const tryFor = (enemy, kind, target, max) =>
+      solve(values, signs(enemy, kind), target, { maxTiles: max, exclude: used, grain: s.level.grain });
+    // A helmet soaks up a two-number sum (CLANG, no damage); three numbers knock it off and hurt.
+    const clangs = (kind, enemy, answer) => kind === "strike" && enemy.quirk === "helmet" && answer.tiles.length < 3;
     const planFor = (kind, enemy, answer) => ({
       aim: `${kind}-${enemy.id}`,
       kind,
       enemy: enemy.id,
-      lethal: kind === "strike" && strikeDamage[answer.tiles.length] >= enemy.hp,
+      clangs: clangs(kind, enemy, answer),
+      lethal: kind === "strike" && !clangs(kind, enemy, answer) && strikeDamage[answer.tiles.length] >= enemy.hp,
       tiles: answer.tiles.map((i) => s.hand[i].id),
       ops: answer.ops,
       multi: s.level.ops.length > 1,
@@ -162,10 +175,10 @@ const planMove = (page, { parries = true } = {}) =>
       n: alive.length,
     });
     const landing = parries && alive.find((e) => e.intent.turns === 1 && e.intent.remaining > 0);
-    const parry = landing && tryFor(landing.intent.damage, 2);
+    const parry = landing && tryFor(landing, "parry", landing.intent.damage, 2);
     if (parry) return planFor("parry", landing, parry);
     for (const e of alive) {
-      const a = tryFor(e.weakness, 3);
+      const a = tryFor(e, "strike", e.weakness, 3);
       if (a) return planFor("strike", e, a);
     }
     return { end: true, canCall: !s.called };
@@ -209,14 +222,14 @@ const castMove = async (page, plan, shotOnce) => {
   const key = `w${plan.wave}n${plan.n}${plan.kind}t${plan.tiles.length}`;
   await shotOnce(`eq_${key}`);
   await tap(page, "[data-action=cast]");
-  const showedDamage = await appears(page, "#fx .float-damage");
+  const showedDamage = await appears(page, plan.clangs ? "#fx .float-ko" : "#fx .float-damage");
   await shotOnce(`fx_${key}`);
   const celebrated =
     !plan.lethal || ((await appears(page, "#fx .float-ko")) && (await appears(page, "#fx .burst-star")));
   if (plan.lethal) await shotOnce("ko");
   await idle(page);
   // A monster that took a hit and survived has to look it.
-  const survivedAHit = plan.kind === "strike" && !plan.lethal;
+  const survivedAHit = plan.kind === "strike" && !plan.lethal && !plan.clangs;
   const looksHurt = !survivedAHit || (await page.locator(`[data-enemy="${plan.enemy}"].is-hurt`).count()) > 0;
   if (survivedAHit) await shotOnce("hurt");
   return { showedDamage, celebrated, looksHurt };
@@ -438,6 +451,233 @@ const JOURNEY = [
   reloadAndStartOver,
 ];
 
+/** A save with stars to spend: a land finished, its second chest ready, and some far-land progress. */
+const RICH_SAVE = {
+  stars: { add_1: 3, add_2: 3, add_3: 3, add_4: 3, add_5: 3, sub_1: 3, sub_2: 3, mul_1: 3 },
+  chests: { add: 1 },
+  beaten: { add_minion: 12, add_boss: 1 },
+  heroAt: "add_5",
+  seen: ["add", "sub", "mul", "div", "big", "frac", "add_boss"],
+};
+
+/** The numbers on the tiles still free, with the element index of each, read off the screen. */
+const freeTiles = (page) =>
+  page.evaluate(() =>
+    [...document.querySelectorAll("[data-tile]")].flatMap((tile, index) =>
+      tile.disabled ? [] : [{ index, value: Number(tile.getAttribute("aria-label").replace("Number ", "")) }],
+    ),
+  );
+
+/** Builds a two-tile sum for `target` on a sum panel in an addition land, and presses its big button. */
+const makeOnPanel = async (page, target) => {
+  const tiles = await freeTiles(page);
+  const pair = tiles.flatMap((a) =>
+    tiles.filter((b) => b.index > a.index && a.value + b.value === target).map((b) => [a, b]),
+  )[0];
+  if (!pair) return false;
+  for (const { index } of pair) await page.locator("[data-tile]").nth(index).tap();
+  await tap(page, "[data-action=cast]");
+  return true;
+};
+
+const openAChest = async ({ page, problems, shot }) => {
+  await page.goto(base);
+  await checkScreen(page, problems, shot, { name: "title_streak", where: "title", settleMs: 1500 });
+  await tap(page, "[data-action=play]");
+  await onScreen(page, "map");
+  await checkScreen(page, problems, shot, { name: "map_rich", where: "map with chests", settleMs: 600 });
+  await tap(page, "[data-chest=mul]");
+  expectThat(problems, await appears(page, "[data-hint]"), "a chest that is not ready gave no hint");
+  await tap(page, "[data-cave=add]");
+  await page.waitForTimeout(300);
+  expectThat(problems, (await page.evaluate(() => window.__axiom.screen())) === "map", "a locked cave opened");
+  await tap(page, "[data-chest=add]");
+  await onScreen(page, "lock");
+  await checkScreen(page, problems, shot, { name: "lock", where: "chest lock", settleMs: 600 });
+  for (const dial of [0, 1, 2]) {
+    await tap(page, `[data-dial="${dial}"]`);
+    const target = Number(await page.locator(`[data-dial="${dial}"] .num`).getAttribute("aria-label"));
+    // A pair meant for another dial may have been used; new numbers always bring one back.
+    if (!(await makeOnPanel(page, target))) {
+      await tap(page, "[data-action=redeal]");
+      expectThat(problems, await makeOnPanel(page, target), `no pair for lock ${dial} even after new numbers`);
+    }
+    await page.waitForTimeout(250);
+  }
+  expectThat(
+    problems,
+    await appears(page, "[data-result=chest] [data-prize=key]", 3000),
+    "the chest did not open on a key",
+  );
+  await checkScreen(page, problems, shot, { name: "lock_open", where: "opened chest", settleMs: 500 });
+  const opened = await readSave(page);
+  expectThat(
+    problems,
+    opened.chests.add === 2 && opened.potions === 1 && opened.scrolls === 1,
+    `chest save wrong: ${JSON.stringify([opened.chests, opened.potions, opened.scrolls])}`,
+  );
+  await tap(page, "[data-action=map]");
+  await onScreen(page, "map");
+};
+
+const clearACave = async ({ page, problems, shot }) => {
+  await tap(page, "[data-cave=add]");
+  await onScreen(page, "cave");
+  await checkScreen(page, problems, shot, { name: "cave", where: "cave riddle", settleMs: 500 });
+  for (const round of [0, 1, 2, 3, 4, 5, 6, 7]) {
+    await page.waitForSelector(`[data-riddle="${round}"]`);
+    const { values, target } = await page.evaluate(() => ({
+      values: [...document.querySelectorAll(".cave-tiles .tile .num")].map((n) => Number(n.getAttribute("aria-label"))),
+      target: Number(document.querySelector(".cave-target").getAttribute("aria-label")),
+    }));
+    const possible = await page.evaluate(
+      ({ values, target }) => window.__axiom.solve(values, ["+"], target, { maxTiles: 5 }) !== null,
+      { values, target },
+    );
+    await tap(page, `[data-answer=${possible ? "yes" : "no"}]`);
+    expectThat(
+      problems,
+      await appears(page, "[data-verdict=right]"),
+      `cave riddle ${round} marked a right answer wrong`,
+    );
+    if (round === 0) await shot("cave_verdict");
+    await tap(page, "[data-action=next]");
+  }
+  expectThat(problems, await appears(page, "[data-result=cave]", 3000), "the cave never finished");
+  await checkScreen(page, problems, shot, { name: "cave_done", where: "cave result", settleMs: 800 });
+  const cleared = await readSave(page);
+  expectThat(
+    problems,
+    cleared.stars.cave_add === 3 && cleared.potions === 2,
+    `cave save wrong: ${JSON.stringify(cleared.stars)}`,
+  );
+  await tap(page, "[data-action=map]");
+  await onScreen(page, "map");
+};
+
+const visitFarLands = async ({ page, problems, shot }) => {
+  await tap(page, "[data-action=page]");
+  await checkScreen(page, problems, shot, { name: "map_far", where: "far lands map", settleMs: 500 });
+  expectThat(
+    problems,
+    (await page.locator("[data-land-lock=frac]").count()) === 1,
+    "fractions was not locked at 24 stars",
+  );
+  expectThat(
+    problems,
+    (await page.locator("[data-land-lock=big]").count()) === 0,
+    "big numbers was not open at 24 stars",
+  );
+  await tap(page, "[data-action=page]");
+};
+
+const useTheCamp = async ({ page, problems, shot }) => {
+  await tap(page, "[data-action=campfire]");
+  await onScreen(page, "campfire");
+  await checkScreen(page, problems, shot, { name: "camp", where: "camp", settleMs: 500 });
+
+  await tap(page, "[data-camp=book]");
+  await checkScreen(page, problems, shot, { name: "camp_book", where: "monster book", settleMs: 300 });
+  expectThat(problems, (await page.locator(".book-page.is-gold").count()) === 1, "ten beaten did not gild a book page");
+  await tap(page, "[data-action=camp]");
+
+  await tap(page, "[data-camp=gear]");
+  await checkScreen(page, problems, shot, { name: "camp_gear", where: "pets and tiles", settleMs: 300 });
+  await tap(page, "[data-gear=tiles-classic]");
+  expectThat(problems, (await readSave(page)).tileStyle === null, "picking classic tiles did not change the save");
+  await tap(page, "[data-gear=tiles-add]");
+  expectThat(problems, (await readSave(page)).tileStyle === "add", "picking a won tile style did not change the save");
+  await tap(page, "[data-action=camp]");
+
+  await tap(page, "[data-camp=words]");
+  await checkScreen(page, problems, shot, { name: "camp_words", where: "word lab", settleMs: 300 });
+  const scrollsBefore = (await readSave(page)).scrolls;
+  for (const round of [0, 1, 2, 3, 4]) {
+    await page.waitForSelector(`[data-phase=words][data-round="${round}"]`);
+    await tap(page, "[data-answer=correct]");
+  }
+  expectThat(
+    problems,
+    await appears(page, "[data-phase=words-done] [data-prizes]", 3000),
+    "a perfect word lab gave no prize",
+  );
+  expectThat(problems, (await readSave(page)).scrolls === scrollsBefore + 1, "the word lab prize was not saved");
+  await tap(page, "[data-action=camp]");
+
+  await tap(page, "[data-camp=practice]");
+  await page.waitForSelector("[data-phase=practice-ready]");
+  await checkScreen(page, problems, shot, {
+    name: "camp_practice_ready",
+    where: "target practice start",
+    settleMs: 300,
+  });
+  await tap(page, "[data-action=start]");
+  const target = Number(await page.locator(".cast-number").getAttribute("aria-label"));
+  expectThat(problems, await makeOnPanel(page, target), "target practice dealt no pair for its number");
+  expectThat(
+    problems,
+    await appears(page, "[data-score='1'], [data-score='2']"),
+    "a hit in target practice did not score",
+  );
+  await checkScreen(page, problems, shot, { name: "camp_practice", where: "target practice", settleMs: 300 });
+  await tap(page, "[data-action=camp]");
+  await page.waitForSelector("[data-phase=hub]");
+};
+
+const EXTRAS = [openAChest, clearACave, visitFarLands, useTheCamp];
+
+/** Everything around the battles that needs stars first: chests, caves, the far lands and the camp. */
+const extras = async (page) => {
+  const errors = watchErrors(page);
+  const problems = [];
+  const stage = { page, problems, ...screenshots(page, "extras") };
+  for (const leg of EXTRAS) await leg(stage);
+  if (errors.length) problems.push(`console errors ${JSON.stringify(errors)}`);
+  return { problems };
+};
+
+/** The same screens on a 4:3 tablet, where the layout is only 40rem wide: nothing may overflow or shrink below a fingertip. */
+const tablet = async (page) => {
+  const errors = watchErrors(page);
+  const problems = [];
+  const { shot } = screenshots(page, "tablet");
+  await page.goto(base);
+  await checkScreen(page, problems, shot, { name: "title", where: "tablet title", settleMs: 1500 });
+  await tap(page, "[data-action=play]");
+  await onScreen(page, "map");
+  await checkScreen(page, problems, shot, { name: "map", where: "tablet map", settleMs: 600 });
+  await tap(page, "[data-action=page]");
+  await checkScreen(page, problems, shot, { name: "map_far", where: "tablet far map", settleMs: 500 });
+  await tap(page, "[data-action=page]");
+  await tap(page, "[data-chest=add]");
+  await onScreen(page, "lock");
+  await checkScreen(page, problems, shot, { name: "lock", where: "tablet chest lock", settleMs: 600 });
+  await tap(page, "[data-action=map]");
+  await onScreen(page, "map");
+  await tap(page, "[data-action=campfire]");
+  await onScreen(page, "campfire");
+  await checkScreen(page, problems, shot, { name: "camp", where: "tablet camp", settleMs: 500 });
+  for (const activity of ["book", "gear", "words"]) {
+    await tap(page, `[data-camp=${activity}]`);
+    await checkScreen(page, problems, shot, { name: `camp_${activity}`, where: `tablet ${activity}`, settleMs: 300 });
+    await tap(page, "[data-action=camp]");
+  }
+  // The level with the most signs is the tightest fit for the tiles.
+  for (const level of ["div_3", "big_2", "frac_3"]) {
+    await page.goto(`${base}?level=${level}&seed=4`);
+    await page.waitForFunction(() => window.__axiom?.state()?.hand.length > 0 && !window.__axiom.busy(), null, {
+      timeout: 20000,
+    });
+    await checkScreen(page, problems, shot, {
+      name: `battle_${level}`,
+      where: `tablet battle ${level}`,
+      settleMs: 900,
+    });
+  }
+  if (errors.length) problems.push(`console errors ${JSON.stringify(errors)}`);
+  return { problems };
+};
+
 const journey = async (page) => {
   const errors = watchErrors(page);
   const problems = [];
@@ -451,13 +691,21 @@ const browser = await chromium.launch();
 if (shotDir) mkdirSync(shotDir, { recursive: true });
 
 /** Every run gets its own storage, so saved progress never leaks from one into the next. */
-const withPage = async (run) => {
+const PHONE = { width: 800, height: 360 };
+const TABLET = { width: 1024, height: 768 };
+
+const withPage = async (run, startingSave, viewport = PHONE) => {
   const context = await browser.newContext({
-    viewport: { width: 800, height: 360 },
+    viewport,
     deviceScaleFactor: 3,
     hasTouch: true,
     isMobile: true,
   });
+  if (startingSave) {
+    await context.addInitScript((stored) => {
+      if (!localStorage.getItem("axiom-strike-save-v1")) localStorage.setItem("axiom-strike-save-v1", stored);
+    }, JSON.stringify(startingSave));
+  }
   const page = await context.newPage();
   const cdp = await context.newCDPSession(page);
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
@@ -466,27 +714,35 @@ const withPage = async (run) => {
   return result;
 };
 
+// `ONLY=extras` (or journey, levels, direct) runs one part, for working on that part.
+const only = process.env.ONLY;
+const wanted = (part) => !only || only === part;
+
 const results = [];
-for (const run of levelRuns) {
+for (const run of wanted("levels") ? levelRuns : []) {
   const result = await withPage((page) =>
     playLevel(page, run.name, (problems, shot) => openFromTitle(page, base + run.query, run.level, problems, shot)),
   );
   results.push({ name: run.name, ...result });
 }
-// The developer shortcut: straight into a battle from the address bar, with no intro.
-results.push({
-  name: "direct-link",
-  // Not timed: skipping the title means the first tap also has to wake the sound system.
-  ...(await withPage((page) =>
-    playLevel(page, "direct", () => page.goto(`${base}?level=add_2&seed=9`), { timed: false }),
-  )),
-});
-results.push({ name: "journey", ...(await withPage(journey)) });
+// The developer shortcut: straight into a battle from the address bar, with no intro. These cover
+// what the first levels do not: helmets, a monster that hates plus, a boss, and the far lands.
+// Not timed: skipping the title means the first tap also has to wake the sound system, and they
+// run side by side.
+const directRun = (query) =>
+  withPage((page) =>
+    playLevel(page, `direct-${query}`, () => page.goto(`${base}?level=${query}`), { timed: false }),
+  ).then((result) => ({ name: `direct ${query}`, ...result }));
+for (const pair of wanted("direct") ? DIRECT_RUNS : []) results.push(...(await Promise.all(pair.map(directRun))));
+if (wanted("journey")) results.push({ name: "journey", ...(await withPage(journey)) });
+if (wanted("tablet")) results.push({ name: "tablet", ...(await withPage(tablet, RICH_SAVE, TABLET)) });
+if (wanted("extras")) results.push({ name: "extras", ...(await withPage(extras, RICH_SAVE)) });
 await browser.close();
 
 const problems = results.flatMap((result) => result.problems.map((problem) => `${result.name}: ${problem}`));
 const rightCalls = results.reduce((sum, result) => sum + (result.outcome?.calls.right ?? 0), 0);
-if (rightCalls === 0) problems.push("no Impossible call was ever right, so its reward was never seen");
+if (rightCalls === 0 && wanted("levels"))
+  problems.push("no Impossible call was ever right, so its reward was never seen");
 console.log(JSON.stringify(results, null, 1));
 if (problems.length) {
   console.error("FAILED\n" + problems.join("\n"));

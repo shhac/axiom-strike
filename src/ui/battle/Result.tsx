@@ -2,7 +2,7 @@ import type { BattleState } from "../../engine/battle";
 import { findLevel, nextLevel } from "../../engine/levels";
 import { icon } from "../assets";
 import { MapButton, Prizes } from "../common";
-import { enterBattle, goTo } from "../nav";
+import { enterBattle, goToCamp } from "../nav";
 import { press } from "../press";
 import { save } from "../save";
 
@@ -34,7 +34,7 @@ export const Result = ({ state }: { state: BattleState }) => {
         <div class="result-buttons">
           <MapButton />
           {storyWaiting && (
-            <button class="btn btn-wide btn-fire" data-action="campfire" onClick={press(() => goTo("campfire"))}>
+            <button class="btn btn-wide btn-fire" data-action="campfire" onClick={press(() => goToCamp("story"))}>
               <img src={icon("campfire")} alt="" />
               Story time
             </button>

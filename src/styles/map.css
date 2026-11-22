@@ -14,7 +14,7 @@
   position: relative;
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+
   padding: 0 5%;
 }
 
@@ -50,6 +50,8 @@
 }
 
 .trail {
+  /* Drawn over the whole land, so it must not swallow taps meant for the chest and cave. */
+  pointer-events: none;
   position: absolute;
   inset: 0;
   width: 100%;
@@ -259,8 +261,8 @@
 .map-nudge {
   position: absolute;
   left: 50%;
-  /* Just under the land titles: the one strip no level ever sits in. */
-  top: 2.9rem;
+  /* Along the bottom, between the corner buttons: the chests now sit under the titles. */
+  bottom: 0.5rem;
   transform: translateX(-50%);
   padding: 0.3rem 1.1rem;
   border-radius: 0.8rem;
@@ -304,4 +306,257 @@
 
 .map-hero.is-walking {
   animation: hop 275ms ease-out 4;
+}
+
+/* ---------- Colour coming back, stars flying in ---------- */
+
+/* A grey copy of the map over one land. It thins out as the land's stars come in. */
+.map-grey {
+  position: absolute;
+  inset: 0;
+  background: center / cover no-repeat;
+  transition: opacity 1200ms ease-out;
+  pointer-events: none;
+}
+
+.star-fly {
+  position: absolute;
+  z-index: 3;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin: -0.8rem 0 0 -0.8rem;
+  left: var(--from-x);
+  top: var(--from-y);
+  opacity: 0;
+  filter: drop-shadow(0 0 0.4rem var(--gold));
+  pointer-events: none;
+  animation: star-fly 800ms cubic-bezier(0.5, 0, 0.3, 1) both;
+}
+
+.region.is-complete .region-title {
+  border-color: var(--gold);
+  box-shadow: 0 0 0.8rem rgb(255 210 63 / 0.7);
+  color: var(--gold);
+}
+
+.region-crown {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.twinkle {
+  position: absolute;
+  width: 1rem;
+  height: 1rem;
+  pointer-events: none;
+  animation: twinkle 1600ms ease-in-out infinite;
+}
+
+.twinkle-0 {
+  left: 12%;
+  top: 42%;
+}
+
+.twinkle-1 {
+  left: 84%;
+  top: 60%;
+  animation-delay: 500ms;
+}
+
+.twinkle-2 {
+  left: 52%;
+  top: 90%;
+  animation-delay: 1000ms;
+}
+
+/* ---------- Star chests and caves ---------- */
+
+.gates {
+  position: absolute;
+  inset: 2.45rem 0.35rem auto;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.gate {
+  position: relative;
+  width: 3.2rem;
+  height: 3.1rem;
+  display: grid;
+  place-items: center;
+  border-radius: 0.7rem;
+  background: rgb(20 18 43 / 0.72);
+  border: 0.14rem solid rgb(255 255 255 / 0.3);
+  pointer-events: auto;
+}
+
+.gate > img {
+  width: 2.2rem;
+  height: 2.2rem;
+}
+
+.gate small {
+  position: absolute;
+  bottom: -0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0 0.3rem;
+  border-radius: 0.3rem;
+  background: var(--ink);
+  font-size: 0.62rem;
+  white-space: nowrap;
+}
+
+.gate-chest.is-ready {
+  border-color: var(--gold);
+  background: rgb(120 80 0 / 0.85);
+  box-shadow: 0 0 1rem 0.2rem rgb(255 210 63 / 0.8);
+  animation: throb 520ms ease-in-out infinite alternate;
+}
+
+.gate-chest.is-ready small {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+.gate.is-spent,
+.gate.is-locked > img:first-child {
+  filter: saturate(0.4) brightness(0.75);
+}
+
+.gate .gate-key {
+  position: absolute;
+  right: -0.35rem;
+  bottom: -0.45rem;
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.gate .node-stars {
+  bottom: -0.7rem;
+}
+
+/* ---------- Far lands ---------- */
+
+.region.is-shut .trail,
+.region.is-shut .node {
+  opacity: 0.45;
+}
+
+.land-lock {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.7rem 1.4rem;
+  border-radius: 0.9rem;
+  background: rgb(20 18 43 / 0.88);
+  border: 0.16rem solid var(--gold);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.land-lock > img {
+  width: 2.4rem;
+  height: 2.4rem;
+}
+
+.land-lock b {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 1.5rem;
+  color: var(--gold);
+}
+
+.land-lock b img {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+/* Tucked under the corner chest or cave, the one gap at the edge that no level reaches. */
+.map-page {
+  position: absolute;
+  top: 5.9rem;
+  height: 3rem;
+  padding: 0 0.6rem;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+}
+
+.map-page-1 {
+  right: max(0.4rem, env(safe-area-inset-right));
+}
+
+.map-page-0 {
+  left: max(0.4rem, env(safe-area-inset-left));
+  flex-direction: row-reverse;
+}
+
+.map-page-arrow {
+  width: 0;
+  height: 0;
+  border: 0.45rem solid transparent;
+  border-left: 0.6rem solid var(--gold);
+  border-right: 0;
+}
+
+.map-page-0 .map-page-arrow {
+  border-left: 0;
+  border-right: 0.6rem solid var(--gold);
+}
+
+.map-hint {
+  background: var(--cream);
+  animation: pop 200ms ease-out;
+}
+
+/* ---------- Pets ---------- */
+
+.pet {
+  transform: scaleX(-1);
+}
+
+.pet.is-golden {
+  filter: sepia(1) saturate(5) hue-rotate(-12deg) brightness(1.2);
+}
+
+.map-hero .pet {
+  position: absolute;
+  left: -1.3rem;
+  bottom: 0;
+  width: 1.9rem;
+  height: 1.9rem;
+}
+
+.map-hero.is-facing-left .pet {
+  left: auto;
+  right: -1.3rem;
+  transform: none;
+}
+
+.hero-pet {
+  position: absolute;
+  left: max(0.3rem, env(safe-area-inset-left));
+  bottom: 0.5rem;
+  width: 4.2rem;
+  height: 4.2rem;
+  z-index: 1;
+}
+
+/* On squarer screens a land is narrower, so its title is set smaller to keep the star count in view. */
+@media (max-aspect-ratio: 17/9) {
+  .region-title {
+    font-size: 0.6rem;
+    padding: 0.25rem 0.35rem;
+  }
+
+  .region-name .num {
+    font-size: 0.9rem;
+  }
 }

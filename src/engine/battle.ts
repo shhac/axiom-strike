@@ -1,4 +1,4 @@
-import { dealHand, dealSwap } from "./deal";
+import { canPair, dealHand, dealSwap } from "./deal";
 import {
   boardTotal,
   boardTotals,
@@ -8,13 +8,14 @@ import {
   freshTiles,
   pickOp,
   placeTile,
+  sumPower,
   undoLast,
   type Board,
   type Equation,
   type Tile,
 } from "./board";
 import type { Op } from "./equation";
-import { ENEMY_HP, type EnemyKind, type Level, type OpFamily } from "./levels";
+import { ENEMY_HP, type EnemyKind, type LandId, type Level, type OpFamily, type Quirk } from "./levels";
 import { createRng, type Rng } from "./rng";
 import { solve, type Solution } from "./solver";
 
@@ -38,6 +39,14 @@ export type Enemy = {
   intent: Intent;
   /** Grows each time this enemy lands a hit nobody tried to parry; its attacks grow with it. */
   rage: number;
+  /** What makes it play differently right now; a helmet is lost when it is knocked off. */
+  quirk: Quirk | null;
+  /** Exact two-number hits a helmet has taken; the second knocks it off. */
+  dents: number;
+  /** A boss gains a quirk the first time it drops to half health. */
+  phased: boolean;
+  /** Turns until a lucky monster runs away. Null for every ordinary monster. */
+  flees: number | null;
 };
 
 export type AimKind = "strike" | "parry";
@@ -70,7 +79,18 @@ export type BattleState = {
 export type BattleEvent =
   | { type: "waveStart"; wave: number }
   | { type: "deal" }
-  | { type: "strike"; enemyId: number; damage: number; exact: boolean; power: number }
+  | {
+      type: "strike";
+      enemyId: number;
+      damage: number;
+      exact: boolean;
+      power: number;
+      /** What an exact hit did to a helmet, if the monster wore one. */
+      helmet?: "dent" | "off";
+    }
+  | { type: "bossPhase"; enemyId: number; quirk: Quirk }
+  | { type: "fled"; enemyId: number }
+  | { type: "caught"; enemyId: number }
   | { type: "parry"; enemyId: number; exact: boolean; blocked: number; counter: number }
   | { type: "defeated"; enemyId: number }
   | { type: "weaknessShift"; enemyId: number }
@@ -91,7 +111,8 @@ export type BattleEvent =
         | "noExact"
         | "noPotions"
         | "fullHealth"
-        | "alreadyCalled";
+        | "alreadyCalled"
+        | "bannedSign";
     };
 
 /** One beat of the battle: the state to show, and what just happened to get there. */
@@ -118,7 +139,46 @@ const MAX_LANDING_TOGETHER = 2;
 const RAGE_STEP = 2;
 const MAX_RAGE = 3;
 
+const HELMET_DENTS = 2;
+/** A helmet comes straight off for a sum of this many numbers or more. */
+const HELMET_BREAKER = 3;
+const LUCKY_ODDS = 6;
+const LUCKY_STAYS = 3;
+const LUCKY_ROOM = 2;
+/** The quirk each land's boss takes on at half health. */
+const PHASE_QUIRK: Record<LandId, Quirk> = {
+  add: "helmet",
+  sub: "noPlus",
+  mul: "noPlus",
+  div: "helmet",
+  big: "helmet",
+  frac: "helmet",
+};
+
 const living = (state: BattleState) => state.enemies.filter((enemy) => enemy.hp > 0);
+
+export const isLucky = (enemy: Enemy) => enemy.flees !== null;
+
+/** The monsters that have to be beaten to clear the wave; a lucky one is a bonus and never holds it up. */
+const fighters = (state: BattleState) => living(state).filter((enemy) => !isLucky(enemy));
+
+/** The sign a monster will not be struck with. Blocking its attack is never restricted. */
+export const bannedOp = (enemy: Enemy | undefined, kind: AimKind): Op | null =>
+  kind === "strike" && enemy?.quirk === "noPlus" ? "+" : null;
+
+const aimedEnemy = (state: BattleState) => state.enemies.find((candidate) => candidate.id === state.aim?.enemyId);
+
+/** The sign that cannot be used on what is aimed at right now, if any. */
+export const bannedNow = (state: BattleState): Op | null =>
+  state.aim ? bannedOp(aimedEnemy(state), state.aim.kind) : null;
+
+/** The signs that may be used on what is aimed at: the single source for building, hints and answer searches. */
+export const opsFor = (state: BattleState): readonly Op[] => {
+  const banned = bannedNow(state);
+  return banned ? state.level.ops.filter((op) => op !== banned) : state.level.ops;
+};
+
+const boardRules = (state: BattleState) => ({ ops: opsFor(state), grain: state.level.grain });
 
 export const lastState = (steps: readonly Step[], fallback: BattleState) => steps.at(-1)?.state ?? fallback;
 
@@ -131,18 +191,6 @@ export const equationValues = (state: BattleState): number[] => boardValues(stat
 export const runningTotals = (state: BattleState): number[] => boardTotals(state, state.level.grain);
 
 export const equationTotal = (state: BattleState): number | null => boardTotal(state, state.level.grain);
-
-const MIN_POWER = 2;
-
-/**
- * How many tiles it really took to reach the final total. `3 + 4 + 5 - 5` is still a two-tile
- * seven, so adding a number and taking it away again earns nothing. It never drops below two:
- * `6 × 1` is padding too, but it is still a right answer and hits like one.
- */
-const equationPower = (totals: readonly number[]): number => {
-  const final = totals.at(-1);
-  return final === undefined ? 0 : Math.max(MIN_POWER, totals.indexOf(final) + 1);
-};
 
 /** The number an aim of this kind at this enemy has to make. */
 export const targetOf = (enemy: Enemy, kind: AimKind): number =>
@@ -176,13 +224,18 @@ const rerollIntent = (state: BattleState, enemyId: number, rage: number): [Inten
   return withRng(state, (rng) => rollIntent(rng, state.level, others, rage));
 };
 
-const rollWeakness = (rng: Rng, level: Level, avoid?: number): number =>
-  rng.pick(level.weakness.filter((value) => value !== avoid));
+/** A monster that hates a sign only ever gets a weakness two tiles can make without it. */
+const rollWeakness = (rng: Rng, level: Level, options: { avoid?: number; quirk?: Quirk | null } = {}): number => {
+  const fresh = level.weakness.filter((value) => value !== options.avoid);
+  const banned = options.quirk === "noPlus" ? "+" : undefined;
+  const makeable = banned ? fresh.filter((value) => canPair(level, value, banned)) : fresh;
+  return rng.pick(makeable.length > 0 ? makeable : fresh);
+};
 
 const defaultAim = (state: BattleState): Aim | null => {
   const aimed = living(state).find((enemy) => enemy.id === state.aim?.enemyId);
   if (aimed && state.aim) return state.aim;
-  const first = living(state)[0];
+  const first = fighters(state)[0] ?? living(state)[0];
   return first ? { enemyId: first.id, kind: "strike" } : null;
 };
 
@@ -193,7 +246,13 @@ const dealStep = (state: BattleState): Step => {
     .filter((enemy) => enemy.intent.turns === 1 && enemy.intent.remaining > 0)
     .map((enemy) => enemy.intent.damage);
   const [values, seed] = withRng(state, (rng) =>
-    dealHand(rng, state.level, strikeEnemy?.weakness ?? state.level.weakness[0] ?? 2, landing),
+    dealHand(
+      rng,
+      state.level,
+      strikeEnemy?.weakness ?? state.level.weakness[0] ?? 2,
+      landing,
+      bannedOp(strikeEnemy, "strike") ?? undefined,
+    ),
   );
   const hand = freshTiles(values, state.nextId);
   return {
@@ -212,9 +271,38 @@ const dealStep = (state: BattleState): Step => {
   };
 };
 
+/**
+ * Now and then a golden monster joins a small wave. It never attacks and never holds the wave
+ * up; beating it before it runs is a bonus. It is rolled from its own stream, so whether one
+ * turns up changes nothing else about the battle.
+ */
+const luckyVisitor = (state: BattleState, id: number): Enemy | null => {
+  const specs = state.level.waves[state.wave] ?? [];
+  const first = specs[0];
+  const roomy = specs.length <= LUCKY_ROOM && !specs.some((spec) => spec.kind === "boss");
+  if (!first || !roomy || state.level.step === 0) return null;
+  const rng = createRng((state.seed ^ 0x51ed270b ^ state.wave) >>> 0);
+  if (rng.int(1, LUCKY_ODDS) !== 1) return null;
+  return {
+    id,
+    kind: "minion",
+    family: first.family,
+    hp: ENEMY_HP.minion,
+    maxHp: ENEMY_HP.minion,
+    weakness: rollWeakness(rng, state.level),
+    // It has no attack; this stands in so nothing that reads an intent has to special-case it.
+    intent: { damage: 0, remaining: 0, turns: Infinity },
+    rage: 0,
+    quirk: null,
+    dents: 0,
+    phased: false,
+    flees: LUCKY_STAYS,
+  };
+};
+
 const waveStep = (state: BattleState, wave: number): Step => {
   const specs = state.level.waves[wave] ?? [];
-  const [enemies, seed] = withRng(state, (rng) =>
+  const [regulars, seed] = withRng(state, (rng) =>
     specs.map((spec, index): Enemy => {
       const damage = rng.pick(state.level.attack);
       return {
@@ -223,13 +311,19 @@ const waveStep = (state: BattleState, wave: number): Step => {
         family: spec.family,
         hp: ENEMY_HP[spec.kind],
         maxHp: ENEMY_HP[spec.kind],
-        weakness: rollWeakness(rng, state.level),
+        weakness: rollWeakness(rng, state.level, { quirk: spec.quirk }),
         // Staggered so nothing lands on the first turn of a wave and at most two land together.
         intent: { damage, remaining: damage, turns: 2 + (index % 2) },
         rage: 0,
+        quirk: spec.quirk ?? null,
+        dents: 0,
+        phased: false,
+        flees: null,
       };
     }),
   );
+  const lucky = luckyVisitor({ ...state, wave }, state.nextId + regulars.length);
+  const enemies = lucky ? [...regulars, lucky] : regulars;
   return {
     state: { ...state, seed, wave, enemies, nextId: state.nextId + enemies.length, aim: null, hand: [] },
     event: { type: "waveStart", wave },
@@ -278,6 +372,20 @@ const onBoard = (state: BattleState, next: Board | "needOperator" | "badStep" | 
 
 const clear = (state: BattleState): Step[] => onBoard(state, clearBoard(state));
 
+const without = (state: BattleState, enemyId: number): BattleState => ({
+  ...state,
+  enemies: state.enemies.filter((enemy) => enemy.id !== enemyId),
+});
+
+/** Any lucky monster still about when the wave is won runs for it. */
+const scatter = (state: BattleState): Step[] =>
+  living(state)
+    .filter(isLucky)
+    .reduce<Step[]>((steps, { id }) => {
+      const gone = without(lastState(steps, state), id);
+      return [...steps, { state: gone, event: { type: "fled", enemyId: id } }];
+    }, []);
+
 const updateEnemy = (state: BattleState, enemyId: number, change: (enemy: Enemy) => Enemy): BattleState => ({
   ...state,
   enemies: state.enemies.map((enemy) => (enemy.id === enemyId ? change(enemy) : enemy)),
@@ -294,14 +402,18 @@ const settle = (state: BattleState, enemyId: number): Step[] => {
   const enemy = state.enemies.find((candidate) => candidate.id === enemyId);
   if (!enemy || enemy.hp > 0) return [];
   const defeated: Step = { state: { ...state, aim: defaultAim(state) }, event: { type: "defeated", enemyId } };
-  if (living(state).length > 0) return [defeated];
+  const prize: Step[] = isLucky(enemy) ? [{ state: defeated.state, event: { type: "caught", enemyId } }] : [];
+  if (fighters(state).length > 0) return [defeated, ...prize];
 
+  const fled = scatter(defeated.state);
+  const cleared = lastState(fled, defeated.state);
+  const before = [defeated, ...prize, ...fled];
   const nextWave = state.wave + 1;
   if (nextWave >= state.level.waves.length) {
     const stars = starsFor(state.heroHp);
-    return [defeated, { state: { ...defeated.state, phase: "won", stars }, event: { type: "won", stars } }];
+    return [...before, { state: { ...cleared, phase: "won", stars }, event: { type: "won", stars } }];
   }
-  return [defeated, ...openWave({ ...defeated.state, turn: 0 }, nextWave)];
+  return [...before, ...openWave({ ...cleared, turn: 0 }, nextWave)];
 };
 
 /** One step off the number: one away, or a half or a quarter away where the land counts in those. */
@@ -312,17 +424,50 @@ const strikeDamage = (distance: number, power: number, level: Level): number => 
   return isNearMiss(distance, level) ? NEAR_MISS_DAMAGE : 0;
 };
 
+/**
+ * What an exact hit does to a helmet. Two numbers only dent it, and the second dent knocks it
+ * off, so short sums still get through, just more slowly. Three or more knock it off at once.
+ */
+const helmetHit = (enemy: Enemy, exact: boolean, power: number): "dent" | "off" | "holds" | null => {
+  if (enemy.quirk !== "helmet") return null;
+  if (!exact) return "holds";
+  return power >= HELMET_BREAKER || enemy.dents + 1 >= HELMET_DENTS ? "off" : "dent";
+};
+
+/** A boss that has just dropped to half health takes on its land's quirk, with a weakness that suits it. */
+const bossPhase = (state: BattleState, enemyId: number): Step[] => {
+  const enemy = state.enemies.find((candidate) => candidate.id === enemyId);
+  const halfway = enemy && enemy.hp > 0 && enemy.hp <= enemy.maxHp / 2;
+  if (!enemy || enemy.kind !== "boss" || enemy.phased || !halfway) return [];
+  const quirk = PHASE_QUIRK[state.level.region];
+  const [weakness, seed] = withRng(state, (rng) => rollWeakness(rng, state.level, { avoid: enemy.weakness, quirk }));
+  const next = updateEnemy({ ...state, seed }, enemyId, (e) => ({ ...e, quirk, dents: 0, phased: true, weakness }));
+  return [{ state: next, event: { type: "bossPhase", enemyId, quirk } }];
+};
+
 const strike = (state: BattleState, enemy: Enemy, total: number, power: number): Step[] => {
   const distance = Math.abs(total - enemy.weakness);
   const exact = distance === 0;
-  const damage = strikeDamage(distance, power, state.level);
-  const hit = updateEnemy(state, enemy.id, (e) => ({ ...e, hp: Math.max(0, e.hp - damage) }));
-  const struck: Step = { state: hit, event: { type: "strike", enemyId: enemy.id, damage, exact, power } };
+  const helmet = helmetHit(enemy, exact, power);
+  // A helmet stops everything except the sum that knocks it off with three numbers or more.
+  const blocked = helmet !== null && !(helmet === "off" && power >= HELMET_BREAKER);
+  const damage = blocked ? 0 : strikeDamage(distance, power, state.level);
+  const hit = updateEnemy(state, enemy.id, (e) => ({
+    ...e,
+    hp: Math.max(0, e.hp - damage),
+    quirk: helmet === "off" ? null : e.quirk,
+    dents: helmet === "dent" ? e.dents + 1 : e.dents,
+  }));
+  const dealt = helmet === "dent" || helmet === "off" ? { helmet } : {};
+  const struck: Step = { state: hit, event: { type: "strike", enemyId: enemy.id, damage, exact, power, ...dealt } };
 
   const survived = enemy.hp - damage > 0;
   if (!exact || !survived) return [struck, ...settle(hit, enemy.id)];
 
-  const [weakness, seed] = withRng(hit, (rng) => rollWeakness(rng, hit.level, enemy.weakness));
+  const phase = bossPhase(hit, enemy.id);
+  if (phase.length > 0) return [struck, ...phase];
+  const quirk = helmet === "off" ? null : enemy.quirk;
+  const [weakness, seed] = withRng(hit, (rng) => rollWeakness(rng, hit.level, { avoid: enemy.weakness, quirk }));
   const shifted = updateEnemy({ ...hit, seed }, enemy.id, (e) => ({ ...e, weakness }));
   return [struck, { state: shifted, event: { type: "weaknessShift", enemyId: enemy.id } }];
 };
@@ -339,6 +484,7 @@ const exactParry = (state: BattleState, enemy: Enemy, power: number): Step[] => 
   return [
     { state: next, event: { type: "parry", enemyId: enemy.id, exact: true, blocked: enemy.intent.remaining, counter } },
     ...settle(next, enemy.id),
+    ...bossPhase(next, enemy.id),
   ];
 };
 
@@ -363,6 +509,12 @@ const enemyTurn = (state: BattleState, enemyId: number): Step[] => {
   if (state.phase !== "player") return [];
   const enemy = state.enemies.find((candidate) => candidate.id === enemyId);
   if (!enemy) return [];
+  if (enemy.flees !== null) {
+    const flees = enemy.flees - 1;
+    if (flees > 0) return quiet(updateEnemy(state, enemyId, (e) => ({ ...e, flees })));
+    const gone = without(state, enemyId);
+    return [{ state: { ...gone, aim: defaultAim(gone) }, event: { type: "fled", enemyId } }];
+  }
   const turns = enemy.intent.turns - 1;
   if (turns > 0) return quiet(updateEnemy(state, enemyId, (e) => ({ ...e, intent: { ...e.intent, turns } })));
 
@@ -397,13 +549,15 @@ const cast = (state: BattleState): Step[] => {
   if (total === undefined || state.equation.tiles.length < 2) return reject(state, "tooShort");
   const enemy = living(state).find((candidate) => candidate.id === state.aim?.enemyId);
   if (!enemy || !state.aim) return reject(state, "noAim");
+  const banned = bannedNow(state);
+  if (banned && state.equation.ops.includes(banned)) return reject(state, "bannedSign");
 
   const wasted = total !== targetOf(enemy, state.aim.kind);
   const hand = wasted
     ? state.hand.map((tile) => (state.equation.tiles.includes(tile.id) ? { ...tile, wasted } : tile))
     : state.hand;
   const spent: BattleState = { ...state, hand, equation: EMPTY_EQUATION, hintPath: null };
-  const power = equationPower(totals);
+  const power = sumPower(totals);
   const steps = state.aim.kind === "strike" ? strike(spent, enemy, total, power) : parry(spent, enemy, total, power);
 
   const end = lastState(steps, spent);
@@ -423,7 +577,7 @@ const spentTiles = (state: BattleState, options: { wastedCount?: boolean } = {})
 const searchAnswer = (state: BattleState, target: number, options: { prefix?: Solution; exclude: number[] }) =>
   solve(
     state.hand.map((tile) => tile.value),
-    state.level.ops,
+    opsFor(state),
     target,
     { ...options, grain: state.level.grain },
   );
@@ -452,7 +606,9 @@ const hint = (state: BattleState): Step[] => {
   const placed = state.equation.tiles.map((tileId) => state.hand.findIndex((tile) => tile.id === tileId));
   const exclude = spentTiles(state);
   const prefix = { tiles: placed, ops: state.equation.ops };
-  const continued = placed.length > 0 ? searchAnswer(state, target, { prefix, exclude }) : null;
+  // A sum that already uses a sign the monster hates cannot be finished; the hint starts over.
+  const usable = placed.length > 0 && state.equation.ops.every((op) => opsFor(state).includes(op));
+  const continued = usable ? searchAnswer(state, target, { prefix, exclude }) : null;
   const fresh = continued ?? searchAnswer(state, target, { exclude });
   if (!fresh) return reject(state, "noExact");
 
@@ -472,7 +628,9 @@ const unspentPlaces = (state: BattleState): number[] => state.hand.flatMap((tile
  */
 const swapUnspent = (state: BattleState, target: number): BattleState => {
   const places = unspentPlaces(state);
-  const [values, seed] = withRng(state, (rng) => dealSwap(rng, state.level, target, places.length));
+  const [values, seed] = withRng(state, (rng) =>
+    dealSwap(rng, state.level, target, places.length, bannedNow(state) ?? undefined),
+  );
   const fresh = new Map(
     places.map((place, order): [number, Tile] => [
       place,
@@ -523,19 +681,27 @@ export const hintNext = (state: BattleState): { tileId: number; op: Op | null } 
   return { tileId, op };
 };
 
+/** Anything alive can be struck; a lucky monster has no attack to block. */
+const aimable = (state: BattleState, aim: Aim): boolean => {
+  const enemy = living(state).find((candidate) => candidate.id === aim.enemyId);
+  return enemy !== undefined && !(aim.kind === "parry" && isLucky(enemy));
+};
+
 export const reduce = (state: BattleState, action: Action): Step[] => {
   if (state.phase !== "player") return [];
   switch (action.type) {
     case "tapTile":
-      return onBoard(state, placeTile(state, action.tileId, state.level));
+      return onBoard(state, placeTile(state, action.tileId, boardRules(state)));
     case "tapOp":
-      return onBoard(state, pickOp(state, action.op, state.level));
+      return action.op === bannedNow(state)
+        ? reject(state, "bannedSign")
+        : onBoard(state, pickOp(state, action.op, boardRules(state)));
     case "undo":
       return onBoard(state, undoLast(state));
     case "clear":
       return clear(state);
     case "aim":
-      return living(state).some((enemy) => enemy.id === action.aim.enemyId) ? quiet({ ...state, aim: action.aim }) : [];
+      return aimable(state, action.aim) ? quiet({ ...state, aim: action.aim }) : [];
     case "cast":
       return cast(state);
     case "endTurn":

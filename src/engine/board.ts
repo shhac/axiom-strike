@@ -37,6 +37,18 @@ export const boardTotals = (board: Board, grain = 1): number[] =>
 
 export const boardTotal = (board: Board, grain = 1): number | null => boardTotals(board, grain).at(-1) ?? null;
 
+const MIN_POWER = 2;
+
+/**
+ * How many tiles it really took to reach the final total. `3 + 4 + 5 - 5` is still a two-tile
+ * seven, so adding a number and taking it away again earns nothing. It never drops below two:
+ * `6 × 1` is padding too, but it is still a right answer and hits like one.
+ */
+export const sumPower = (totals: readonly number[]): number => {
+  const final = totals.at(-1);
+  return final === undefined ? 0 : Math.max(MIN_POWER, totals.indexOf(final) + 1);
+};
+
 export type Refusal = "needOperator" | "badStep";
 
 /** The board with the tile added to the sum, why it cannot be, or null if the tile is not free. */

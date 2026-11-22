@@ -92,6 +92,35 @@
   }
 }
 
+@keyframes star-fly {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1.7);
+  }
+  100% {
+    left: 82%;
+    top: 1.4rem;
+    opacity: 1;
+    transform: scale(0.7);
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.4) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(40deg);
+  }
+}
+
 @keyframes point {
   to {
     transform: translateY(-0.5rem);
