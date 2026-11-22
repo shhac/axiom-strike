@@ -1,102 +1,21 @@
-import { useLayoutEffect, useRef } from "preact/hooks";
-import { aimTarget, equationTotal, equationValues, hintNext, type BattleState } from "../../engine/battle";
-import { bracketEnds } from "../../engine/equation";
+import { useRef } from "preact/hooks";
+import { aimTarget, equationTotal, hintNext, type BattleState } from "../../engine/battle";
+import { showNumber } from "../../engine/fractions";
 import { icon } from "../assets";
 import { Num } from "../common";
 import { dispatch } from "../store";
+import { EquationBox, OpRow, TileRow } from "../sums/SumBoard";
 import { act } from "./act";
 
-type Hinted = ReturnType<typeof hintNext>;
-
-/** Shrinks a long equation to the room it has, so the total beside it is never pushed out of view. */
-const useShrinkToFit = (content: string) => {
-  const ref = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    const node = ref.current;
-    const room = node?.parentElement?.clientWidth;
-    if (!node || !room) return;
-    const scale = Math.min(1, room / node.offsetWidth);
-    node.style.transform = scale < 1 ? `scale(${scale})` : "";
-  }, [content]);
-  return ref;
-};
-
-const EquationBar = ({ state }: { state: BattleState }) => {
-  const target = aimTarget(state);
-  const total = equationTotal(state);
-  const placed = equationValues(state);
-  const exact = total !== null && total === target;
-  const { ops, pendingOp } = state.equation;
-  const closes = bracketEnds(pendingOp ? [...ops, pendingOp] : ops);
-  const terms = useShrinkToFit(`${placed.join()} ${ops.join()} ${pendingOp ?? ""}`);
-  return (
-    <div class="row row-equation">
-      <CallOrPass called={state.called} />
-      <div class="equation" aria-live="polite">
-        {placed.length === 0 && <span class="equation-empty">Tap numbers to make {target}</span>}
-        <div class="eq-room">
-          <div class="eq-terms" ref={terms}>
-            {closes.map((close) => (
-              <Num key={`open-${close}`} class="eq-bracket" value="(" />
-            ))}
-            {placed.map((value, index) => (
-              <>
-                {index > 0 && <Num class="eq-op" value={ops[index - 1] ?? ""} />}
-                <Num class="eq-num" value={value} />
-                {closes.includes(index) && <Num class="eq-bracket" value=")" />}
-              </>
-            ))}
-            {pendingOp && <Num class="eq-op is-pending" value={pendingOp} />}
-          </div>
-        </div>
-        {total !== null && (
-          <span class={`eq-total ${exact ? "is-exact" : ""}`} data-total={total}>
-            <Num value={`=${total}`} />
-          </span>
-        )}
-      </div>
-      <button class="btn btn-icon" aria-label="Undo" onClick={act("tile_undo", { type: "undo" })}>
-        <img src={icon("undo")} alt="" />
-      </button>
-    </div>
-  );
-};
-
-const Tiles = ({ state, hinted }: { state: BattleState; hinted: Hinted }) => (
-  <div class="tiles">
-    {state.hand.map((tile, index) => (
-      <button
-        key={tile.id}
-        class={`tile ${tile.used ? "is-used" : ""} ${hinted?.tileId === tile.id ? "is-hinted" : ""}`}
-        style={{ animationDelay: `${index * 45}ms` }}
-        data-tile={tile.id}
-        disabled={tile.used}
-        aria-label={`Number ${tile.value}`}
-        onClick={act("tile_tap", { type: "tapTile", tileId: tile.id })}
-      >
-        <Num value={tile.value} />
-      </button>
-    ))}
+const EquationRow = ({ state }: { state: BattleState }) => (
+  <div class="row row-equation">
+    <CallOrPass called={state.called} />
+    <EquationBox board={state} total={equationTotal(state)} target={aimTarget(state)} />
+    <button class="btn btn-icon" aria-label="Undo" onClick={act("tile_undo", { type: "undo" })}>
+      <img src={icon("undo")} alt="" />
+    </button>
   </div>
 );
-
-const Ops = ({ state, hinted }: { state: BattleState; hinted: Hinted }) => {
-  if (state.level.ops.length <= 1) return null;
-  return (
-    <div class="ops">
-      {state.level.ops.map((op) => (
-        <button
-          class={`op ${state.equation.pendingOp === op ? "is-picked" : ""} ${hinted?.op === op && !state.equation.pendingOp ? "is-hinted" : ""}`}
-          data-op={op}
-          aria-label={`Sign ${op}`}
-          onClick={act("tile_tap", { type: "tapOp", op })}
-        >
-          <Num value={op} />
-        </button>
-      ))}
-    </div>
-  );
-};
 
 /** How long the Pass button ignores taps after it replaces Impossible, so a double tap on that cannot give the turn away. */
 const PASS_ARMS_AFTER_MS = 700;
@@ -154,7 +73,7 @@ const CastButton = ({ state }: { state: BattleState }) => {
     <button
       class={`btn btn-cast btn-cast-${kind} ${ready ? "" : "is-waiting"} ${ready && exact ? "is-exact" : ""}`}
       data-action="cast"
-      aria-label={`${kind === "strike" ? "Strike" : "Block"}: make ${target ?? "the number"}`}
+      aria-label={`${kind === "strike" ? "Strike" : "Block"}: make ${target === null ? "the number" : showNumber(target)}`}
       onClick={() => dispatch({ type: "cast" })}
     >
       <span class="cast-goal">
@@ -171,8 +90,17 @@ const Hand = ({ state }: { state: BattleState }) => {
   return (
     <div class="row row-hand">
       <HintButton hints={state.hints} />
-      <Tiles state={state} hinted={hinted} />
-      <Ops state={state} hinted={hinted} />
+      <TileRow
+        hand={state.hand}
+        hintedId={hinted?.tileId}
+        onTap={(tileId) => act("tile_tap", { type: "tapTile", tileId })()}
+      />
+      <OpRow
+        ops={state.level.ops}
+        pending={state.equation.pendingOp}
+        hinted={hinted?.op}
+        onTap={(op) => act("tile_tap", { type: "tapOp", op })()}
+      />
     </div>
   );
 };
@@ -180,7 +108,7 @@ const Hand = ({ state }: { state: BattleState }) => {
 export const ControlPanel = ({ state }: { state: BattleState }) => (
   <div class="panel">
     <div class="panel-rows">
-      <EquationBar state={state} />
+      <EquationRow state={state} />
       <Hand state={state} />
     </div>
     <CastButton state={state} />

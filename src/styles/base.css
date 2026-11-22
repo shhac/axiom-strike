@@ -149,3 +149,27 @@ img {
   animation-direction: reverse;
   animation-timing-function: ease-in;
 }
+
+/* A half or a quarter: two small digits either side of a bar, as tall as one digit. */
+.num-frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 1em;
+  margin: 0 0.04em;
+}
+
+.num .num-frac img {
+  height: 0.46em;
+  margin: 0;
+}
+
+.num-frac i {
+  width: 0.55em;
+  height: 0.07em;
+  margin: 0.02em 0;
+  border-radius: 0.05em;
+  background: #ffc21a;
+  box-shadow: 0 0 0 0.03em #2a1608;
+}

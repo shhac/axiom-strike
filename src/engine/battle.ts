@@ -1,5 +1,19 @@
 import { dealHand, dealSwap } from "./deal";
-import { applyStep, type Op } from "./equation";
+import {
+  boardTotal,
+  boardTotals,
+  boardValues,
+  clearBoard,
+  EMPTY_EQUATION,
+  freshTiles,
+  pickOp,
+  placeTile,
+  undoLast,
+  type Board,
+  type Equation,
+  type Tile,
+} from "./board";
+import type { Op } from "./equation";
 import { ENEMY_HP, type EnemyKind, type Level, type OpFamily } from "./levels";
 import { createRng, type Rng } from "./rng";
 import { solve, type Solution } from "./solver";
@@ -11,14 +25,6 @@ export const POTION_HEAL = 30;
 /** Items earned at the campfire and carried into a battle. */
 export type Kit = { scrolls: number; potions: number };
 export const NO_KIT: Kit = { scrolls: 0, potions: 0 };
-
-export type Tile = {
-  id: number;
-  value: number;
-  used: boolean;
-  /** Thrown away on an answer that was not exact. It still counts against an "Impossible!" call. */
-  wasted?: boolean;
-};
 
 export type Intent = { damage: number; remaining: number; turns: number };
 
@@ -37,7 +43,7 @@ export type Enemy = {
 export type AimKind = "strike" | "parry";
 export type Aim = { enemyId: number; kind: AimKind };
 
-export type Equation = { tiles: number[]; ops: Op[]; pendingOp: Op | null };
+export type { Equation, Tile } from "./board";
 
 export type Phase = "player" | "won" | "lost";
 
@@ -112,8 +118,6 @@ const MAX_LANDING_TOGETHER = 2;
 const RAGE_STEP = 2;
 const MAX_RAGE = 3;
 
-const EMPTY_EQUATION: Equation = { tiles: [], ops: [], pendingOp: null };
-
 const living = (state: BattleState) => state.enemies.filter((enemy) => enemy.hp > 0);
 
 export const lastState = (steps: readonly Step[], fallback: BattleState) => steps.at(-1)?.state ?? fallback;
@@ -122,21 +126,11 @@ export const lastState = (steps: readonly Step[], fallback: BattleState) => step
 const chain = (state: BattleState, ...phases: readonly ((current: BattleState) => Step[])[]): Step[] =>
   phases.reduce<Step[]>((steps, phase) => [...steps, ...phase(lastState(steps, state))], []);
 
-/** The numbers placed in the equation so far, in order. */
-export const equationValues = (state: BattleState): number[] =>
-  state.equation.tiles.map((id) => state.hand.find((tile) => tile.id === id)?.value ?? 0);
+export const equationValues = (state: BattleState): number[] => boardValues(state);
 
-/** Running totals after each tile of the equation; empty if nothing is placed. */
-export const runningTotals = (state: BattleState): number[] =>
-  equationValues(state).reduce<number[]>((totals, value, index) => {
-    if (index === 0) return [value];
-    const op = state.equation.ops[index - 1];
-    const previous = totals[totals.length - 1];
-    if (op === undefined || previous === undefined) return totals;
-    return [...totals, applyStep(previous, { op, value }) ?? previous];
-  }, []);
+export const runningTotals = (state: BattleState): number[] => boardTotals(state, state.level.grain);
 
-export const equationTotal = (state: BattleState): number | null => runningTotals(state).at(-1) ?? null;
+export const equationTotal = (state: BattleState): number | null => boardTotal(state, state.level.grain);
 
 const MIN_POWER = 2;
 
@@ -201,7 +195,7 @@ const dealStep = (state: BattleState): Step => {
   const [values, seed] = withRng(state, (rng) =>
     dealHand(rng, state.level, strikeEnemy?.weakness ?? state.level.weakness[0] ?? 2, landing),
   );
-  const hand = values.map((value, index) => ({ id: state.nextId + index, value, used: false }));
+  const hand = freshTiles(values, state.nextId);
   return {
     state: {
       ...state,
@@ -276,47 +270,13 @@ const reject = (state: BattleState, reason: Extract<BattleEvent, { type: "reject
 
 const quiet = (state: BattleState): Step[] => [{ state, event: null }];
 
-const tapTile = (state: BattleState, tileId: number): Step[] => {
-  const tile = state.hand.find((candidate) => candidate.id === tileId);
-  if (!tile || tile.used) return [];
-  const { equation } = state;
-  const take = (next: Equation) =>
-    quiet({
-      ...state,
-      equation: next,
-      hand: state.hand.map((t) => (t.id === tileId ? { ...t, used: true } : t)),
-    });
-
-  if (equation.tiles.length === 0) return take({ tiles: [tileId], ops: [], pendingOp: null });
-
-  const onlyOp = state.level.ops.length === 1 ? state.level.ops[0] : undefined;
-  const op = equation.pendingOp ?? onlyOp;
-  if (!op) return reject(state, "needOperator");
-
-  const total = equationTotal(state);
-  if (total === null || applyStep(total, { op, value: tile.value }) === null) return reject(state, "badStep");
-  return take({ tiles: [...equation.tiles, tileId], ops: [...equation.ops, op], pendingOp: null });
+/** A change to the sum being built: nothing happened, it was refused, or the board moved on. */
+const onBoard = (state: BattleState, next: Board | "needOperator" | "badStep" | null): Step[] => {
+  if (next === null) return [];
+  return typeof next === "string" ? reject(state, next) : quiet({ ...state, ...next });
 };
 
-const release = (state: BattleState, tileIds: readonly number[]): Tile[] =>
-  state.hand.map((tile) => (tileIds.includes(tile.id) ? { ...tile, used: false } : tile));
-
-const undo = (state: BattleState): Step[] => {
-  const { equation } = state;
-  if (equation.pendingOp) return quiet({ ...state, equation: { ...equation, pendingOp: null } });
-  const last = equation.tiles.at(-1);
-  if (last === undefined) return [];
-  return quiet({
-    ...state,
-    hand: release(state, [last]),
-    equation: { tiles: equation.tiles.slice(0, -1), ops: equation.ops.slice(0, -1), pendingOp: null },
-  });
-};
-
-const clear = (state: BattleState): Step[] =>
-  state.equation.tiles.length === 0 && !state.equation.pendingOp
-    ? []
-    : quiet({ ...state, hand: release(state, state.equation.tiles), equation: EMPTY_EQUATION });
+const clear = (state: BattleState): Step[] => onBoard(state, clearBoard(state));
 
 const updateEnemy = (state: BattleState, enemyId: number, change: (enemy: Enemy) => Enemy): BattleState => ({
   ...state,
@@ -344,15 +304,18 @@ const settle = (state: BattleState, enemyId: number): Step[] => {
   return [defeated, ...openWave({ ...defeated.state, turn: 0 }, nextWave)];
 };
 
-const strikeDamage = (distance: number, power: number): number => {
+/** One step off the number: one away, or a half or a quarter away where the land counts in those. */
+export const isNearMiss = (distance: number, level: Level) => distance === (level.grain ?? 1);
+
+const strikeDamage = (distance: number, power: number, level: Level): number => {
   if (distance === 0) return STRIKE_DAMAGE[Math.min(power, 5)] ?? 0;
-  return distance === 1 ? NEAR_MISS_DAMAGE : 0;
+  return isNearMiss(distance, level) ? NEAR_MISS_DAMAGE : 0;
 };
 
 const strike = (state: BattleState, enemy: Enemy, total: number, power: number): Step[] => {
   const distance = Math.abs(total - enemy.weakness);
   const exact = distance === 0;
-  const damage = strikeDamage(distance, power);
+  const damage = strikeDamage(distance, power, state.level);
   const hit = updateEnemy(state, enemy.id, (e) => ({ ...e, hp: Math.max(0, e.hp - damage) }));
   const struck: Step = { state: hit, event: { type: "strike", enemyId: enemy.id, damage, exact, power } };
 
@@ -382,7 +345,8 @@ const exactParry = (state: BattleState, enemy: Enemy, power: number): Step[] => 
 /** A near miss softens the blow but never by more than half: only an exact answer stops it. */
 const softenedBlow = ({ damage, remaining }: Intent, total: number): number => {
   const floor = Math.ceil(damage / 2);
-  return Math.min(remaining, Math.max(floor, Math.min(damage, Math.abs(total - damage))));
+  // Rounded up, so an answer with a half in it never leaves half a point of health.
+  return Math.min(remaining, Math.max(floor, Math.min(damage, Math.ceil(Math.abs(total - damage)))));
 };
 
 const nearParry = (state: BattleState, enemy: Enemy, total: number): Step[] => {
@@ -461,7 +425,7 @@ const searchAnswer = (state: BattleState, target: number, options: { prefix?: So
     state.hand.map((tile) => tile.value),
     state.level.ops,
     target,
-    options,
+    { ...options, grain: state.level.grain },
   );
 
 /** An exact answer for the aimed number from the tiles not yet spent this turn, if there is one. */
@@ -563,13 +527,11 @@ export const reduce = (state: BattleState, action: Action): Step[] => {
   if (state.phase !== "player") return [];
   switch (action.type) {
     case "tapTile":
-      return tapTile(state, action.tileId);
+      return onBoard(state, placeTile(state, action.tileId, state.level));
     case "tapOp":
-      return state.equation.tiles.length === 0 || !state.level.ops.includes(action.op)
-        ? []
-        : quiet({ ...state, equation: { ...state.equation, pendingOp: action.op } });
+      return onBoard(state, pickOp(state, action.op, state.level));
     case "undo":
-      return undo(state);
+      return onBoard(state, undoLast(state));
     case "clear":
       return clear(state);
     case "aim":

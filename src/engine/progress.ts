@@ -1,5 +1,5 @@
 import type { Kit } from "./battle";
-import { LEVELS, perFamily, TIERS, type Level, type OpFamily, type Tier } from "./levels";
+import { findRegion, LEVELS, perLand, TIERS, type LandId, type Level, type Tier } from "./levels";
 import { chooseTier, decay, NEW_SKILL, rate, type Skill } from "./skill";
 
 export const DIFFICULTIES = ["auto", ...TIERS] as const;
@@ -12,7 +12,7 @@ export type Settings = { music: boolean; sound: boolean; difficulty: Difficulty;
 
 export type Save = {
   stars: Record<string, number>;
-  skill: Record<OpFamily, Skill>;
+  skill: Record<LandId, Skill>;
   reading: Skill;
   /** Whole days since 1970, so time away can ease a returning player back in. */
   lastPlayedDay: number | null;
@@ -39,7 +39,7 @@ export const DEFAULT_SETTINGS: Settings = { music: true, sound: true, difficulty
 
 export const EMPTY_SAVE: Save = {
   stars: {},
-  skill: perFamily(() => NEW_SKILL),
+  skill: perLand(() => NEW_SKILL),
   reading: NEW_SKILL,
   lastPlayedDay: null,
   losses: {},
@@ -54,8 +54,17 @@ export const EMPTY_SAVE: Save = {
 
 export const starsFor = (save: Save, level: Level) => save.stars[level.id] ?? 0;
 
-/** Any land can be started; inside a land each level opens when the one before it is beaten. */
+/** Stars across every level of every land. Caves and anything else kept beside them do not count. */
+export const totalStars = (save: Save): number => LEVELS.reduce((sum, level) => sum + starsFor(save, level), 0);
+
+export const landIsOpen = (save: Save, land: LandId): boolean => totalStars(save) >= findRegion(land).opensAt;
+
+/**
+ * Any of the first four lands can be started; the far lands open on stars in total. Inside a
+ * land each level opens when the one before it is beaten.
+ */
 export const isUnlocked = (save: Save, level: Level): boolean => {
+  if (!landIsOpen(save, level.region)) return false;
   if (level.step === 0) return true;
   const previous = LEVELS.find((candidate) => candidate.region === level.region && candidate.step === level.step - 1);
   return previous !== undefined && starsFor(save, previous) > 0;
@@ -95,7 +104,7 @@ export const recordLoss = (save: Save, level: Level): Save => ({
   losses: { ...save.losses, [level.id]: (save.losses[level.id] ?? 0) + 1 },
 });
 
-export const recordCast = (save: Save, family: OpFamily, difficulty: number, score: number): Save => ({
+export const recordCast = (save: Save, family: LandId, difficulty: number, score: number): Save => ({
   ...save,
   skill: { ...save.skill, [family]: rate(save.skill[family], difficulty, score) },
 });
@@ -141,6 +150,6 @@ export const startDay = (save: Save, today: number): Save => {
     ...save,
     lastPlayedDay: today,
     reading: decay(save.reading, away),
-    skill: perFamily((family) => decay(save.skill[family], away)),
+    skill: perLand((land) => decay(save.skill[land], away)),
   };
 };

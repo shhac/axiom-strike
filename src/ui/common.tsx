@@ -1,16 +1,34 @@
+import { FRACTION_DIGITS, showNumber } from "../engine/fractions";
 import { glyphFile, glyphSrc, icon } from "./assets";
 import { goTo } from "./nav";
 import { press } from "./press";
 
-/** Numbers and signs drawn with the game's own glyph set instead of a font. */
-export const Num = ({ value, class: className = "" }: { value: number | string; class?: string }) => (
-  <span class={`num ${String(value).length > 1 ? "num-long" : ""} ${className}`} aria-label={String(value)} role="img">
-    {[...String(value)].map((char) => {
-      const file = glyphFile(char);
-      return file ? <img src={glyphSrc(file)} alt="" draggable={false} /> : <span>{char}</span>;
-    })}
-  </span>
-);
+const Glyph = ({ char }: { char: string }) => {
+  const fraction = FRACTION_DIGITS[char];
+  if (fraction) {
+    return (
+      <span class="num-frac">
+        <img src={glyphSrc(fraction[0])} alt="" draggable={false} />
+        <i />
+        <img src={glyphSrc(fraction[1])} alt="" draggable={false} />
+      </span>
+    );
+  }
+  const file = glyphFile(char);
+  return file ? <img src={glyphSrc(file)} alt="" draggable={false} /> : <span>{char}</span>;
+};
+
+/** Numbers and signs drawn with the game's own glyph set instead of a font. Halves and quarters are stacked digits. */
+export const Num = ({ value, class: className = "" }: { value: number | string; class?: string }) => {
+  const text = typeof value === "number" ? showNumber(value) : value;
+  return (
+    <span class={`num ${text.length > 1 ? "num-long" : ""} ${className}`} aria-label={text} role="img">
+      {[...text].map((char) => (
+        <Glyph char={char} />
+      ))}
+    </span>
+  );
+};
 
 type SpriteProps = ({ strip: string; once?: boolean } | { still: string }) & { class?: string };
 

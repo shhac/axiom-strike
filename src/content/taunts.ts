@@ -5,6 +5,7 @@ export const MONSTER_NAMES: Record<OpFamily, Record<EnemyKind, string>> = {
   sub: { minion: "Spikelet", standard: "Sir Prickle", boss: "Lord Thornax" },
   mul: { minion: "Sparkling", standard: "Crystamul", boss: "Archmage Multiplix" },
   div: { minion: "Droplet", standard: "Dribble", boss: "The Deep Divider" },
+  frac: { minion: "Crumb", standard: "Slicer", boss: "Baron von Gateau" },
 };
 
 type Lines = { first: readonly string[]; later: readonly string[]; boss: readonly string[] };
@@ -30,6 +31,11 @@ export const TAUNTS: Record<OpFamily, Lines> = {
     first: ["Drip... drop... split!", "We share NOTHING with you!", "Divide and conquer!"],
     later: ["Split up and soak the hero!", "No leftovers this time!", "Drip drop, round we go!"],
     boss: ["I will split you from your stars!", "The deep divides us all!"],
+  },
+  frac: {
+    first: ["You only get HALF a chance!", "A quarter of you will be left!", "Slice and dice!"],
+    later: ["Seconds, anyone?", "We come in pieces!", "Another slice of trouble!"],
+    boss: ["You cannot have your cake AND beat it!", "Three quarters of me is ALL trouble!"],
   },
 };
 

@@ -6,12 +6,12 @@ type Frontier = { total: number; tiles: number[]; ops: Op[] };
 
 type Candidate = { index: number; value: number };
 
-const extend = (node: Frontier, candidates: readonly Candidate[], ops: readonly Op[]): Frontier[] =>
+const extend = (node: Frontier, candidates: readonly Candidate[], ops: readonly Op[], grain: number): Frontier[] =>
   candidates.flatMap(({ index, value }) =>
     node.tiles.includes(index)
       ? []
       : ops.flatMap((op) => {
-          const total = applyStep(node.total, { op, value });
+          const total = applyStep(node.total, { op, value }, grain);
           return total === null ? [] : [{ total, tiles: [...node.tiles, index], ops: [...node.ops, op] }];
         }),
   );
@@ -34,16 +34,23 @@ export const solve = (
   values: readonly number[],
   ops: readonly Op[],
   target: number,
-  options: { minTiles?: number; maxTiles?: number; prefix?: Solution; exclude?: readonly number[] } = {},
+  options: {
+    minTiles?: number;
+    maxTiles?: number;
+    prefix?: Solution;
+    exclude?: readonly number[];
+    grain?: number;
+  } = {},
 ): Solution | null => {
   const minTiles = options.minTiles ?? 2;
   const maxTiles = Math.min(options.maxTiles ?? 4, values.length);
   const excluded = new Set(options.exclude ?? []);
   const candidates = values.flatMap((value, index) => (excluded.has(index) ? [] : [{ index, value }]));
   const prefix = options.prefix;
+  const grain = options.grain ?? 1;
 
   const start: Frontier[] = prefix?.tiles.length
-    ? prefixStart(values, prefix)
+    ? prefixStart(values, prefix, grain)
     : candidates.map(({ index, value }) => ({ total: value, tiles: [index], ops: [] }));
 
   const search = (frontier: Frontier[]): Solution | null => {
@@ -54,13 +61,13 @@ export const solve = (
       if (hit) return { tiles: hit.tiles, ops: hit.ops };
     }
     if (depth >= maxTiles) return null;
-    return search(dedupe(frontier.flatMap((node) => extend(node, candidates, ops))));
+    return search(dedupe(frontier.flatMap((node) => extend(node, candidates, ops, grain))));
   };
   return search(start);
 };
 
 /** The single node an equation already on the board starts from, or nothing if it does not add up. */
-const prefixStart = (values: readonly number[], prefix: Solution): Frontier[] => {
+const prefixStart = (values: readonly number[], prefix: Solution, grain: number): Frontier[] => {
   const [firstIndex, ...rest] = prefix.tiles;
   const first = firstIndex === undefined ? undefined : values[firstIndex];
   if (first === undefined) return [];
@@ -68,7 +75,7 @@ const prefixStart = (values: readonly number[], prefix: Solution): Frontier[] =>
     const value = values[tileIndex];
     const op = prefix.ops[i];
     if (sum === null || value === undefined || op === undefined) return null;
-    return applyStep(sum, { op, value });
+    return applyStep(sum, { op, value }, grain);
   }, first);
   return total === null ? [] : [{ total, tiles: [...prefix.tiles], ops: [...prefix.ops] }];
 };

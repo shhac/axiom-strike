@@ -1,5 +1,5 @@
 import { PASSAGES, type Passage } from "../content/passages";
-import { REGIONS, type OpFamily } from "./levels";
+import { REGIONS, type LandId } from "./levels";
 import { MAX_ITEMS, type ReadingLevel, type Save } from "./progress";
 import type { Rng } from "./rng";
 import { rate } from "./skill";
@@ -17,7 +17,7 @@ const READINGS_BEFORE_OWN_RATING = 3;
 const READING_TRAILS_MATHS = 0.5;
 const FIXED_GRADE: Record<Exclude<ReadingLevel, "auto">, number> = { easy: 1.5, medium: 3.5, hard: 5.5 };
 /** Roughly the grade at which each land's sums are taught. */
-const LAND_GRADE: Record<OpFamily, number> = { add: 2, sub: 2.5, mul: 3.5, div: 4.5 };
+const LAND_GRADE: Record<LandId, number> = { add: 2, sub: 2.5, mul: 3.5, div: 4.5, big: 4.5, frac: 5 };
 /** Anything quicker than this per word was not read, only tapped through. */
 const MIN_MS_PER_WORD = 250;
 
@@ -28,7 +28,7 @@ const clampGrade = (grade: number) => Math.min(MAX_GRADE, Math.max(MIN_GRADE, gr
 const passageDifficulty = (grade: number) => 600 + 200 * grade;
 const gradeForRating = (rating: number) => (rating - 600) / 200;
 
-const hasStarsIn = (save: Save, family: OpFamily) =>
+const hasStarsIn = (save: Save, family: LandId) =>
   Object.keys(save.stars).some((levelId) => levelId.startsWith(`${family}_`));
 
 const mathsGrade = (save: Save): number =>

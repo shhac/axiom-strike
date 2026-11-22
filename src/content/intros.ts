@@ -1,4 +1,4 @@
-import type { Level, OpFamily } from "../engine/levels";
+import type { LandId, Level, OpFamily } from "../engine/levels";
 import { MONSTER_NAMES } from "./taunts";
 
 export type Beat = {
@@ -8,11 +8,20 @@ export type Beat = {
   sum?: string;
 };
 
-export type Intro = { id: string; family: OpFamily; boss: boolean; name: string; beats: readonly Beat[] };
+/** `land` sets the backdrop and `family` the monster that does the talking. */
+export type Intro = {
+  id: string;
+  land: LandId;
+  family: OpFamily;
+  boss: boolean;
+  name: string;
+  beats: readonly Beat[];
+};
 
-const FAMILY_INTROS: Record<OpFamily, Intro> = {
+const LAND_INTROS: Record<LandId, Intro> = {
   add: {
     id: "add",
+    land: "add",
     family: "add",
     boss: false,
     name: MONSTER_NAMES.add.standard,
@@ -36,6 +45,7 @@ const FAMILY_INTROS: Record<OpFamily, Intro> = {
   },
   sub: {
     id: "sub",
+    land: "sub",
     family: "sub",
     boss: false,
     name: MONSTER_NAMES.sub.standard,
@@ -51,6 +61,7 @@ const FAMILY_INTROS: Record<OpFamily, Intro> = {
   },
   mul: {
     id: "mul",
+    land: "mul",
     family: "mul",
     boss: false,
     name: MONSTER_NAMES.mul.standard,
@@ -63,6 +74,7 @@ const FAMILY_INTROS: Record<OpFamily, Intro> = {
   },
   div: {
     id: "div",
+    land: "div",
     family: "div",
     boss: false,
     name: MONSTER_NAMES.div.standard,
@@ -73,26 +85,59 @@ const FAMILY_INTROS: Record<OpFamily, Intro> = {
       { speaker: "enemy", text: "It only works if it splits evenly. No leftovers allowed down here!" },
     ],
   },
+  big: {
+    id: "big",
+    land: "big",
+    family: "mul",
+    boss: false,
+    name: MONSTER_NAMES.mul.standard,
+    beats: [
+      { speaker: "enemy", text: "Welcome to the GIANT Peaks! Up here every number is ENORMOUS. Even ours!" },
+      { speaker: "enemy", text: "We ALL came. Slimes, spikes, sparks and drips. Plus, minus, times AND divide!" },
+      {
+        speaker: "hero",
+        text: "Big numbers are just small ones stuck together. Use any sign you like!",
+        sum: "30+25=55",
+      },
+      { speaker: "hero", text: "Times gets you there fast.", sum: "12×5=60" },
+    ],
+  },
+  frac: {
+    id: "frac",
+    land: "frac",
+    family: "frac",
+    boss: false,
+    name: MONSTER_NAMES.frac.standard,
+    beats: [
+      { speaker: "enemy", text: "I am Slicer, and nothing here is WHOLE. Not the pies. Not the numbers. Not YOU!" },
+      { speaker: "enemy", text: "My weakness has a HALF in it. You cannot count that on your fingers!" },
+      { speaker: "hero", text: "Two halves make a whole.", sum: "½+½=1" },
+      { speaker: "hero", text: "So add the wholes, then the halves.", sum: "1½+1=2½" },
+    ],
+  },
 };
 
-const boss = (family: OpFamily, text: string): Intro => ({
-  id: `${family}_boss`,
+const boss = (land: LandId, family: OpFamily, text: string): Intro => ({
+  id: `${land}_boss`,
+  land,
   family,
   boss: true,
   name: MONSTER_NAMES[family].boss,
   beats: [{ speaker: "enemy", text }],
 });
 
-const BOSS_INTROS: Record<OpFamily, Intro> = {
-  add: boss("add", "WHO DARES squelch into my throne room? I have ONE HUNDRED health. Bring your biggest sums!"),
-  sub: boss("sub", "Every number you take away, I take personally. Now face the Peak Warden!"),
-  mul: boss("mul", "Two times two times TROUBLE! My magic multiplies, and so will your problems!"),
-  div: boss("div", "I will split you from your stars! Only the sharpest sharing can sink me."),
+const BOSS_INTROS: Record<LandId, Intro> = {
+  add: boss("add", "add", "WHO DARES squelch into my throne room? I have ONE HUNDRED health. Bring your biggest sums!"),
+  sub: boss("sub", "sub", "Every number you take away, I take personally. Now face the Peak Warden!"),
+  mul: boss("mul", "mul", "Two times two times TROUBLE! My magic multiplies, and so will your problems!"),
+  div: boss("div", "div", "I will split you from your stars! Only the sharpest sharing can sink me."),
+  big: boss("big", "mul", "You climbed ALL this way? Then meet a GIANT helping of magic!"),
+  frac: boss("frac", "frac", "I am three quarters cake and ONE HUNDRED percent furious. No seconds for you!"),
 };
 
 /** The scene to play before this level, if the player has not met its monsters yet. */
 export const introFor = (level: Level, seen: readonly string[]): Intro | null => {
-  const family = FAMILY_INTROS[level.region];
+  const family = LAND_INTROS[level.region];
   if (!seen.includes(family.id)) return family;
   const bossIntro = BOSS_INTROS[level.region];
   const hasBoss = level.waves.some((wave) => wave.some((enemy) => enemy.kind === "boss"));

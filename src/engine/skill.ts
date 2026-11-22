@@ -1,4 +1,4 @@
-import { aimTarget, answerLeft, equationTotal, type BattleState } from "./battle";
+import { aimTarget, answerLeft, equationTotal, isNearMiss, type BattleState } from "./battle";
 import { TIER_STEP, type Level, type Tier } from "./levels";
 
 /** How well a player is doing at one kind of question, on the Elo scale. */
@@ -61,7 +61,7 @@ export const castResult = (state: BattleState): CastResult | null => {
   if (target === null || total === null || state.equation.tiles.length < 2) return null;
   if (!answerLeft(state)) return null;
   const distance = Math.abs(total - target);
-  return { exact: distance === 0, nearMiss: distance === 1, hinted: state.hintPath !== null };
+  return { exact: distance === 0, nearMiss: isNearMiss(distance, state.level), hinted: state.hintPath !== null };
 };
 
 export const castScore = ({ exact, nearMiss, hinted }: CastResult): number => {

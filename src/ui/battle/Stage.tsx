@@ -1,4 +1,5 @@
 import { HERO_MAX_HP, targetOf, type AimKind, type BattleState, type Enemy } from "../../engine/battle";
+import { findRegion } from "../../engine/levels";
 import { enemyStrip, icon, knockedOutSprite } from "../assets";
 import { playSfx } from "../audio";
 import { Num, Sprite } from "../common";
@@ -76,7 +77,7 @@ export const Hud = ({ state }: { state: BattleState }) => (
     </div>
     <div class="hud-level">
       <span class="hud-name" aria-label={state.level.name}>
-        <Num value={state.level.focus} />
+        <Num value={findRegion(state.level.region).sign} />
         Level {state.level.step + 1}
       </span>
       <span class="pips" aria-label={`Wave ${state.wave + 1} of ${state.level.waves.length}`}>

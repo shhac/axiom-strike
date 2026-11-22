@@ -1,4 +1,4 @@
-import { perFamily } from "./levels";
+import { perLand } from "./levels";
 import {
   DEFAULT_SETTINGS,
   DIFFICULTIES,
@@ -70,7 +70,7 @@ export const parseSave = (raw: string | null): Save => {
   const skills = isRecord(parsed.skill) ? parsed.skill : {};
   return {
     stars: counts(parsed.stars, 1, 3),
-    skill: perFamily((family) => skill(skills[family])),
+    skill: perLand((land) => skill(skills[land])),
     reading: skill(parsed.reading),
     lastPlayedDay: typeof parsed.lastPlayedDay === "number" ? parsed.lastPlayedDay : null,
     losses: counts(parsed.losses, 1, 1e6),

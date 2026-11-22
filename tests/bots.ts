@@ -26,7 +26,7 @@ const exactAnswer = (state: BattleState, target: number, sizes: { minTiles?: num
     state.hand.map((tile) => tile.value),
     state.level.ops,
     target,
-    { ...sizes, exclude: tileIndices(state, true) },
+    { ...sizes, exclude: tileIndices(state, true), grain: state.level.grain },
   );
 
 const play = (state: BattleState, answer: Solution, aim: Action): Action[] => [

@@ -83,4 +83,10 @@ monster art-src/anim_e.png 3 boss_div_hurt 1
 hero art-src/anim_c.png 1 hero_victory 0 100 30
 hero art-src/anim_c.png 2 hero_attack 1 100
 hero art-src/anim_c.png 3 hero_hurt 1 100
+monster art-src/anim_f.png 0 enemy_frac 1
+monster art-src/anim_f.png 1 enemy_frac_hurt 1
+monster art-src/anim_f.png 2 boss_frac 1
+monster art-src/anim_f.png 3 boss_frac_hurt 1
+# Knocked out: the hurt slice tipped on its side.
+magick "$OUT/enemy_frac_hurt.png" -crop 160x160+0+0 +repage -background none -rotate 90 -resize 128x128 -strip public/assets/chars/enemy_frac_ko.png
 rm -rf "$TMP"

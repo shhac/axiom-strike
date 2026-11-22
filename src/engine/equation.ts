@@ -10,11 +10,15 @@ const APPLY: Record<Op, (total: number, value: number) => number> = {
 };
 
 /** Kids see a running total, so every intermediate must be a whole number that is not negative. */
-const isFriendly = (n: number) => Number.isInteger(n) && n >= 0;
+const isFriendly = (n: number, grain: number) => Number.isInteger(n / grain) && n >= 0;
 
-export const applyStep = (total: number, step: Step): number | null => {
+/**
+ * `grain` is the smallest step a running total may land on: 1 for whole numbers, 0.5 or 0.25
+ * where the tiles are halves or quarters (both exact in floating point).
+ */
+export const applyStep = (total: number, step: Step, grain = 1): number | null => {
   const next = APPLY[step.op](total, step.value);
-  return isFriendly(next) ? next : null;
+  return isFriendly(next, grain) ? next : null;
 };
 
 const isLoose = (op: Op) => op === "+" || op === "-";
@@ -33,5 +37,5 @@ export const bracketEnds = (ops: readonly Op[]): number[] =>
   });
 
 /** One step at a time on the total so far, which `bracketEnds` makes true on screen. */
-export const evaluate = (first: number, steps: readonly Step[]): number | null =>
-  steps.reduce<number | null>((total, step) => (total === null ? null : applyStep(total, step)), first);
+export const evaluate = (first: number, steps: readonly Step[], grain = 1): number | null =>
+  steps.reduce<number | null>((total, step) => (total === null ? null : applyStep(total, step, grain)), first);

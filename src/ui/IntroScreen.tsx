@@ -26,7 +26,7 @@ export const IntroScreen = () => {
   };
 
   return (
-    <div class={`screen intro stage-${scene.family}`} data-screen="intro" onClick={advance}>
+    <div class={`screen intro stage-${scene.land}`} data-screen="intro" onClick={advance}>
       <div class={`intro-cast is-${beat.speaker}`}>
         <Sprite class="intro-hero" strip={heroStrip(beat.speaker === "hero" ? "victory" : "idle")} />
         <Sprite

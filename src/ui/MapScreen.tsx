@@ -93,10 +93,10 @@ const RegionColumn = ({ region, progress }: { region: Region; progress: Save }) 
   const heroTo = heroGoal(progress);
   return (
     <section class={`region region-${region.id}`} aria-label={region.name}>
-      <Num class="region-symbol" value={region.focus} />
+      <Num class="region-symbol" value={region.sign} />
       <header class="region-title">
         <span class="region-name">
-          <Num value={region.focus} />
+          <Num value={region.sign} />
           {region.label}
         </span>
         <span class="region-stars">
@@ -142,7 +142,7 @@ export const MapScreen = () => {
     <div class={`screen map ${nudging ? "is-nudging" : ""}`} data-screen="map" onPointerDown={touched}>
       <div class="map-art" />
       <div class="regions">
-        {REGIONS.map((region) => (
+        {REGIONS.filter((region) => region.page === 0).map((region) => (
           <RegionColumn key={region.id} region={region} progress={save.value} />
         ))}
       </div>

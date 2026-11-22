@@ -322,3 +322,11 @@
 .stage-div {
   background-image: url("/assets/bg/division_depths.webp");
 }
+
+.stage-big {
+  background-image: url("/assets/bg/big_peaks.webp");
+}
+
+.stage-frac {
+  background-image: url("/assets/bg/fraction_fields.webp");
+}

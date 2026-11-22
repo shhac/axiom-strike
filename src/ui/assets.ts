@@ -1,4 +1,4 @@
-import { REGIONS, type EnemyKind, type OpFamily } from "../engine/levels";
+import { FAMILIES, type EnemyKind, type OpFamily } from "../engine/levels";
 
 export const icon = (name: string) => `./assets/icons/${name}.png`;
 
@@ -34,7 +34,7 @@ export const knockedOutSprite = (family: OpFamily) => `./assets/chars/enemy_${fa
 
 export const ALL_SPRITES = [
   ...HERO_POSES.map(heroStrip),
-  ...REGIONS.flatMap(({ id }) => [
+  ...FAMILIES.flatMap((id) => [
     enemyStrip(id, "standard"),
     enemyStrip(id, "standard", true),
     enemyStrip(id, "boss"),

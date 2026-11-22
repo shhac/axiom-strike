@@ -103,6 +103,8 @@ describe("ratings in the save", () => {
         sub: { rating: 1200, attempts: 2 },
         mul: { rating: 1300, attempts: 3 },
         div: { rating: 1400, attempts: 4 },
+        big: { rating: 1500, attempts: 5 },
+        frac: { rating: 1600, attempts: 6 },
       },
       reading: { rating: 1500, attempts: 5 },
     };
@@ -112,6 +114,8 @@ describe("ratings in the save", () => {
       sub: decay(rated.skill.sub, 4),
       mul: decay(rated.skill.mul, 4),
       div: decay(rated.skill.div, 4),
+      big: decay(rated.skill.big, 4),
+      frac: decay(rated.skill.frac, 4),
     });
     expect(later.reading).toEqual(decay(rated.reading, 4));
     expect(startDay(rated, 90)).toEqual({ ...rated, lastPlayedDay: 90 });

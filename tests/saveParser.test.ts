@@ -29,6 +29,8 @@ describe("reading a stored save", () => {
         sub: { rating: 1200, attempts: 2 },
         mul: { rating: 1300, attempts: 3 },
         div: { rating: 1400, attempts: 4 },
+        big: { rating: 1500, attempts: 5 },
+        frac: { rating: 1600, attempts: 6 },
       },
       reading: { rating: 1500, attempts: 5 },
     };

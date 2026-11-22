@@ -28,7 +28,7 @@ const rig = (
   enemies: state.enemies.map((e, index) => (index === 0 ? { ...e, ...enemy } : e)),
 });
 /** True if every target has its own two-tile exact answer, with no tile shared between them. */
-const disjointAnswers = (hand: number[], ops: readonly Op[], targets: number[], used: number[]): boolean => {
+const disjointAnswers = (hand: number[], ops: readonly Op[], targets: number[], used: number[], grain = 1): boolean => {
   const [target, ...rest] = targets;
   if (target === undefined) return true;
   const free = hand.flatMap((_, index) => (used.includes(index) ? [] : [index]));
@@ -36,8 +36,8 @@ const disjointAnswers = (hand: number[], ops: readonly Op[], targets: number[], 
     free.some(
       (j) =>
         i !== j &&
-        ops.some((op) => applyStep(hand[i]!, { op, value: hand[j]! }) === target) &&
-        disjointAnswers(hand, ops, rest, [...used, i, j]),
+        ops.some((op) => applyStep(hand[i]!, { op, value: hand[j]! }, grain) === target) &&
+        disjointAnswers(hand, ops, rest, [...used, i, j], grain),
     ),
   );
 };
@@ -103,9 +103,9 @@ describe("deal guarantee", () => {
       const raged = (n: number) => (level.rage ? Math.min(level.tileMax * 2 - 1, n + (seed % 4) * 2) : n);
       const parries = Array.from({ length: seed % 3 }, () => Math.max(raged(rng.pick(level.attack)), 0));
       const hand = dealHand(rng, level, strike, parries);
-      if (hand.length !== HAND_SIZE || hand.some((value) => value < 1 || value > level.tileMax)) return seed;
+      if (hand.length !== HAND_SIZE || hand.some((value) => value <= 0 || value > level.tileMax)) return seed;
 
-      return disjointAnswers(hand, level.ops, [...parries, strike], []) ? null : seed;
+      return disjointAnswers(hand, level.ops, [...parries, strike], [], level.grain) ? null : seed;
     }).filter((seed) => seed !== null);
     expect(failures).toEqual([]);
   });
