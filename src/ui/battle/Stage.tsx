@@ -31,7 +31,7 @@ const AimChip = ({ enemy, kind, state }: { enemy: Enemy; kind: AimKind; state: B
       aria-pressed={selected}
       onClick={act("aim", { type: "aim", aim: { enemyId: enemy.id, kind } })}
     >
-      <img class="chip-icon" src={icon(kind === "strike" ? "sword" : "shield")} alt="" />
+      <img class="chip-icon" src={icon(kind === "strike" ? "sword" : "claw")} alt="" />
       <Num class="chip-number" key={number} value={number} />
       {kind === "parry" && <span class="chip-when">{urgent ? "NOW!" : `in ${intent.turns}`}</span>}
     </button>

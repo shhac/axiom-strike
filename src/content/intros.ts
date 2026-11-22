@@ -25,7 +25,7 @@ const FAMILY_INTROS: Record<OpFamily, Intro> = {
       { speaker: "hero", text: "Tap numbers that add up to the sword number, then STRIKE!", sum: "3+4=7" },
       {
         speaker: "enemy",
-        text: "Well, the shield number is how hard I hit! Make THAT number and you parry me. As if you could!",
+        text: "Well, the claw number is how hard I hit! Make THAT number and you block me. As if you could!",
       },
       { speaker: "hero", text: "More numbers in one sum means a bigger hit.", sum: "2+2+3=7" },
       {

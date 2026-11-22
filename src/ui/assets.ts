@@ -10,6 +10,8 @@ const GLYPH_FILES: Record<string, string> = {
   "÷": "divide",
   "=": "equals",
   "!": "bang",
+  "(": "open",
+  ")": "close",
 };
 
 export const glyphFile = (char: string): string | undefined => (/\d/.test(char) ? char : GLYPH_FILES[char]);

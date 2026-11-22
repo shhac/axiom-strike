@@ -96,7 +96,7 @@ const strikeFx = async (event: EventOf<"strike">) => {
 const parryFeedback = (event: EventOf<"parry">, target: HTMLElement | null) => {
   if (event.exact) {
     playSfx("parry");
-    float("PARRIED!", target, "good", -1.6);
+    float("BLOCKED!", target, "good", -1.6);
     float(`-${event.counter}`, target, "damage");
     shake(target);
     return;

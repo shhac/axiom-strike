@@ -26,13 +26,14 @@ const EquationBar = ({ state }: { state: BattleState }) => {
   const total = equationTotal(state);
   const kind = state.aim?.kind ?? "strike";
   const placed = equationValues(state);
-  const ready = placed.length >= 2;
   const exact = total !== null && total === target;
   const { ops, pendingOp } = state.equation;
   const closes = bracketEnds(pendingOp ? [...ops, pendingOp] : ops);
   const terms = useShrinkToFit(`${placed.join()} ${ops.join()} ${pendingOp ?? ""}`);
   return (
     <div class="row row-equation">
+      <HintButton hints={state.hints} />
+      <CallOrEnd called={state.called} />
       <div class={`goal goal-${kind}`}>
         <img src={icon(kind === "strike" ? "sword" : "shield")} alt="" />
         <Num class="goal-number" key={target} value={target ?? "?"} />
@@ -62,22 +63,6 @@ const EquationBar = ({ state }: { state: BattleState }) => {
       </div>
       <button class="btn btn-icon" aria-label="Undo" onClick={act("tile_undo", { type: "undo" })}>
         <img src={icon("undo")} alt="" />
-      </button>
-      <button
-        class={`btn btn-call ${state.called ? "is-empty" : ""}`}
-        data-action="impossible"
-        aria-label="Impossible: the numbers left cannot make it"
-        onClick={act("button", { type: "impossible" })}
-      >
-        <img src={icon("cross")} alt="" />
-        <span>Impossible!</span>
-      </button>
-      <button
-        class={`btn btn-cast btn-cast-${kind} ${ready ? "" : "is-waiting"} ${ready && exact ? "is-exact" : ""}`}
-        data-action="cast"
-        onClick={() => dispatch({ type: "cast" })}
-      >
-        {kind === "strike" ? "STRIKE!" : "PARRY!"}
       </button>
     </div>
   );
@@ -119,23 +104,67 @@ const Ops = ({ state, hinted }: { state: BattleState; hinted: Hinted }) => {
   );
 };
 
-const Tools = ({ hints }: { hints: number }) => (
-  <div class="tools">
-    <button
-      class={`btn btn-tool ${hints === 0 ? "is-empty" : ""}`}
-      data-action="hint"
-      aria-label={`Hint, ${hints} left`}
-      onClick={act("hint", { type: "hint" })}
-    >
-      <img src={icon("hint")} alt="" />
-      <b class="badge">{hints}</b>
-    </button>
-    <button class="btn btn-tool btn-end" data-action="end-turn" onClick={act("button", { type: "endTurn" })}>
+/** How long the End turn button ignores taps after it replaces Impossible, so a double tap on that cannot give the turn away. */
+const END_TURN_ARMS_AFTER_MS = 700;
+
+const EndTurn = () => {
+  const shownAt = useRef(performance.now());
+  const endTurn = () => {
+    if (performance.now() - shownAt.current < END_TURN_ARMS_AFTER_MS) return;
+    act("button", { type: "endTurn" })();
+  };
+  return (
+    <button class="btn btn-call" data-action="end-turn" onClick={endTurn}>
       <img src={icon("hourglass")} alt="" />
       <span>End turn</span>
     </button>
-  </div>
+  );
+};
+
+/** One call each turn, so once it is made its button becomes the way to give the turn away. */
+const CallOrEnd = ({ called }: { called: boolean }) =>
+  called ? (
+    <EndTurn />
+  ) : (
+    <button
+      class="btn btn-call"
+      data-action="impossible"
+      aria-label="Impossible: the numbers left cannot make it"
+      onClick={act("button", { type: "impossible" })}
+    >
+      <img src={icon("cross")} alt="" />
+      <span>Impossible!</span>
+    </button>
+  );
+
+const HintButton = ({ hints }: { hints: number }) => (
+  <button
+    class={`btn btn-tool ${hints === 0 ? "is-empty" : ""}`}
+    data-action="hint"
+    aria-label={`Hint, ${hints} left`}
+    onClick={act("hint", { type: "hint" })}
+  >
+    <img src={icon("hint")} alt="" />
+    <b class="badge">{hints}</b>
+  </button>
 );
+
+const CastButton = ({ state }: { state: BattleState }) => {
+  const kind = state.aim?.kind ?? "strike";
+  const total = equationTotal(state);
+  const ready = state.equation.tiles.length >= 2;
+  const exact = total !== null && total === aimTarget(state);
+  return (
+    <button
+      class={`btn btn-cast btn-cast-${kind} ${ready ? "" : "is-waiting"} ${ready && exact ? "is-exact" : ""}`}
+      data-action="cast"
+      onClick={() => dispatch({ type: "cast" })}
+    >
+      <img src={icon(kind === "strike" ? "sword" : "shield")} alt="" />
+      {kind === "strike" ? "STRIKE!" : "BLOCK!"}
+    </button>
+  );
+};
 
 const Hand = ({ state }: { state: BattleState }) => {
   const hinted = hintNext(state);
@@ -143,14 +172,16 @@ const Hand = ({ state }: { state: BattleState }) => {
     <div class="row row-hand">
       <Tiles state={state} hinted={hinted} />
       <Ops state={state} hinted={hinted} />
-      <Tools hints={state.hints} />
     </div>
   );
 };
 
 export const ControlPanel = ({ state }: { state: BattleState }) => (
   <div class="panel">
-    <EquationBar state={state} />
-    <Hand state={state} />
+    <div class="panel-rows">
+      <EquationBar state={state} />
+      <Hand state={state} />
+    </div>
+    <CastButton state={state} />
   </div>
 );
