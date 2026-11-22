@@ -3,9 +3,9 @@ import { boardTotal, pickOp, placeTile, undoLast, type Board, type Refusal } fro
 import type { Level } from "../../engine/levels";
 import { icon } from "../assets";
 import { playSfx } from "../audio";
-import { Num } from "../common";
-import { EquationBox, OpRow, TileRow } from "./SumBoard";
+import { CastButton, EquationBox, handRowClass, OpRow, TileRow } from "./SumBoard";
 
+/** What to say when a tile or sign cannot go where it was put. The battle says the same. */
 export const REFUSALS: Record<Refusal, string> = {
   needOperator: "Pick a sign first",
   badStep: "That can't go below zero or split unevenly",
@@ -50,23 +50,13 @@ export const SumPanel = ({ board, level, target, change, refuse, corner, below, 
             <img src={icon("undo")} alt="" />
           </button>
         </div>
-        <div class={`row row-hand ${level.ops.length >= 4 ? "is-crowded" : ""}`}>
+        <div class={handRowClass(level.ops)}>
           {below}
           <TileRow hand={board.hand} onTap={(tileId) => apply(placeTile(board, tileId, level))} />
           <OpRow ops={level.ops} pending={board.equation.pendingOp} onTap={(op) => apply(pickOp(board, op, level))} />
         </div>
       </div>
-      <button
-        class={`btn btn-cast ${ready ? "" : "is-waiting"} ${ready && total === target ? "is-exact" : ""}`}
-        data-action="cast"
-        onClick={cast.go}
-      >
-        <span class="cast-goal">
-          <img src={icon(cast.icon)} alt="" />
-          <Num class="cast-number" key={target} value={target ?? "?"} />
-        </span>
-        <span class="cast-label">{cast.label}</span>
-      </button>
+      <CastButton label={cast.label} icon={cast.icon} target={target} total={total} ready={ready} go={cast.go} />
     </div>
   );
 };

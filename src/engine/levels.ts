@@ -277,5 +277,7 @@ export const FIRST_LEVEL: Level = LEVELS[0]!;
 /** An unknown id falls back to the first level rather than failing. */
 export const findLevel = (id: string): Level => LEVELS.find((level) => level.id === id) ?? FIRST_LEVEL;
 
-export const nextLevel = (level: Level): Level | null =>
-  LEVELS.find((candidate) => candidate.region === level.region && candidate.step === level.step + 1) ?? null;
+export const levelAt = (land: LandId, step: number): Level | undefined =>
+  LEVELS.find((level) => level.region === land && level.step === step);
+
+export const nextLevel = (level: Level): Level | null => levelAt(level.region, level.step + 1) ?? null;

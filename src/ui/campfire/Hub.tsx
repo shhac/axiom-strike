@@ -1,18 +1,14 @@
-import { FAMILIES } from "../../engine/levels";
-import type { Save } from "../../engine/progress";
+import { prizeWon, type Save } from "../../engine/progress";
 import { icon } from "../assets";
 import { MapButton, Prizes } from "../common";
 import type { Activity } from "../nav";
 import { press } from "../press";
+import { PAGES } from "./Book";
 import { localDay } from "../save";
-
-/** Monsters with a page in the book: three ranks of every family, and the lucky one. */
-export const BOOK_PAGES = FAMILIES.length * 3 + 1;
 
 const pagesFound = (save: Save) => Object.keys(save.beaten).length;
 
-/** Today's prize for a camp game, until it has been won. */
-const wonToday = (save: Save, prize: "practice" | "words") => save.daily.day === localDay() && save.daily[prize];
+const wonToday = (save: Save, prize: "practice" | "words") => prizeWon(save, prize, localDay());
 
 type CardProps = {
   activity: Activity;
@@ -59,7 +55,7 @@ export const Hub = ({ save, open }: { save: Save; open: (activity: Activity) => 
         )}
       </Card>
       <Card activity="book" art="grimoire" title="Monster book" open={open}>
-        {pagesFound(save)} of {BOOK_PAGES} found
+        {pagesFound(save)} of {PAGES.length} found
       </Card>
       <Card activity="gear" art="paw" title="Pets and tiles" open={open}>
         Choose your look

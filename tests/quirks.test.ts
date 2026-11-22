@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { answerLeft, isLucky, reduce, type Action, type BattleState, type Enemy } from "../src/engine/battle";
-import { canPair } from "../src/engine/deal";
+import { canPair, dealHand, dealSwap } from "../src/engine/deal";
 import { findLevel, LEVELS, TIERS, tuneLevel } from "../src/engine/levels";
-import { fractionLevels } from "./helpers";
+import { createRng } from "../src/engine/rng";
+import { fractionLevels, separateAnswers } from "./helpers";
 import { applyActions, openingState, solverBot, winRate } from "./bots";
 
 const act = (state: BattleState, ...actions: Action[]) => applyActions(state, actions);
@@ -32,8 +33,10 @@ describe("helmet", () => {
     expect(first(dented).weakness).not.toBe(7);
 
     const again = { ...dented, enemies: dented.enemies.map((e, i) => (i === 0 ? { ...e, weakness: 7 } : e)) };
-    const off = act(again, tap(2), tap(3), cast);
-    expect(first(off)).toMatchObject({ hp: 40, quirk: null });
+    const steps = reduce(act(again, tap(2), tap(3)), cast);
+    expect(steps[0]?.event).toMatchObject({ type: "strike", damage: 0, exact: true, helmet: "off" });
+    expect(steps.map((step) => step.event?.type)).toEqual(["strike", "weaknessShift"]);
+    expect(first(steps.at(-1)!.state)).toMatchObject({ hp: 40, quirk: null });
   });
 
   it("comes straight off for a three-number sum, which also does its damage", () => {
@@ -139,6 +142,76 @@ describe("boss phase", () => {
   });
 });
 
+describe("boss phase from a block", () => {
+  const blockAt = (hp: number, levelId: string) => {
+    const state = rig(
+      [4, 2, 1, 1, 1, 1, 1],
+      { kind: "boss", hp, maxHp: 100, intent: { damage: 6, remaining: 6, turns: 1 } },
+      levelId,
+    );
+    const aimed = act(
+      state,
+      { type: "aim", aim: { enemyId: first(state).id, kind: "parry" } },
+      tap(0),
+      op("+"),
+      tap(1),
+    );
+    return reduce(aimed, cast);
+  };
+
+  it("a counter hit that takes a boss to half health starts its phase, with a weakness that suits the quirk", () => {
+    ["sub_5", "mul_5"].forEach((levelId) => {
+      const steps = blockAt(55, levelId);
+      expect(steps.map((step) => step.event?.type)).toEqual(["parry", "bossPhase"]);
+      const end = steps.at(-1)!.state;
+      expect(first(end)).toMatchObject({ hp: 45, quirk: "noPlus", phased: true });
+      expect(canPair(end.level, first(end).weakness, "+")).toBe(true);
+    });
+  });
+
+  it("phases at exactly half health, and not when the counter hit beats it", () => {
+    expect(blockAt(60, "sub_5").map((step) => step.event?.type)).toEqual(["parry", "bossPhase"]);
+    expect(blockAt(10, "sub_5").map((step) => step.event?.type)).not.toContain("bossPhase");
+  });
+});
+
+describe("dealing for a monster that hates plus", () => {
+  it("always includes a two-tile answer without plus, in a new hand and in an Impossible swap", () => {
+    const stuck = LEVELS.filter((level) => level.ops.length > 1).flatMap((level) =>
+      TIERS.flatMap((tier) => {
+        const tuned = tuneLevel(level, tier);
+        const signs = tuned.ops.filter((sign) => sign !== "+");
+        return tuned.weakness
+          .filter((weak) => canPair(tuned, weak, "+"))
+          .flatMap((weak, seed) => {
+            const hands = [
+              dealHand(createRng(seed + 1), tuned, weak, [], "+"),
+              dealSwap(createRng(seed + 1), tuned, weak, 5, "+"),
+            ];
+            return hands.every((hand) => separateAnswers(hand, signs, [weak], [], tuned.grain))
+              ? []
+              : [`${level.id} ${tier} ${weak}`];
+          });
+      }),
+    );
+    expect(stuck).toEqual([]);
+  });
+});
+
+describe("near misses in halves and quarters", () => {
+  const strikeWith = (levelId: string, values: number[], weakness: number) => {
+    const state = rig(values, { weakness, hp: 40, maxHp: 40 }, levelId);
+    return first(act(state, tap(0), op("+"), tap(1), cast)).hp;
+  };
+
+  it("counts one step of the land's own size as one away", () => {
+    expect(strikeWith("frac_1", [1, 1.5, 1, 1, 1, 1, 1], 3)).toBe(39);
+    expect(strikeWith("frac_1", [1, 1, 1, 1, 1, 1, 1], 3)).toBe(40);
+    const quarters = tuneLevel(findLevel("frac_3"), "standard");
+    expect(quarters.grain).toBe(0.25);
+  });
+});
+
 describe("lucky monster", () => {
   const level = findLevel("add_2");
   const withLucky = () => {
@@ -172,6 +245,18 @@ describe("lucky monster", () => {
     const steps = reduce(two, pass);
     expect(steps.map((step) => step.event?.type)).toContain("fled");
     expect(steps.at(-1)!.state.enemies.some(isLucky)).toBe(false);
+  });
+
+  it("leaves the player aimed at a real monster with an answer when it runs while aimed at", () => {
+    const state = withLucky();
+    const lucky = state.enemies.find(isLucky)!;
+    const aimed = act(state, { type: "aim", aim: { enemyId: lucky.id, kind: "strike" } });
+    expect(["sharpEye", "lookAgain"]).toContain(events(aimed, { type: "impossible" })[0]);
+    const pass: Action = { type: "endTurn" };
+    const after = act(aimed, pass, pass, pass);
+    const target = after.enemies.find((enemy) => enemy.id === after.aim?.enemyId);
+    expect(target && !isLucky(target) && target.hp > 0).toBe(true);
+    expect(after.phase === "player" ? answerLeft(after) : true).toBeTruthy();
   });
 
   it("gives a prize when beaten, and runs when the rest of the wave is beaten first", () => {

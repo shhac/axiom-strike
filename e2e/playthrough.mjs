@@ -68,7 +68,8 @@ const screenshots = (page, prefix) => {
 const layoutProblems = (page, where) =>
   page.evaluate(
     ({ where, min }) => {
-      const small = [...document.querySelectorAll("button")]
+      // A spent tile is drawn smaller on purpose and cannot be tapped, so only live buttons count.
+      const small = [...document.querySelectorAll("button:not(:disabled)")]
         .map((b) => ({ label: b.getAttribute("aria-label") ?? b.textContent, box: b.getBoundingClientRect() }))
         .filter(({ box }) => box.width > 0 && (Math.round(box.width) < min || Math.round(box.height) < min))
         .map(
@@ -609,7 +610,7 @@ const useTheCamp = async ({ page, problems, shot }) => {
   await checkScreen(page, problems, shot, {
     name: "camp_practice_ready",
     where: "target practice start",
-    settleMs: 300,
+    settleMs: 900,
   });
   await tap(page, "[data-action=start]");
   const target = Number(await page.locator(".cast-number").getAttribute("aria-label"));
@@ -619,7 +620,7 @@ const useTheCamp = async ({ page, problems, shot }) => {
     await appears(page, "[data-score='1'], [data-score='2']"),
     "a hit in target practice did not score",
   );
-  await checkScreen(page, problems, shot, { name: "camp_practice", where: "target practice", settleMs: 300 });
+  await checkScreen(page, problems, shot, { name: "camp_practice", where: "target practice", settleMs: 900 });
   await tap(page, "[data-action=camp]");
   await page.waitForSelector("[data-phase=hub]");
 };

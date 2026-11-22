@@ -63,6 +63,55 @@ export const Prizes = ({ lead }: { lead: string }) => (
   </span>
 );
 
+/** Back to the camp from one of its activities. */
+export const CampButton = ({ back }: { back: () => void }) => (
+  <button class="btn btn-wide" data-action="camp" onClick={press(back)}>
+    Camp
+  </button>
+);
+
+type StarsProps = { count: number; class?: string; label?: boolean; stagger?: boolean };
+
+/** Three stars, `count` of them lit. `stagger` pops them in one after another, as on a result panel. */
+export const Stars = ({ count, class: className = "stars", label = false, stagger = false }: StarsProps) => (
+  <span class={className} aria-label={label ? `${count} of 3 stars` : undefined}>
+    {[1, 2, 3].map((n) => (
+      <img
+        src={icon(n <= count ? "star" : "star_empty")}
+        alt=""
+        style={stagger ? { animationDelay: `${n * 180}ms` } : undefined}
+      />
+    ))}
+  </span>
+);
+
+const pipClass = (index: number, now: number) => {
+  if (index < now) return "pip is-done";
+  return index === now ? "pip is-now" : "pip";
+};
+
+/** A row of dots for steps through something: done, the current one, and still to come. */
+export const Pips = ({ count, now, label }: { count: number; now: number; label?: string }) => (
+  <span class="pips" aria-label={label}>
+    {Array.from({ length: count }, (_, index) => (
+      <i class={pipClass(index, now)} />
+    ))}
+  </span>
+);
+
+/** Days played in a row, as a flame that grows at three and seven. Nothing until a day has been played. */
+export const Streak = ({ days }: { days: number }) => {
+  if (days === 0) return null;
+  const size = days >= 7 ? "is-roaring" : days >= 3 ? "is-bright" : "";
+  return (
+    <span class={`streak ${size}`} data-streak={days} aria-label={`${days} days played in a row`}>
+      <img src={icon("flame")} alt="" />
+      {days}
+      <small>{days === 1 ? "day" : "days"}</small>
+    </span>
+  );
+};
+
 export const RotatePrompt = () => (
   <div class="rotate">
     <img src={icon("undo")} alt="" />

@@ -1,8 +1,7 @@
-import { canPair, dealHand, dealSwap } from "./deal";
+import { canPair, dealHand, dealSwap, grainOf } from "./deal";
 import {
   boardTotal,
   boardTotals,
-  boardValues,
   clearBoard,
   EMPTY_EQUATION,
   freshTiles,
@@ -173,7 +172,7 @@ export const bannedNow = (state: BattleState): Op | null =>
   state.aim ? bannedOp(aimedEnemy(state), state.aim.kind) : null;
 
 /** The signs that may be used on what is aimed at: the single source for building, hints and answer searches. */
-export const opsFor = (state: BattleState): readonly Op[] => {
+const opsFor = (state: BattleState): readonly Op[] => {
   const banned = bannedNow(state);
   return banned ? state.level.ops.filter((op) => op !== banned) : state.level.ops;
 };
@@ -186,9 +185,7 @@ export const lastState = (steps: readonly Step[], fallback: BattleState) => step
 const chain = (state: BattleState, ...phases: readonly ((current: BattleState) => Step[])[]): Step[] =>
   phases.reduce<Step[]>((steps, phase) => [...steps, ...phase(lastState(steps, state))], []);
 
-export const equationValues = (state: BattleState): number[] => boardValues(state);
-
-export const runningTotals = (state: BattleState): number[] => boardTotals(state, state.level.grain);
+const runningTotals = (state: BattleState): number[] => boardTotals(state, state.level.grain);
 
 export const equationTotal = (state: BattleState): number | null => boardTotal(state, state.level.grain);
 
@@ -417,7 +414,7 @@ const settle = (state: BattleState, enemyId: number): Step[] => {
 };
 
 /** One step off the number: one away, or a half or a quarter away where the land counts in those. */
-export const isNearMiss = (distance: number, level: Level) => distance === (level.grain ?? 1);
+export const isNearMiss = (distance: number, level: Level) => distance === grainOf(level);
 
 const strikeDamage = (distance: number, power: number, level: Level): number => {
   if (distance === 0) return STRIKE_DAMAGE[Math.min(power, 5)] ?? 0;
@@ -428,10 +425,21 @@ const strikeDamage = (distance: number, power: number, level: Level): number => 
  * What an exact hit does to a helmet. Two numbers only dent it, and the second dent knocks it
  * off, so short sums still get through, just more slowly. Three or more knock it off at once.
  */
-const helmetHit = (enemy: Enemy, exact: boolean, power: number): "dent" | "off" | "holds" | null => {
+const helmetHit = (enemy: Enemy, exact: boolean, smashes: boolean): "dent" | "off" | "holds" | null => {
   if (enemy.quirk !== "helmet") return null;
   if (!exact) return "holds";
-  return power >= HELMET_BREAKER || enemy.dents + 1 >= HELMET_DENTS ? "off" : "dent";
+  return smashes || enemy.dents + 1 >= HELMET_DENTS ? "off" : "dent";
+};
+
+/** After an exact hit it survived, a monster moves its weakness to a number that suits whatever quirk it has left. */
+const shiftWeakness = (state: BattleState, enemyId: number): Step[] => {
+  const enemy = state.enemies.find((candidate) => candidate.id === enemyId);
+  if (!enemy) return [];
+  const [weakness, seed] = withRng(state, (rng) =>
+    rollWeakness(rng, state.level, { avoid: enemy.weakness, quirk: enemy.quirk }),
+  );
+  const shifted = updateEnemy({ ...state, seed }, enemyId, (e) => ({ ...e, weakness }));
+  return [{ state: shifted, event: { type: "weaknessShift", enemyId } }];
 };
 
 /** A boss that has just dropped to half health takes on its land's quirk, with a weakness that suits it. */
@@ -448,10 +456,10 @@ const bossPhase = (state: BattleState, enemyId: number): Step[] => {
 const strike = (state: BattleState, enemy: Enemy, total: number, power: number): Step[] => {
   const distance = Math.abs(total - enemy.weakness);
   const exact = distance === 0;
-  const helmet = helmetHit(enemy, exact, power);
-  // A helmet stops everything except the sum that knocks it off with three numbers or more.
-  const blocked = helmet !== null && !(helmet === "off" && power >= HELMET_BREAKER);
-  const damage = blocked ? 0 : strikeDamage(distance, power, state.level);
+  // A helmet stops everything except the exact sum of three numbers or more that smashes it off.
+  const smashes = exact && power >= HELMET_BREAKER;
+  const helmet = helmetHit(enemy, exact, smashes);
+  const damage = helmet !== null && !smashes ? 0 : strikeDamage(distance, power, state.level);
   const hit = updateEnemy(state, enemy.id, (e) => ({
     ...e,
     hp: Math.max(0, e.hp - damage),
@@ -465,11 +473,7 @@ const strike = (state: BattleState, enemy: Enemy, total: number, power: number):
   if (!exact || !survived) return [struck, ...settle(hit, enemy.id)];
 
   const phase = bossPhase(hit, enemy.id);
-  if (phase.length > 0) return [struck, ...phase];
-  const quirk = helmet === "off" ? null : enemy.quirk;
-  const [weakness, seed] = withRng(hit, (rng) => rollWeakness(rng, hit.level, { avoid: enemy.weakness, quirk }));
-  const shifted = updateEnemy({ ...hit, seed }, enemy.id, (e) => ({ ...e, weakness }));
-  return [struck, { state: shifted, event: { type: "weaknessShift", enemyId: enemy.id } }];
+  return [struck, ...(phase.length > 0 ? phase : shiftWeakness(hit, enemy.id))];
 };
 
 const exactParry = (state: BattleState, enemy: Enemy, power: number): Step[] => {
@@ -505,16 +509,18 @@ const nearParry = (state: BattleState, enemy: Enemy, total: number): Step[] => {
 const parry = (state: BattleState, enemy: Enemy, total: number, power: number): Step[] =>
   total === enemy.intent.damage ? exactParry(state, enemy, power) : nearParry(state, enemy, total);
 
+/** A lucky monster never attacks: its turn only brings it closer to running away. */
+const luckyTurn = (state: BattleState, enemyId: number, flees: number): Step[] => {
+  if (flees > 0) return quiet(updateEnemy(state, enemyId, (e) => ({ ...e, flees })));
+  const gone = without(state, enemyId);
+  return [{ state: { ...gone, aim: defaultAim(gone) }, event: { type: "fled", enemyId } }];
+};
+
 const enemyTurn = (state: BattleState, enemyId: number): Step[] => {
   if (state.phase !== "player") return [];
   const enemy = state.enemies.find((candidate) => candidate.id === enemyId);
   if (!enemy) return [];
-  if (enemy.flees !== null) {
-    const flees = enemy.flees - 1;
-    if (flees > 0) return quiet(updateEnemy(state, enemyId, (e) => ({ ...e, flees })));
-    const gone = without(state, enemyId);
-    return [{ state: { ...gone, aim: defaultAim(gone) }, event: { type: "fled", enemyId } }];
-  }
+  if (enemy.flees !== null) return luckyTurn(state, enemyId, enemy.flees - 1);
   const turns = enemy.intent.turns - 1;
   if (turns > 0) return quiet(updateEnemy(state, enemyId, (e) => ({ ...e, intent: { ...e.intent, turns } })));
 

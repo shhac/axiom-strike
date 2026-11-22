@@ -11,8 +11,7 @@ import { press } from "./press";
 import { save, updateSave } from "./save";
 import { SumPanel } from "./sums/SumPanel";
 import { useHint } from "./useHint";
-
-const randomSeed = () => Math.floor(Math.random() * 2 ** 31);
+import { randomSeed } from "./seed";
 
 const Prize = ({ prize, land }: { prize: ChestPrize; land: LandId }) => {
   if (prize === "style") {

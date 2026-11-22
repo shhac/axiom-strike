@@ -3,6 +3,7 @@ import { useLayoutEffect, useRef } from "preact/hooks";
 import { boardValues, type Board, type Tile } from "../../engine/board";
 import { bracketEnds, type Op } from "../../engine/equation";
 import { showNumber } from "../../engine/fractions";
+import { icon } from "../assets";
 import { Num } from "../common";
 
 /** Shrinks a long equation to the room it has, so the total beside it is never pushed out of view. */
@@ -63,6 +64,40 @@ export const EquationBox = ({ board, total, target, children }: EquationProps) =
     </div>
   );
 };
+
+/** With this many signs the hand row is crowded, and whatever sits beside the tiles drops its label. */
+const MANY_SIGNS = 4;
+
+export const handRowClass = (ops: readonly Op[]) => `row row-hand ${ops.length >= MANY_SIGNS ? "is-crowded" : ""}`;
+
+type CastButtonProps = {
+  label: string;
+  icon: string;
+  target: number | null;
+  total: number | null;
+  /** Whether enough numbers are placed to try the sum. */
+  ready: boolean;
+  go: () => void;
+  /** Battle only: which of its two colours to wear, and what a screen reader should call it. */
+  kind?: string;
+  ariaLabel?: string;
+};
+
+/** The big button that tries the sum. It carries the number to make, and throbs when the sum is exact. */
+export const CastButton = ({ label, icon: art, target, total, ready, go, kind, ariaLabel }: CastButtonProps) => (
+  <button
+    class={`btn btn-cast ${kind ? `btn-cast-${kind}` : ""} ${ready ? "" : "is-waiting"} ${ready && total !== null && total === target ? "is-exact" : ""}`}
+    data-action="cast"
+    aria-label={ariaLabel}
+    onClick={go}
+  >
+    <span class="cast-goal">
+      <img src={icon(art)} alt="" />
+      <Num class="cast-number" key={target} value={target ?? "?"} />
+    </span>
+    <span class="cast-label">{label}</span>
+  </button>
+);
 
 type TileRowProps = { hand: readonly Tile[]; hintedId?: number; onTap: (tileId: number) => void };
 

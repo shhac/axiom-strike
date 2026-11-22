@@ -95,3 +95,6 @@ export const clearBoard = ({ hand, equation }: Board): Board | null =>
   equation.tiles.length === 0 && !equation.pendingOp
     ? null
     : { hand: release(hand, equation.tiles), equation: EMPTY_EQUATION };
+
+/** The board with every tile back in the hand, whether or not any were out. */
+export const emptied = (board: Board): Board => clearBoard(board) ?? { hand: board.hand, equation: board.equation };

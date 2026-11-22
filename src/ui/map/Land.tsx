@@ -15,18 +15,10 @@ import {
   type Save,
 } from "../../engine/progress";
 import { icon } from "../assets";
-import { Num } from "../common";
+import { Num, Stars } from "../common";
 import { enterBattle, visit } from "../nav";
 import { press } from "../press";
 import { MapHero, PATH, SPOTS } from "./MapHero";
-
-const Stars = ({ count }: { count: number }) => (
-  <span class="node-stars">
-    {[1, 2, 3].map((n) => (
-      <img src={icon(n <= count ? "star" : "star_empty")} alt="" />
-    ))}
-  </span>
-);
 
 const NodeButton = ({ level, current, progress }: { level: Level; current: boolean; progress: Save }) => {
   const spot = SPOTS[level.step] ?? SPOTS[0];
@@ -44,10 +36,14 @@ const NodeButton = ({ level, current, progress }: { level: Level; current: boole
     >
       {open ? <Num value={level.step + 1} /> : <img class="node-lock" src={icon("lock")} alt="" />}
       {current && <i class="node-arrow" />}
-      {stars > 0 && <Stars count={stars} />}
+      {stars > 0 && <Stars count={stars} class="node-stars" />}
     </button>
   );
 };
+
+/** New stars wait for the curtain to open, then set off one after another. */
+export const TRAIL_STARTS_MS = 700;
+export const TRAIL_GAP_MS = 160;
 
 type GateProps = { region: Region; progress: Save; say: (hint: string) => void };
 
@@ -90,7 +86,7 @@ const CaveButton = ({ region, progress, say }: GateProps) => {
       onClick={press(enter)}
     >
       <img src={icon("cave")} alt="" />
-      {open ? <Stars count={stars} /> : <img class="gate-key" src={icon("key")} alt="" />}
+      {open ? <Stars count={stars} class="node-stars" /> : <img class="gate-key" src={icon("key")} alt="" />}
     </button>
   );
 };
@@ -163,7 +159,11 @@ export const Land = ({ region, progress, shownStars, flying, say }: LandProps) =
             class="star-fly"
             src={icon("star")}
             alt=""
-            style={{ "--from-x": `${from.x}%`, "--from-y": `${from.y}%`, animationDelay: `${700 + index * 160}ms` }}
+            style={{
+              "--from-x": `${from.x}%`,
+              "--from-y": `${from.y}%`,
+              animationDelay: `${TRAIL_STARTS_MS + index * TRAIL_GAP_MS}ms`,
+            }}
           />
         ))}
       {complete && [0, 1, 2].map((n) => <img class={`twinkle twinkle-${n}`} src={icon("star")} alt="" />)}

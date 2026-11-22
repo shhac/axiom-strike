@@ -1,7 +1,7 @@
 import type { BattleState } from "../../engine/battle";
 import { findLevel, nextLevel } from "../../engine/levels";
 import { icon } from "../assets";
-import { MapButton, Prizes } from "../common";
+import { MapButton, Prizes, Stars } from "../common";
 import { enterBattle, goToCamp } from "../nav";
 import { press } from "../press";
 import { save } from "../save";
@@ -17,19 +17,7 @@ export const Result = ({ state }: { state: BattleState }) => {
     <div class="overlay" data-result={state.phase}>
       <div class="result">
         <h1>{won ? "Victory!" : "So close!"}</h1>
-        {won ? (
-          <div class="stars" aria-label={`${state.stars} of 3 stars`}>
-            {[1, 2, 3].map((n) => (
-              <img
-                src={icon(n <= state.stars ? "star" : "star_empty")}
-                alt=""
-                style={{ animationDelay: `${n * 180}ms` }}
-              />
-            ))}
-          </div>
-        ) : (
-          <p>The monsters won this round. You can beat them!</p>
-        )}
+        {won ? <Stars count={state.stars} label stagger /> : <p>The monsters won this round. You can beat them!</p>}
         {storyWaiting && <Prizes lead="A campfire story is waiting. Read it to win" />}
         <div class="result-buttons">
           <MapButton />

@@ -1,5 +1,5 @@
-import { pairFor } from "./deal";
-import { LEVELS, type LandId, type Level } from "./levels";
+import { filler, pairFor } from "./deal";
+import { FIRST_LEVEL, levelAt, type LandId, type Level } from "./levels";
 import { createRng, type Rng } from "./rng";
 import { solve, type Solution } from "./solver";
 
@@ -11,8 +11,9 @@ const TRIES = 60;
 export type Riddle = { hand: number[]; target: number; answer: Solution | null };
 
 /** A cave uses the numbers of its land's middle level. */
-export const caveLevel = (land: LandId): Level =>
-  LEVELS.find((level) => level.region === land && level.step === 2) ?? LEVELS[0]!;
+const CAVE_STEP = 2;
+
+export const caveLevel = (land: LandId): Level => levelAt(land, CAVE_STEP) ?? FIRST_LEVEL;
 
 export const caveId = (land: LandId) => `cave_${land}`;
 
@@ -20,16 +21,11 @@ export const caveId = (land: LandId) => `cave_${land}`;
 const answerFor = (level: Level, hand: readonly number[], target: number) =>
   solve(hand, level.ops, target, { maxTiles: CAVE_TILES, grain: level.grain });
 
-const spare = (rng: Rng, level: Level, count: number): number[] => {
-  const grain = level.grain ?? 1;
-  return Array.from({ length: count }, () => rng.int(1, level.tileMax / grain) * grain);
-};
-
 /** A hand that hides an answer when one is wanted; otherwise a random one, which may or may not have one. */
 const draw = (rng: Rng, level: Level, wanted: boolean): Riddle => {
   const target = rng.pick(level.weakness);
   const pair = wanted ? (pairFor(rng, level, target) ?? []) : [];
-  const hand = rng.shuffle([...pair, ...spare(rng, level, CAVE_TILES - pair.length)]);
+  const hand = rng.shuffle([...pair, ...filler(rng, level, CAVE_TILES - pair.length)]);
   return { hand, target, answer: answerFor(level, hand, target) };
 };
 

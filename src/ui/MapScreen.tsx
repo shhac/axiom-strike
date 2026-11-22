@@ -3,7 +3,7 @@ import { REGIONS, type LandId } from "../engine/levels";
 import { landStars } from "../engine/progress";
 import { playMusic, playSfx } from "./audio";
 import { icon } from "./assets";
-import { Land } from "./map/Land";
+import { Land, TRAIL_GAP_MS, TRAIL_STARTS_MS } from "./map/Land";
 import { goTo, goToCamp, mapPage, settingsOpen } from "./nav";
 import { press } from "./press";
 import { save } from "./save";
@@ -13,8 +13,6 @@ import { useHint } from "./useHint";
 /** How long the map can sit untouched before it points at the levels that can be played. */
 const NUDGE_AFTER_MS = 15000;
 /** New stars wait for the curtain, then fly one after another into the land's counter. */
-const TRAIL_STARTS_MS = 700;
-const TRAIL_GAP_MS = 160;
 const TRAIL_FLIGHT_MS = 800;
 const STARS_IN_A_LAND = 15;
 /** A land with no stars is this grey; it gains its colour star by star. */

@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { createBattle, equationTotal, hintNext, reduce, type Action, type BattleState } from "../src/engine/battle";
 import { dealHand, HAND_SIZE } from "../src/engine/deal";
-import { applyStep, bracketEnds, evaluate, type Op } from "../src/engine/equation";
+import { bracketEnds, evaluate, writeSum } from "../src/engine/equation";
 import { findLevel, LEVELS, TIERS, tuneLevel } from "../src/engine/levels";
 import { createRng } from "../src/engine/rng";
 import { solve } from "../src/engine/solver";
 import { applyActions, callerBot, mashAndCallBot, masherBot, openingState, solverBot, winRate } from "./bots";
+import { separateAnswers } from "./helpers";
 
 const [addLevel, subLevel] = [findLevel("add_1"), findLevel("sub_1")];
 
@@ -27,21 +28,6 @@ const rig = (
   hand: values.map((value, index) => ({ id: 100 + index, value, used: false })),
   enemies: state.enemies.map((e, index) => (index === 0 ? { ...e, ...enemy } : e)),
 });
-/** True if every target has its own two-tile exact answer, with no tile shared between them. */
-const disjointAnswers = (hand: number[], ops: readonly Op[], targets: number[], used: number[], grain = 1): boolean => {
-  const [target, ...rest] = targets;
-  if (target === undefined) return true;
-  const free = hand.flatMap((_, index) => (used.includes(index) ? [] : [index]));
-  return free.some((i) =>
-    free.some(
-      (j) =>
-        i !== j &&
-        ops.some((op) => applyStep(hand[i]!, { op, value: hand[j]! }, grain) === target) &&
-        disjointAnswers(hand, ops, rest, [...used, i, j], grain),
-    ),
-  );
-};
-
 const tap = (index: number): Action => ({ type: "tapTile", tileId: 100 + index });
 
 describe("equation", () => {
@@ -50,6 +36,12 @@ describe("equation", () => {
     expect(bracketEnds(["+", "+", "÷"])).toEqual([2]);
     expect(bracketEnds(["+", "×", "+", "×"])).toEqual([1, 3]);
     expect(bracketEnds(["-", "÷"])).toEqual([1]);
+  });
+  it("writes a finished sum with the brackets it needs", () => {
+    expect(writeSum([2, 3, 4], ["+", "×"])).toBe("(2+3)×4");
+    expect(writeSum([2, 3, 4, 5, 6], ["+", "×", "+", "×"])).toBe("((2+3)×4+5)×6");
+    expect(writeSum([8, 2, 3, 2], ["-", "÷", "×"])).toBe("(8-2)÷3×2");
+    expect(writeSum([1.5, 0.5, 2], ["+", "-"])).toBe("1½+½-2");
   });
   it("needs no brackets where the usual order already agrees", () => {
     expect(bracketEnds(["×", "+"])).toEqual([]);
@@ -105,7 +97,7 @@ describe("deal guarantee", () => {
       const hand = dealHand(rng, level, strike, parries);
       if (hand.length !== HAND_SIZE || hand.some((value) => value <= 0 || value > level.tileMax)) return seed;
 
-      return disjointAnswers(hand, level.ops, [...parries, strike], [], level.grain) ? null : seed;
+      return separateAnswers(hand, level.ops, [...parries, strike], [], level.grain) ? null : seed;
     }).filter((seed) => seed !== null);
     expect(failures).toEqual([]);
   });

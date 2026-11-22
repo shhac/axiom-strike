@@ -1,0 +1,43 @@
+/* ---------- Tile styles won from chests ---------- */
+
+[data-tiles="add"] .tile:not([data-tiles]),
+.tile[data-tiles="add"] {
+  --tile: #c9f5a8;
+  --tile-edge: #3f9b3a;
+  background: linear-gradient(#f0ffe0, var(--tile));
+}
+
+[data-tiles="sub"] .tile:not([data-tiles]),
+.tile[data-tiles="sub"] {
+  --tile: #ffc39a;
+  --tile-edge: #c2401f;
+  background: linear-gradient(#fff0dc, var(--tile));
+}
+
+[data-tiles="mul"] .tile:not([data-tiles]),
+.tile[data-tiles="mul"] {
+  --tile: #e2c7ff;
+  --tile-edge: #7a45c9;
+  background: linear-gradient(#f8eeff, var(--tile));
+}
+
+[data-tiles="div"] .tile:not([data-tiles]),
+.tile[data-tiles="div"] {
+  --tile: #b4e9ff;
+  --tile-edge: #1f7fc2;
+  background: linear-gradient(#eafaff, var(--tile));
+}
+
+[data-tiles="big"] .tile:not([data-tiles]),
+.tile[data-tiles="big"] {
+  --tile: #d9dbe4;
+  --tile-edge: #6b6f85;
+  background: linear-gradient(#f6f7fb, var(--tile));
+}
+
+[data-tiles="frac"] .tile:not([data-tiles]),
+.tile[data-tiles="frac"] {
+  --tile: #ffd0d6;
+  --tile-edge: #d24a5f;
+  background: repeating-linear-gradient(45deg, #fff 0 0.5rem, var(--tile) 0.5rem 1rem);
+}

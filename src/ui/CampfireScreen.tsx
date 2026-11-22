@@ -10,22 +10,10 @@ import { Hub } from "./campfire/Hub";
 import { PracticeGame } from "./campfire/Practice";
 import { Story } from "./campfire/Story";
 import { Words } from "./campfire/Words";
+import { CampButton, Streak } from "./common";
 import { campActivity, type Activity } from "./nav";
-import { press } from "./press";
 import { save } from "./save";
-
-export const Streak = () => {
-  const { days } = save.value.streak;
-  if (days === 0) return null;
-  const size = days >= 7 ? "is-roaring" : days >= 3 ? "is-bright" : "";
-  return (
-    <span class={`streak ${size}`} data-streak={days} aria-label={`${days} days played in a row`}>
-      <img src={icon("flame")} alt="" />
-      {days}
-      <small>{days === 1 ? "day" : "days"}</small>
-    </span>
-  );
-};
+import { randomSeed } from "./seed";
 
 const Bag = () => (
   <div class="bag" aria-label={`${save.value.potions} potions, ${save.value.scrolls} hint scrolls`}>
@@ -37,7 +25,7 @@ const Bag = () => (
       <img src={icon("hint")} alt="" />
       {save.value.scrolls}
     </span>
-    <Streak />
+    <Streak days={save.value.streak.days} />
   </div>
 );
 
@@ -46,15 +34,13 @@ const FireIsLow = ({ back }: { back: () => void }) => (
     <h1>The fire is low</h1>
     <p class="scroll-answer">Win a level and a new story will be waiting here.</p>
     <div class="result-buttons">
-      <button class="btn btn-wide" data-action="camp" onClick={press(back)}>
-        Camp
-      </button>
+      <CampButton back={back} />
     </div>
   </div>
 );
 
 const newStory = () => {
-  const seed = Math.floor(Math.random() * 2 ** 31);
+  const seed = randomSeed();
   const passageId = pickPassage(save.value, createRng(seed));
   const passage = PASSAGES[passageId];
   return passage ? { seed, passageId, passage } : null;

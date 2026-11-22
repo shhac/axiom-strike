@@ -35,7 +35,8 @@ const PAIR_FOR: Record<Op, (rng: Rng, target: number, tileMax: number) => Pair |
   },
 };
 
-const grainOf = (level: Level) => level.grain ?? 1;
+/** The smallest step a number may be in this level: 1 unless it deals in halves or quarters. */
+export const grainOf = (level: Level) => level.grain ?? 1;
 
 /** Adding and taking away work the same counted in halves or quarters; times and divide do not. */
 const SCALES: readonly Op[] = ["+", "-"];
@@ -73,7 +74,8 @@ const splitTile = (rng: Rng, level: Level, value: number): Pair | null => {
   return [a * grain, (units - a) * grain];
 };
 
-const filler = (rng: Rng, level: Level, count: number): number[] => {
+/** `count` spare tiles of any size the level allows. */
+export const filler = (rng: Rng, level: Level, count: number): number[] => {
   const grain = grainOf(level);
   return Array.from({ length: Math.max(0, count) }, () => rng.int(1, level.tileMax / grain) * grain);
 };

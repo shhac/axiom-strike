@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { placeTile, type Board } from "../src/engine/board";
 import { caveLevel, caveRiddles, caveStars, CAVE_ROUNDS, isRight } from "../src/engine/cave";
-import { applyStep, type Op } from "../src/engine/equation";
+import { applyStep } from "../src/engine/equation";
 import { showNumber } from "../src/engine/fractions";
 import { findLevel, REGIONS } from "../src/engine/levels";
 import { isUnlocked as lockOpen, lockLevel, newLock, pickDial, redealLock, tryDial } from "../src/engine/lock";
@@ -28,6 +28,7 @@ import {
 import { parseSave } from "../src/engine/saveParser";
 import { solve } from "../src/engine/solver";
 import { wordQuiz, WORD_ROUNDS } from "../src/engine/words";
+import { separateAnswers } from "./helpers";
 
 /** Places the two tiles of the first exact pair for `target` that is still free. */
 const placePair = <T extends Board & { level: { ops: readonly ("+" | "-" | "×" | "÷")[]; grain?: number } }>(
@@ -48,27 +49,6 @@ const placePair = <T extends Board & { level: { ops: readonly ("+" | "-" | "×" 
   if (first === null || typeof first === "string") return board;
   const second = placeTile({ ...first, equation: { ...first.equation, pendingOp: found.op } }, found.b.id, board.level);
   return second === null || typeof second === "string" ? board : { ...board, ...second };
-};
-
-/** True if every target has its own two-tile exact answer, with no tile shared between them. */
-const separateAnswers = (
-  hand: readonly number[],
-  ops: readonly Op[],
-  targets: readonly number[],
-  used: readonly number[],
-  grain = 1,
-): boolean => {
-  const [target, ...rest] = targets;
-  if (target === undefined) return true;
-  const free = hand.flatMap((_, index) => (used.includes(index) ? [] : [index]));
-  return free.some((i) =>
-    free.some(
-      (j) =>
-        i !== j &&
-        ops.some((op) => applyStep(hand[i]!, { op, value: hand[j]! }, grain) === target) &&
-        separateAnswers(hand, ops, rest, [...used, i, j], grain),
-    ),
-  );
 };
 
 const withStars = (stars: Record<string, number>): Save => ({ ...EMPTY_SAVE, stars });
@@ -215,6 +195,8 @@ describe("playing each day", () => {
     expect(week.streak.days).toBe(7);
     expect(markPlayed(week, 110).streak).toEqual({ days: 3, lastDay: 110 });
     expect(markPlayed(one, 150).streak.days).toBe(1);
+    // A clock that goes backwards changes nothing.
+    expect(markPlayed(week, 103)).toBe(week);
   });
 
   it("pays each camp prize once a day, and only for a good enough run", () => {
@@ -229,6 +211,8 @@ describe("playing each day", () => {
     const words = recordWords(EMPTY_SAVE, 4, 7);
     expect(words.scrolls).toBe(1);
     expect(recordWords(words, 5, 7).scrolls).toBe(1);
+    expect(recordWords(words, 5, 8).scrolls).toBe(2);
+    expect(recordPractice(good, 9, 6).potions).toBe(1);
   });
 
   it("keeps a cave's best stars and pays for its first clear only", () => {
@@ -243,7 +227,7 @@ describe("saving the new progress", () => {
   it("survives a round trip and tolerates rubbish", () => {
     const played: Save = {
       ...recordWin(markPlayed(EMPTY_SAVE, 200), findLevel("add_1"), 3),
-      chests: { ...EMPTY_SAVE.chests, add: 2, frac: 1 },
+      chests: { ...EMPTY_SAVE.chests, add: 3, frac: 1 },
       pet: "add",
       tileStyle: "frac",
       beaten: { add_minion: 4, lucky: 1 },
@@ -255,6 +239,11 @@ describe("saving the new progress", () => {
     expect(junk.chests.add).toBe(3);
     expect(junk.chests.sub).toBe(0);
     expect(junk).toMatchObject({ pet: null, streak: EMPTY_SAVE.streak, daily: EMPTY_SAVE.daily });
+    // A pet or style whose chest was never opened is not kept.
+    expect(parseSave(JSON.stringify({ pet: "sub", tileStyle: "sub", chests: { sub: 1 } }))).toMatchObject({
+      pet: null,
+      tileStyle: "sub",
+    });
   });
 });
 

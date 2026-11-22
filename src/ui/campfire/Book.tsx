@@ -2,9 +2,9 @@ import { useState } from "preact/hooks";
 import { LUCKY_FACT, MONSTER_FACTS } from "../../content/monsterFacts";
 import { MONSTER_NAMES } from "../../content/taunts";
 import { FAMILIES, type EnemyKind, type OpFamily } from "../../engine/levels";
-import type { Save } from "../../engine/progress";
+import { bookKey, LUCKY_KEY, type Save } from "../../engine/progress";
 import { enemyStrip } from "../assets";
-import { Sprite } from "../common";
+import { CampButton, Sprite } from "../common";
 import { press } from "../press";
 
 const KINDS: readonly EnemyKind[] = ["minion", "standard", "boss"];
@@ -13,10 +13,10 @@ const GOLD_AT = 10;
 
 type Page = { key: string; name: string; fact: string; family: OpFamily; kind: EnemyKind; lucky: boolean };
 
-const PAGES: readonly Page[] = [
+export const PAGES: readonly Page[] = [
   ...FAMILIES.flatMap((family) =>
     KINDS.map((kind) => ({
-      key: `${family}_${kind}`,
+      key: bookKey(family, kind),
       name: MONSTER_NAMES[family][kind],
       fact: MONSTER_FACTS[family][kind],
       family,
@@ -24,7 +24,7 @@ const PAGES: readonly Page[] = [
       lucky: false,
     })),
   ),
-  { key: "lucky", name: "Lucky monster", fact: LUCKY_FACT, family: "add", kind: "minion", lucky: true },
+  { key: LUCKY_KEY, name: "Lucky monster", fact: LUCKY_FACT, family: "add", kind: "minion", lucky: true },
 ];
 
 /** Every monster in the game. One that has not been beaten yet is only a shadow. */
@@ -61,9 +61,7 @@ export const Book = ({ save, back }: { save: Save; back: () => void }) => {
         )}
       </p>
       <div class="result-buttons">
-        <button class="btn btn-wide" data-action="camp" onClick={press(back)}>
-          Camp
-        </button>
+        <CampButton back={back} />
       </div>
     </div>
   );

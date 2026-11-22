@@ -54,6 +54,10 @@ const settings = (value: unknown): Settings => {
   };
 };
 
+/** How many of a land's chests must be open for its tile style and its pet to have been won. */
+const STYLE_CHEST = 1;
+const PET_CHEST = 3;
+
 const land = (value: unknown): LandId | null => REGIONS.find((region) => region.id === value)?.id ?? null;
 
 const dayNumber = (value: unknown): number | null =>
@@ -81,6 +85,12 @@ export const parseSave = (raw: string | null): Save => {
   const parsed = parseJson(raw);
   if (!isRecord(parsed)) return EMPTY_SAVE;
   const skills = isRecord(parsed.skill) ? parsed.skill : {};
+  const chests = perLand((id) => wholeNumber(isRecord(parsed.chests) ? parsed.chests[id] : 0, 0, 3, 0));
+  // Only what its chest has given can be worn, whatever the stored save claims.
+  const worn = (value: unknown, opened: number) => {
+    const id = land(value);
+    return id && chests[id] >= opened ? id : null;
+  };
   return {
     stars: counts(parsed.stars, 1, 3),
     skill: perLand((land) => skill(skills[land])),
@@ -92,9 +102,9 @@ export const parseSave = (raw: string | null): Save => {
     stories: wholeNumber(parsed.stories, 0, MAX_STORIES, 0),
     read: list(parsed.read, isIndex),
     heroAt: typeof parsed.heroAt === "string" ? parsed.heroAt : null,
-    chests: perLand((id) => wholeNumber(isRecord(parsed.chests) ? parsed.chests[id] : 0, 0, 3, 0)),
-    pet: land(parsed.pet),
-    tileStyle: land(parsed.tileStyle),
+    chests,
+    pet: worn(parsed.pet, PET_CHEST),
+    tileStyle: worn(parsed.tileStyle, STYLE_CHEST),
     beaten: counts(parsed.beaten, 1, 1e6),
     streak: streak(parsed.streak),
     daily: daily(parsed.daily),

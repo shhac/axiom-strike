@@ -1,5 +1,16 @@
 import type { Kit } from "./battle";
-import { findRegion, LEVELS, perLand, TIERS, type LandId, type Level, type Tier } from "./levels";
+import {
+  findRegion,
+  levelAt,
+  LEVELS,
+  perLand,
+  TIERS,
+  type EnemyKind,
+  type LandId,
+  type Level,
+  type OpFamily,
+  type Tier,
+} from "./levels";
 import { chooseTier, decay, NEW_SKILL, rate, type Skill } from "./skill";
 
 export const DIFFICULTIES = ["auto", ...TIERS] as const;
@@ -85,7 +96,7 @@ export const landIsOpen = (save: Save, land: LandId): boolean => totalStars(save
 export const isUnlocked = (save: Save, level: Level): boolean => {
   if (!landIsOpen(save, level.region)) return false;
   if (level.step === 0) return true;
-  const previous = LEVELS.find((candidate) => candidate.region === level.region && candidate.step === level.step - 1);
+  const previous = levelAt(level.region, level.step - 1);
   return previous !== undefined && starsFor(save, previous) > 0;
 };
 
@@ -103,7 +114,7 @@ export const heroSpot = (save: Save): Level | undefined =>
 export const heroGoal = (save: Save): Level | undefined => {
   const spot = heroSpot(save);
   if (!spot || starsFor(save, spot) === 0) return spot;
-  const next = LEVELS.find((level) => level.region === spot.region && level.step === spot.step + 1);
+  const next = levelAt(spot.region, spot.step + 1);
   return next && starsFor(save, next) === 0 ? next : spot;
 };
 
@@ -215,17 +226,26 @@ export const openChest = (save: Save, land: LandId): Save => {
   };
 };
 
+/** What ends up worn: nothing asked keeps what is on, `null` takes it off, and a land's item goes on only if owned. */
+const worn = (asked: LandId | null | undefined, current: LandId | null, owns: (land: LandId) => boolean) => {
+  if (asked === undefined) return current;
+  if (asked === null) return null;
+  return owns(asked) ? asked : current;
+};
+
 /** Only what has been won can be worn; `null` is always allowed (no pet, classic tiles). */
 export const wear = (save: Save, change: { pet?: LandId | null; tileStyle?: LandId | null }): Save => ({
   ...save,
-  pet: change.pet === undefined || (change.pet && !ownsPet(save, change.pet)) ? save.pet : change.pet,
-  tileStyle:
-    change.tileStyle === undefined || (change.tileStyle && !ownsStyle(save, change.tileStyle))
-      ? save.tileStyle
-      : change.tileStyle,
+  pet: worn(change.pet, save.pet, (land) => ownsPet(save, land)),
+  tileStyle: worn(change.tileStyle, save.tileStyle, (land) => ownsStyle(save, land)),
 });
 
 /* ---------- Monster book ---------- */
+
+export const LUCKY_KEY = "lucky";
+
+/** The name a monster's page goes by in `beaten`. */
+export const bookKey = (family: OpFamily, kind: EnemyKind) => `${family}_${kind}`;
 
 export const recordBeaten = (save: Save, monster: string): Save => ({
   ...save,
@@ -243,7 +263,8 @@ const WORDS_PRIZE_SCORE = 4;
  */
 export const markPlayed = (save: Save, day: number): Save => {
   const { days, lastDay } = save.streak;
-  if (lastDay === day) return save;
+  // A clock set back, or a flight west, must not halve the streak or pay the day's prizes twice.
+  if (lastDay !== null && day <= lastDay) return save;
   const inARow = lastDay !== null && day - lastDay === 1;
   const kept = lastDay === null ? 1 : Math.max(1, Math.floor(days / 2));
   return {
@@ -252,6 +273,10 @@ export const markPlayed = (save: Save, day: number): Save => {
     daily: { day, practice: false, words: false },
   };
 };
+
+/** Whether one of the once-a-day camp prizes has already been won on `day`. */
+export const prizeWon = (save: Save, prize: "practice" | "words", day: number): boolean =>
+  save.daily.day === day && save.daily[prize];
 
 /** Best score is kept; the first run of the day that scores well enough wins a potion. */
 export const recordPractice = (save: Save, score: number, day: number): Save => {

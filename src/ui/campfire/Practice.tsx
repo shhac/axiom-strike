@@ -4,12 +4,13 @@ import { newPractice, PRACTICE_SECONDS, shoot, skipTarget, type Practice } from 
 import { heroSpot, recordPractice, tierFor } from "../../engine/progress";
 import { icon } from "../assets";
 import { playSfx } from "../audio";
+import { CampButton } from "../common";
 import { press } from "../press";
 import { localDay, save, updateSave } from "../save";
 import { SumPanel } from "../sums/SumPanel";
 import { useHint } from "../useHint";
+import { randomSeed } from "../seed";
 
-const randomSeed = () => Math.floor(Math.random() * 2 ** 31);
 const TICK_MS = 200;
 const LAST_SECONDS = 5;
 
@@ -53,9 +54,7 @@ const Ready = ({ start, back }: { start: () => void; back: () => void }) => (
       <p>Make as many numbers as you can in {PRACTICE_SECONDS} seconds. Three numbers in a sum scores double!</p>
       <p class="practice-best">Best so far: {save.value.practiceBest}</p>
       <div class="result-buttons">
-        <button class="btn btn-wide" data-action="camp" onClick={press(back)}>
-          Camp
-        </button>
+        <CampButton back={back} />
         <button class="btn btn-wide btn-go" data-action="start" onClick={press(start)}>
           Start!
         </button>
@@ -76,9 +75,7 @@ const Done = (props: { score: number; best: boolean; prize: boolean; again: () =
         </span>
       )}
       <div class="result-buttons">
-        <button class="btn btn-wide" data-action="camp" onClick={press(props.back)}>
-          Camp
-        </button>
+        <CampButton back={props.back} />
         <button class="btn btn-wide btn-go" data-action="retry" onClick={press(props.again)}>
           Again
         </button>

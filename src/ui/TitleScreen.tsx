@@ -1,4 +1,5 @@
-import { Streak } from "./CampfireScreen";
+import { Streak } from "./common";
+import { save } from "./save";
 import { goTo, settingsOpen } from "./nav";
 import { glyphSrc, icon } from "./assets";
 import { playMusic } from "./audio";
@@ -39,7 +40,7 @@ export const TitleScreen = () => {
         <img src={icon("gear")} alt="" />
       </button>
       <div class="title-streak">
-        <Streak />
+        <Streak days={save.value.streak.days} />
       </div>
       <p class="tagline">Add it up. Strike it down.</p>
     </div>

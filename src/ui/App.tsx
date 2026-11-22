@@ -7,7 +7,6 @@ import { LockScreen } from "./LockScreen";
 import { MapScreen } from "./MapScreen";
 import { icon } from "./assets";
 import { curtain, screen, settingsOpen, type Screen } from "./nav";
-import { save } from "./save";
 import { SettingsSheet } from "./SettingsSheet";
 import { TitleScreen } from "./TitleScreen";
 
@@ -23,8 +22,6 @@ const SCREENS: Record<Screen, () => preact.JSX.Element | null> = {
 
 export const App = () => {
   const Current = SCREENS[screen.value];
-  // The chosen tile style is worn by every tile in the game, whichever screen draws it.
-  document.documentElement.dataset.tiles = save.value.tileStyle ?? "classic";
   return (
     <>
       <Current />

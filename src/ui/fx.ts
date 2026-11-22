@@ -4,6 +4,7 @@ import type { BattleEvent, BattleState } from "../engine/battle";
 import type { HeroPose } from "./assets";
 import { playMusic, playSfx } from "./audio";
 import { burst, enemyNode, find, flash, float, heroNode, knockOut, lunge, shake, wait } from "./motion";
+import { REFUSALS } from "./sums/SumPanel";
 
 export const heroPose = signal<HeroPose>("idle");
 export const banner = signal<string | null>(null);
@@ -44,8 +45,7 @@ export const showToast = (text: string) => {
 type EventOf<T extends BattleEvent["type"]> = Extract<BattleEvent, { type: T }>;
 
 const REJECTIONS: Record<EventOf<"rejected">["reason"], string> = {
-  needOperator: "Pick a sign first",
-  badStep: "That can't go below zero or split unevenly",
+  ...REFUSALS,
   tooShort: "Use at least two numbers",
   noAim: "Tap a target first",
   noHints: "No hint scrolls left",

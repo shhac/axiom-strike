@@ -2,11 +2,12 @@ import { useState } from "preact/hooks";
 import { recordWords } from "../../engine/progress";
 import { wordQuiz, WORD_ROUNDS } from "../../engine/words";
 import { icon } from "../assets";
+import { CampButton, Pips } from "../common";
 import { playSfx } from "../audio";
 import { press } from "../press";
 import { localDay, save, updateSave } from "../save";
+import { randomSeed } from "../seed";
 
-const randomSeed = () => Math.floor(Math.random() * 2 ** 31);
 const NEXT_AFTER_MS = 1100;
 
 /** A word with its shared part in capitals, drawn with that part picked out. */
@@ -39,15 +40,20 @@ const Finished = ({
       </span>
     )}
     <div class="result-buttons">
-      <button class="btn btn-wide" data-action="camp" onClick={press(back)}>
-        Camp
-      </button>
+      <CampButton back={back} />
       <button class="btn btn-wide btn-go" data-action="retry" onClick={press(again)}>
         Again
       </button>
     </div>
   </div>
 );
+
+/** Once an answer is picked the right one lights up, and the picked one too if it was wrong. */
+const answerMark = (picked: string | null, option: string, meaning: string) => {
+  if (!picked) return "";
+  if (option === meaning) return "is-right";
+  return picked === option ? "is-wrong" : "";
+};
 
 /** Spot the part three words share, and say what it means. */
 export const Words = ({ back }: { back: () => void }) => {
@@ -90,11 +96,7 @@ export const Words = ({ back }: { back: () => void }) => {
     <div class="camp-sheet" data-phase="words" data-round={round}>
       <div class="words-top">
         <h1>Word lab</h1>
-        <span class="pips">
-          {quiz.map((_, index) => (
-            <i class={index < round ? "pip is-done" : index === round ? "pip is-now" : "pip"} />
-          ))}
-        </span>
+        <Pips count={quiz.length} now={round} />
       </div>
       <p class="words-examples">
         {question.part.examples.map((word) => (
@@ -107,7 +109,7 @@ export const Words = ({ back }: { back: () => void }) => {
       <div class="answers words-answers">
         {question.options.map((option) => (
           <button
-            class={`btn answer ${picked && option === question.part.meaning ? "is-right" : ""} ${picked === option && option !== question.part.meaning ? "is-wrong" : ""}`}
+            class={`btn answer ${answerMark(picked, option, question.part.meaning)}`}
             data-answer={option === question.part.meaning ? "correct" : "other"}
             onClick={() => answer(option)}
           >

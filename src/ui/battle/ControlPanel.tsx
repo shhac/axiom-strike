@@ -2,9 +2,8 @@ import { useRef } from "preact/hooks";
 import { aimTarget, bannedNow, equationTotal, hintNext, type BattleState } from "../../engine/battle";
 import { showNumber } from "../../engine/fractions";
 import { icon } from "../assets";
-import { Num } from "../common";
 import { dispatch } from "../store";
-import { EquationBox, OpRow, TileRow } from "../sums/SumBoard";
+import { CastButton, EquationBox, handRowClass, OpRow, TileRow } from "../sums/SumBoard";
 import { act } from "./act";
 
 const EquationRow = ({ state }: { state: BattleState }) => (
@@ -63,35 +62,27 @@ const HintButton = ({ hints }: { hints: number }) => (
   </button>
 );
 
-const CastButton = ({ state }: { state: BattleState }) => {
-  const kind = state.aim?.kind ?? "strike";
-  const total = equationTotal(state);
-  const ready = state.equation.tiles.length >= 2;
+const BattleCast = ({ state }: { state: BattleState }) => {
+  const strikes = (state.aim?.kind ?? "strike") === "strike";
   const target = aimTarget(state);
-  const exact = total !== null && total === target;
   return (
-    <button
-      class={`btn btn-cast btn-cast-${kind} ${ready ? "" : "is-waiting"} ${ready && exact ? "is-exact" : ""}`}
-      data-action="cast"
-      aria-label={`${kind === "strike" ? "Strike" : "Block"}: make ${target === null ? "the number" : showNumber(target)}`}
-      onClick={() => dispatch({ type: "cast" })}
-    >
-      <span class="cast-goal">
-        <img src={icon(kind === "strike" ? "sword" : "shield")} alt="" />
-        <Num class="cast-number" key={target} value={target ?? "?"} />
-      </span>
-      <span class="cast-label">{kind === "strike" ? "STRIKE!" : "BLOCK!"}</span>
-    </button>
+    <CastButton
+      kind={strikes ? "strike" : "parry"}
+      label={strikes ? "STRIKE!" : "BLOCK!"}
+      icon={strikes ? "sword" : "shield"}
+      target={target}
+      total={equationTotal(state)}
+      ready={state.equation.tiles.length >= 2}
+      ariaLabel={`${strikes ? "Strike" : "Block"}: make ${target === null ? "the number" : showNumber(target)}`}
+      go={() => dispatch({ type: "cast" })}
+    />
   );
 };
-
-/** With this many signs the hint drops its label, so the tiles stay a fingertip wide. */
-const MANY_SIGNS = 4;
 
 const Hand = ({ state }: { state: BattleState }) => {
   const hinted = hintNext(state);
   return (
-    <div class={`row row-hand ${state.level.ops.length >= MANY_SIGNS ? "is-crowded" : ""}`}>
+    <div class={handRowClass(state.level.ops)}>
       <HintButton hints={state.hints} />
       <TileRow
         hand={state.hand}
@@ -115,6 +106,6 @@ export const ControlPanel = ({ state }: { state: BattleState }) => (
       <EquationRow state={state} />
       <Hand state={state} />
     </div>
-    <CastButton state={state} />
+    <BattleCast state={state} />
   </div>
 );

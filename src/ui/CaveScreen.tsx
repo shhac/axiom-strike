@@ -6,12 +6,11 @@ import { findRegion } from "../engine/levels";
 import { recordCave } from "../engine/progress";
 import { icon } from "./assets";
 import { playMusic, playSfx } from "./audio";
-import { MapButton, Num } from "./common";
+import { MapButton, Num, Pips, Prizes, Stars } from "./common";
 import { goTo, visiting } from "./nav";
 import { press } from "./press";
 import { save, updateSave } from "./save";
-
-const randomSeed = () => Math.floor(Math.random() * 2 ** 31);
+import { randomSeed } from "./seed";
 
 type Said = { possible: boolean; right: boolean };
 
@@ -47,18 +46,8 @@ const Finished = ({ right, firstClear, again }: { right: number; firstClear: boo
         <p>
           You got {right} of {CAVE_ROUNDS} right
         </p>
-        <div class="stars" aria-label={`${stars} of 3 stars`}>
-          {[1, 2, 3].map((n) => (
-            <img src={icon(n <= stars ? "star" : "star_empty")} alt="" style={{ animationDelay: `${n * 180}ms` }} />
-          ))}
-        </div>
-        {firstClear && stars > 0 && (
-          <span class="prizes" data-prizes>
-            First clear! You win
-            <img src={icon("potion")} alt="a potion" />
-            <img src={icon("hint")} alt="and a hint scroll" />
-          </span>
-        )}
+        <Stars count={stars} label stagger />
+        {firstClear && stars > 0 && <Prizes lead="First clear! You win" />}
         <div class="result-buttons">
           <MapButton />
           <button class="btn btn-wide btn-go" data-action="retry" onClick={press(again)}>
@@ -118,11 +107,11 @@ export const CaveScreen = () => {
       <div class="cave-card">
         <header class="cave-head">
           <h1>{region.label} cave</h1>
-          <span class="pips" aria-label={`Riddle ${Math.min(round + 1, CAVE_ROUNDS)} of ${CAVE_ROUNDS}`}>
-            {riddles.map((_, index) => (
-              <i class={index < round ? "pip is-done" : index === round ? "pip is-now" : "pip"} />
-            ))}
-          </span>
+          <Pips
+            count={riddles.length}
+            now={round}
+            label={`Riddle ${Math.min(round + 1, CAVE_ROUNDS)} of ${CAVE_ROUNDS}`}
+          />
         </header>
         {riddle && (
           <>

@@ -9,8 +9,10 @@ magick brackets_atlas.png -gravity East -crop 50%x100%+0+0 +repage "${KEY[@]}" -
 magick claw_icon.png "${KEY[@]}" -trim +repage -filter point -resize 92x92 -background none -gravity center -extent 96x96 ../public/assets/icons/claw.png
 
 # The 4x3 sheet of icons for chests, the camp and monster quirks.
-names=(chest chest_open target grimoire key helmet cave paw quill flame crown lock3)
+# Two cells of the sheet are not used: its knight helmet was redrawn as a monster cap, and the padlock was never needed.
+names=(chest chest_open target grimoire key - cave paw quill flame crown -)
 for i in "${!names[@]}"; do
+  [ "${names[$i]}" = "-" ] && continue
   magick icons3_atlas.png -crop "25%x33.333%+$(( (i % 4) * 1254 / 4 ))+$(( (i / 4) * 1254 / 3 ))" +repage "${KEY[@]}" \
     -trim +repage -filter point -resize 92x92 -background none -gravity center -extent 96x96 \
     "../public/assets/icons/${names[$i]}.png"

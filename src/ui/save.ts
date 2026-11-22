@@ -14,12 +14,13 @@ const read = (): Save => {
   }
 };
 
-const today = () => Math.floor(Date.now() / MS_PER_DAY);
+/** The day in UTC, which is what rating decay has always counted in. */
+const utcDay = () => Math.floor(Date.now() / MS_PER_DAY);
 
 /** The day where the player is, read when it is needed, so a streak turns over at their midnight. */
 export const localDay = () => Math.floor((Date.now() - new Date().getTimezoneOffset() * 60_000) / MS_PER_DAY);
 
-export const save = signal<Save>(startDay(read(), today()));
+export const save = signal<Save>(startDay(read(), utcDay()));
 
 /** Every change to progress goes through here, so it is always written straight to the device. */
 export const updateSave = (change: (current: Save) => Save) => {
@@ -29,6 +30,11 @@ export const updateSave = (change: (current: Save) => Save) => {
 effect(() => {
   const { music, sound } = save.value.settings;
   setAudioPrefs({ music, sound });
+});
+
+// The chosen tile style is worn by every tile in the game, whichever screen draws it.
+effect(() => {
+  document.documentElement.dataset.tiles = save.value.tileStyle ?? "classic";
 });
 
 effect(() => {

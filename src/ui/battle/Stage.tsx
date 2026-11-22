@@ -3,7 +3,7 @@ import { showNumber } from "../../engine/fractions";
 import { findRegion } from "../../engine/levels";
 import { enemyStrip, icon, knockedOutSprite } from "../assets";
 import { playSfx } from "../audio";
-import { Num, Sprite } from "../common";
+import { Num, Pips, Sprite } from "../common";
 import { settingsOpen } from "../nav";
 import { busy } from "../store";
 import { act } from "./act";
@@ -94,11 +94,6 @@ export const EnemyView = ({ enemy, state }: { enemy: Enemy; state: BattleState }
   );
 };
 
-const pipClass = (index: number, wave: number) => {
-  if (index < wave) return "pip is-done";
-  return index === wave ? "pip is-now" : "pip";
-};
-
 const openPause = () => {
   if (busy.value) return;
   playSfx("button");
@@ -116,11 +111,11 @@ export const Hud = ({ state }: { state: BattleState }) => (
         <Num value={findRegion(state.level.region).sign} />
         Level {state.level.step + 1}
       </span>
-      <span class="pips" aria-label={`Wave ${state.wave + 1} of ${state.level.waves.length}`}>
-        {state.level.waves.map((_, index) => (
-          <i class={pipClass(index, state.wave)} />
-        ))}
-      </span>
+      <Pips
+        count={state.level.waves.length}
+        now={state.wave}
+        label={`Wave ${state.wave + 1} of ${state.level.waves.length}`}
+      />
     </div>
     <div class="hud-side">
       <button class="btn hud-pause" data-action="pause" aria-label="Pause" onClick={openPause}>

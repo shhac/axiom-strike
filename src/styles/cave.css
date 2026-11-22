@@ -1,0 +1,133 @@
+/* ---------- "Impossible or not?" cave ---------- */
+
+.cave {
+  align-items: center;
+  justify-content: center;
+}
+
+.cave::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgb(8 6 24 / 0.72);
+}
+
+.cave-card {
+  position: relative;
+  width: 34rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.9rem 1.4rem 1.1rem;
+  border-radius: 1rem;
+  background: linear-gradient(#2c2766, var(--panel));
+  border: 0.2rem solid var(--panel-edge);
+  box-shadow: 0 0.5rem 0 rgb(0 0 0 / 0.4);
+}
+
+.cave-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cave-head h1 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--gold);
+}
+
+.cave-ask {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.5rem;
+}
+
+.cave-target {
+  padding: 0.1rem 0.7rem;
+  border-radius: 0.6rem;
+  background: var(--strike-deep);
+  border: 0.16rem solid var(--strike);
+  font-size: 2.6rem;
+}
+
+.cave-tiles {
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.cave-tiles .tile {
+  flex: none;
+  width: 4rem;
+}
+
+.cave-signs {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: 0.6rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.cave-signs .num {
+  font-size: 1.3rem;
+}
+
+.cave-answers {
+  display: flex;
+  gap: 1rem;
+  height: 4.3rem;
+  align-items: center;
+}
+
+.cave-answers .btn {
+  height: 3.6rem;
+  min-width: 10rem;
+  font-size: 1.3rem;
+}
+
+.btn-no {
+  background: var(--strike);
+}
+
+.cave-verdict {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  height: 4.3rem;
+  padding: 0 1rem;
+  border-radius: 0.8rem;
+  background: rgb(0 0 0 / 0.3);
+  animation: pop 220ms ease-out;
+}
+
+.cave-verdict b {
+  font-size: 1.3rem;
+}
+
+.cave-verdict.is-right b {
+  color: var(--good);
+}
+
+.cave-verdict.is-wrong b {
+  color: var(--strike);
+}
+
+.cave-way {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.cave-way .num {
+  font-size: 1.5rem;
+}

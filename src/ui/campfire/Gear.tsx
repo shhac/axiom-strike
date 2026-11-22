@@ -3,7 +3,7 @@ import { REGIONS, type LandId } from "../../engine/levels";
 import { ownsPet, ownsStyle, wear, type Save } from "../../engine/progress";
 import { icon } from "../assets";
 import { playSfx } from "../audio";
-import { Num, Pet } from "../common";
+import { CampButton, Num, Pet } from "../common";
 import { press } from "../press";
 import { updateSave } from "../save";
 
@@ -91,9 +91,7 @@ export const Gear = ({ save, back }: { save: Save; back: () => void }) => {
         ))}
       </div>
       <div class="result-buttons">
-        <button class="btn btn-wide" data-action="camp" onClick={press(back)}>
-          Camp
-        </button>
+        <CampButton back={back} />
       </div>
     </div>
   );

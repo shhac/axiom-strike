@@ -1,9 +1,9 @@
-import { boardTotal, clearBoard, EMPTY_EQUATION, freshTiles, type Board } from "./board";
-import { pairFor } from "./deal";
-import { LEVELS, type LandId, type Level } from "./levels";
+import { boardTotal, emptied, EMPTY_EQUATION, freshTiles, type Board } from "./board";
+import { filler, pairFor } from "./deal";
+import { FIRST_LEVEL, levelAt, type LandId, type Level } from "./levels";
 import { createRng, type Rng } from "./rng";
 
-export const LOCK_DIALS = 3;
+const LOCK_DIALS = 3;
 const LOCK_HAND = 8;
 /** Each of a land's three chests uses the numbers of a later level: its first, third and fifth. */
 const GATE_STEPS = [0, 2, 4] as const;
@@ -18,20 +18,12 @@ export type Lock = Board & {
   nextId: number;
 };
 
-export const lockLevel = (land: LandId, gate: number): Level => {
-  const step = GATE_STEPS[gate] ?? 0;
-  return LEVELS.find((level) => level.region === land && level.step === step) ?? LEVELS[0]!;
-};
-
-const fill = (rng: Rng, level: Level, count: number): number[] => {
-  const grain = level.grain ?? 1;
-  return Array.from({ length: Math.max(0, count) }, () => rng.int(1, level.tileMax / grain) * grain);
-};
+export const lockLevel = (land: LandId, gate: number): Level => levelAt(land, GATE_STEPS[gate] ?? 0) ?? FIRST_LEVEL;
 
 /** A two-tile answer for every dial still shut, on separate tiles, topped up with spare numbers. */
 const dealFor = (rng: Rng, level: Level, targets: readonly number[]): number[] => {
   const pairs = targets.flatMap((target) => pairFor(rng, level, target) ?? []);
-  return rng.shuffle([...pairs, ...fill(rng, level, LOCK_HAND - pairs.length)]);
+  return rng.shuffle([...pairs, ...filler(rng, level, LOCK_HAND - pairs.length)]);
 };
 
 const firstShut = (open: readonly boolean[]) => Math.max(0, open.indexOf(false));
@@ -51,7 +43,7 @@ export const newLock = (level: Level, seed: number): Lock => {
 };
 
 export const pickDial = (lock: Lock, dial: number): Lock =>
-  lock.open[dial] === false ? { ...lock, ...(clearBoard(lock) ?? {}), dial } : lock;
+  lock.open[dial] === false ? { ...lock, ...emptied(lock), dial } : lock;
 
 /**
  * Tries the sum on the chosen dial. Right opens it and uses the tiles up; wrong hands them back,
@@ -60,7 +52,7 @@ export const pickDial = (lock: Lock, dial: number): Lock =>
 export const tryDial = (lock: Lock): { lock: Lock; opened: boolean } => {
   const total = boardTotal(lock, lock.level.grain);
   const right = lock.equation.tiles.length >= 2 && total === lock.targets[lock.dial];
-  if (!right) return { lock: { ...lock, ...(clearBoard(lock) ?? {}) }, opened: false };
+  if (!right) return { lock: { ...lock, ...emptied(lock) }, opened: false };
   const open = lock.open.map((isOpen, dial) => isOpen || dial === lock.dial);
   return { lock: { ...lock, open, dial: firstShut(open), equation: EMPTY_EQUATION }, opened: true };
 };

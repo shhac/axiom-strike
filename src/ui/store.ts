@@ -3,6 +3,8 @@ import { createBattle, isLucky, reduce, type Action, type BattleState, type Step
 import { FIRST_LEVEL, tuneLevel, type LandId, type Level } from "../engine/levels";
 import {
   addPotion,
+  bookKey,
+  LUCKY_KEY,
   kitFor,
   markPlayed,
   recordBeaten,
@@ -17,8 +19,7 @@ import { battleDifficulty, castResult, castScore } from "../engine/skill";
 import { playMusic } from "./audio";
 import { afterEvent, beforeEvent, heroPose, hush, showToast } from "./fx";
 import { localDay, save, updateSave } from "./save";
-
-const randomSeed = () => Math.floor(Math.random() * 2 ** 31);
+import { randomSeed } from "./seed";
 
 /**
  * What is on screen. It trails the engine while animations play, one step at a time. Until a
@@ -49,10 +50,10 @@ const noteFreshStars = (level: Level, stars: number) => {
 };
 
 /** The monster book's name for a beaten monster. */
-const bookKey = (state: BattleState, enemyId: number): string | null => {
+const pageOf = (state: BattleState, enemyId: number): string | null => {
   const enemy = state.enemies.find((candidate) => candidate.id === enemyId);
   if (!enemy) return null;
-  return isLucky(enemy) ? "lucky" : `${enemy.family}_${enemy.kind}`;
+  return isLucky(enemy) ? LUCKY_KEY : bookKey(enemy.family, enemy.kind);
 };
 
 const settle = (step: Step) => {
@@ -64,7 +65,7 @@ const settle = (step: Step) => {
   if (event?.type === "lost") updateSave((current) => markPlayed(recordLoss(current, state.level), localDay()));
   if (event?.type === "caught") updateSave(addPotion);
   if (event?.type === "defeated") {
-    const monster = bookKey(state, event.enemyId);
+    const monster = pageOf(state, event.enemyId);
     if (monster) updateSave((current) => recordBeaten(current, monster));
   }
 };

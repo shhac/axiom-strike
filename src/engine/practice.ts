@@ -1,4 +1,4 @@
-import { boardTotals, clearBoard, EMPTY_EQUATION, freshTiles, sumPower, type Board } from "./board";
+import { boardTotals, emptied, EMPTY_EQUATION, freshTiles, sumPower, type Board } from "./board";
 import { dealHand } from "./deal";
 import type { Level } from "./levels";
 import { createRng } from "./rng";
@@ -46,7 +46,7 @@ export const skipTarget = (practice: Practice): Practice => ({
 export const shoot = (practice: Practice): { practice: Practice; gained: number } => {
   const totals = boardTotals(practice, practice.level.grain);
   const hit = practice.equation.tiles.length >= 2 && totals.at(-1) === practice.target;
-  if (!hit) return { practice: { ...practice, ...(clearBoard(practice) ?? {}) }, gained: 0 };
+  if (!hit) return { practice: { ...practice, ...emptied(practice) }, gained: 0 };
   const gained = sumPower(totals) >= LONG_SUM ? 2 : 1;
   const next = skipTarget(practice);
   return { practice: { ...next, score: practice.score + gained, made: practice.made + 1 }, gained };
