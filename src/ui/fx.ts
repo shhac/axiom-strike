@@ -52,7 +52,7 @@ const REJECTIONS: Record<EventOf<"rejected">["reason"], string> = {
   noExact: "No exact answer left. Tap Impossible!",
   noPotions: "No potions left. Earn more at the campfire",
   fullHealth: "You are already at full health",
-  alreadyCalled: "One Impossible call each turn",
+  alreadyCalled: "No more Impossible calls this turn",
   bannedSign: "This monster hates +. Use another sign!",
 };
 

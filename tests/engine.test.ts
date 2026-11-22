@@ -288,7 +288,7 @@ describe("battle rules", () => {
           { exclude: [0, 1], maxTiles: 2 },
         ),
       ).not.toBeNull();
-      expect([after.turn, countdowns(after), after.called]).toEqual([rigged.turn, countdowns(rigged), true]);
+      expect([after.turn, countdowns(after), after.called]).toEqual([rigged.turn, countdowns(rigged), false]);
     });
 
     it("a wrong call changes nothing but uses up the call", () => {
@@ -342,8 +342,29 @@ describe("battle rules", () => {
       expect(act(stuck, call)).toEqual(after);
     });
 
+    it("a right call can be followed by another once the new tiles run dry", () => {
+      const fresh = act(rig(start(), [9, 9, 9, 9], { weakness: 7 }), call);
+      const dry = { ...fresh, hand: fresh.hand.map((tile) => ({ ...tile, value: 30 })) };
+      expect(reduce(dry, call).map((step) => step.event?.type)).toEqual(["sharpEye"]);
+    });
+
+    it("tiles wasted before a right call do not count against the next one", () => {
+      const stuck = rig(start(), [3, 4, 30, 30, 30], { weakness: 7, hp: 40 });
+      const wasted = act(stuck, tap(0), tap(2), { type: "cast" });
+      const dry = { ...wasted, hand: wasted.hand.map((tile, i) => (i === 1 ? { ...tile, value: 30 } : tile)) };
+      const fresh = act(dry, call);
+      expect(fresh.called).toBe(false);
+      // The 3 was thrown away earlier; were it still counted, 3 + 4 would make the 7.
+      const unspent = fresh.hand.flatMap((tile, i) => (tile.used ? [] : [i]));
+      const dryAgain = {
+        ...fresh,
+        hand: fresh.hand.map((tile, i) => (tile.used ? tile : { ...tile, value: i === unspent[0] ? 4 : 30 })),
+      };
+      expect(reduce(dryAgain, call).map((step) => step.event?.type)).toEqual(["sharpEye"]);
+    });
+
     it("the call comes back when the next turn is dealt", () => {
-      const called = act(rig(start(), [9, 9, 9], { weakness: 7 }), call);
+      const called = act(rig(start(), [3, 4, 9], { weakness: 7 }), call);
       expect(called.called).toBe(true);
       expect(act(called, { type: "endTurn" }).called).toBe(false);
     });

@@ -73,7 +73,8 @@ The code calls this a parry; on screen it is always "block", which a six-year-ol
 
 - Tiles are used up when cast. The player may cast several equations in a turn.
 - The turn ends when the player taps **Pass**, or automatically when fewer than two tiles are left.
-- **Pass is not on screen at the start of a turn.** It takes the place of the Impossible! button once that turn's call has been made, so the way to pass is: say whether the number can be made, and then, if still stuck, pass. A turn cannot be given away by one stray tap, and the new button ignores taps for its first 0.7 seconds so a double tap on Impossible! cannot do it either.
+- **Pass is not on screen at the start of a turn.** It takes the place of the Impossible! button once a call has been wrong that turn, so the way to pass is: say whether the number can be made, and then, if still stuck, pass. A turn cannot be given away by one stray tap, and the new button ignores taps for its first 0.7 seconds so a double tap on Impossible! cannot do it either.
+- **The Pass button says what passing does.** Under the word it reads "New numbers" with an hourglass; when a monster is ready to attack it turns red, shows a claw and reads "They attack!".
 - Then each monster's countdown drops by one; any that reach zero attack. Monsters attack every two turns, and never on the first turn of a wave. At most two attacks land on the same turn.
 - Hero health is 100 and carries across the waves of a level. It is restored between levels.
 
@@ -82,10 +83,9 @@ The code calls this a parry; on screen it is always "block", which a six-year-ol
 Spotting that a number cannot be made is maths too, and it is the way out when the tiles left are no use.
 
 - The **Impossible!** button sits at the left of the panel above the hint, away from Strike. It is a claim that the aimed number cannot be made exactly from the tiles left this turn.
-- **Right:** "Sharp eye!" The leftover tiles are traded for the same number of new ones, which always include an exact two-number answer for the aimed number. The monsters do not get a turn.
-- **Wrong:** "These numbers could make it. Look again!" Nothing is lost.
-- **One call each turn**, right or wrong, so it cannot be tapped as a free check or chained to keep the monsters waiting.
-- Tiles thrown away on a wrong answer this turn still count as if they were in hand, so wasting tiles never turns a makeable number into a right call.
+- **Right:** "Sharp eye!" The leftover tiles are traded for the same number of new ones, which always include an exact two-number answer for the aimed number. The monsters do not get a turn, and the button stays: a player who runs dry again later in the turn can call again. Only the tiles left are traded, so the hand keeps shrinking and the turn still ends.
+- **Wrong:** "These numbers could make it. Look again!" Nothing is lost, but the call is used up for the turn and the button becomes Pass, so it cannot be tapped as a free check.
+- Tiles thrown away on a wrong answer still count as if they were in hand until the next right call, so wasting tiles never turns a makeable number into a right call.
 - The game looks for answers of up to four numbers. A number that needs five or more counts as impossible, in the player's favour.
 - Calls do not move the difficulty rating: the game itself says when one would be right (below), so a right call proves nothing.
 - How a player finds it: the addition intro explains it; a strike thrown at a number that could not be made answers "Stuck? If the number can't be made, tap Impossible!"; and a hint asked for when no answer is left says the same.

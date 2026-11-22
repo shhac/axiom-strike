@@ -69,7 +69,7 @@ export type BattleState = {
   hints: number;
   potions: number;
   hintPath: Solution | null;
-  /** Whether "Impossible!" has been called this turn; one call a turn, right or wrong. */
+  /** Whether "Impossible!" has been called wrongly this turn; after that the turn's call is used up. */
   called: boolean;
   nextId: number;
   stars: number;
@@ -236,12 +236,16 @@ const defaultAim = (state: BattleState): Aim | null => {
   return first ? { enemyId: first.id, kind: "strike" } : null;
 };
 
+/** The attacks that land when this turn ends. */
+export const attacksLanding = (state: BattleState): number[] =>
+  living(state)
+    .filter((enemy) => enemy.intent.turns === 1 && enemy.intent.remaining > 0)
+    .map((enemy) => enemy.intent.damage);
+
 const dealStep = (state: BattleState): Step => {
   const aim = defaultAim(state);
   const strikeEnemy = living(state).find((enemy) => enemy.id === aim?.enemyId) ?? living(state)[0];
-  const landing = living(state)
-    .filter((enemy) => enemy.intent.turns === 1 && enemy.intent.remaining > 0)
-    .map((enemy) => enemy.intent.damage);
+  const landing = attacksLanding(state);
   const [values, seed] = withRng(state, (rng) =>
     dealHand(
       rng,
@@ -649,18 +653,21 @@ const swapUnspent = (state: BattleState, target: number): BattleState => {
 
 /**
  * The player says the aimed number cannot be made from the tiles left. Being right trades those
- * tiles for new ones that can make it, without the monsters getting a turn. One call a turn,
- * right or wrong, so it can neither be spammed as a free check nor chained to stall the monsters.
+ * tiles for new ones that can make it, without the monsters getting a turn, and may be done again:
+ * the hand only gets smaller, so it cannot be chained for ever. Being wrong uses up the call for
+ * the turn, so it is never a free check.
  */
 const impossible = (state: BattleState): Step[] => {
   if (state.called) return reject(state, "alreadyCalled");
   const target = aimTarget(state);
   if (target === null) return reject(state, "noAim");
 
-  const called: BattleState = { ...lastState(clear(state), state), called: true, hintPath: null };
-  if (wasMakeable(called)) return [{ state: called, event: { type: "lookAgain" } }];
-  const swapped = unspentPlaces(called).length;
-  return [{ state: swapUnspent(called, target), event: { type: "sharpEye", swapped } }];
+  const cleared: BattleState = { ...lastState(clear(state), state), hintPath: null };
+  if (wasMakeable(cleared)) return [{ state: { ...cleared, called: true }, event: { type: "lookAgain" } }];
+  const swapped = unspentPlaces(cleared).length;
+  // Tiles thrown away before a right call have been judged; they must not count against the next one.
+  const judged = { ...cleared, hand: cleared.hand.map((tile) => (tile.wasted ? { ...tile, wasted: false } : tile)) };
+  return [{ state: swapUnspent(judged, target), event: { type: "sharpEye", swapped } }];
 };
 
 const potion = (state: BattleState): Step[] => {

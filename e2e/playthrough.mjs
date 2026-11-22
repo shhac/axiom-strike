@@ -198,11 +198,13 @@ const callImpossible = async (page, shotOnce) => {
   return hand.some((tile) => !before.includes(tile.id)) ? "right" : "wrong";
 };
 
-/** Pass only appears once the turn's Impossible call is made, and takes a moment to arm. */
+/** Pass only appears once an Impossible call has been wrong this turn, and takes a moment to arm. */
 const END_TURN_ARMS_MS = 800;
 
 const endTurn = async (page, shotOnce) => {
-  if ((await page.locator("[data-action=pass]").count()) === 0) {
+  // A right call deals new numbers and leaves Impossible in place, so it can take more than one.
+  for (const _ of [1, 2, 3, 4]) {
+    if ((await page.locator("[data-action=pass]").count()) > 0) break;
     await tap(page, "[data-action=impossible]");
     await idle(page);
   }

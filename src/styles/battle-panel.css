@@ -167,6 +167,36 @@
   height: 1.5rem;
 }
 
+.btn-pass {
+  gap: 0.15rem;
+  line-height: 1;
+}
+
+.pass-title {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.95rem;
+}
+
+.pass-title img {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.pass-cost {
+  font-size: 0.62rem;
+  color: #cfd0ff;
+}
+
+.btn-pass.is-risky {
+  background: #8a2f45;
+}
+
+.btn-pass.is-risky .pass-cost {
+  color: #ffd9a8;
+}
+
 /* The number to make rides on the button that makes it, which leaves the whole row to the equation. */
 .cast-goal {
   display: flex;
