@@ -269,7 +269,8 @@ Feel is a requirement, not polish.
 ## Technology
 
 - **Why web:** the game is a turn-based tile and text interface. DOM/CSS gives crisp text at phone pixel densities, layout that adapts to any aspect ratio, and a build that can be driven and inspected automatically in a browser on every change.
-- **iOS:** not built yet, but nothing rules it out. Music volume goes through a gain node (iOS ignores an audio element's volume), sound unlocks on the first touch anywhere, audio is MP3, and layout has a fallback for browsers without dynamic viewport units. To do when iOS is added: move the save from `localStorage` to `@capacitor/preferences`, because WKWebView may evict `localStorage`; all save access is already in `src/ui/save.ts`.
+- **iOS:** the Xcode project is in `ios/` (iPhone and iPad, landscape only, full screen, iOS 15 and up) and compiles; it has not yet been run on a simulator or a device. Music volume goes through a gain node (iOS ignores an audio element's volume), sound unlocks on the first touch anywhere, audio is MP3, and layout has a fallback for browsers without dynamic viewport units.
+- **Save on phones:** the save is written to the web view's `localStorage` and, in the Android and iOS apps, also to the device's own preferences (`@capacitor/preferences`), because iOS may clear a web view's storage. If the first copy is missing at launch the game takes progress from the second. All save access is in `src/ui/save.ts`.
 - **Structure:**
   - `src/engine/` is pure and deterministic (seeded): equation rules, solver, dealing, and a battle reducer that returns a list of steps (state + what happened).
   - `src/content/` holds the words: intro scenes, taunts, reading passages, word parts, monster facts and the names of pets and tile styles.

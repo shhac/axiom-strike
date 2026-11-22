@@ -11,11 +11,15 @@
     "test": "vitest run",
     "e2e": "node e2e/playthrough.mjs",
     "android": "pnpm build && cap sync android && cd android && ./gradlew assembleDebug",
-    "android:release": "pnpm build && cap sync android && cd android && ./gradlew assembleRelease bundleRelease"
+    "android:release": "pnpm build && cap sync android && cd android && ./gradlew assembleRelease bundleRelease",
+    "ios": "pnpm build && cap sync ios && xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -derivedDataPath ios/DerivedData CODE_SIGNING_ALLOWED=NO build",
+    "ios:open": "pnpm build && cap sync ios && cap open ios"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.2",
     "@capacitor/core": "^8.6.2",
+    "@capacitor/ios": "^8.6.2",
+    "@capacitor/preferences": "^8.0.1",
     "@fontsource-variable/fredoka": "^5.3.0",
     "@preact/signals": "^2.11.4",
     "preact": "^11.2.0"

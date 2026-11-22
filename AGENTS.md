@@ -18,6 +18,7 @@ Educational math fighting game for phones/tablets (Android + iOS, landscape), ta
 - `pnpm build && pnpm preview --port 5198` then `BASE_URL=http://localhost:5198/ pnpm e2e` — plays whole levels through the real UI on an emulated S21 with 4x CPU throttle; fails on console errors, overflow, small touch targets, slow frames, long stalls. Set `SHOT_DIR=.ai-cache/shots` to save screenshots, and look at them.
 
 - `pnpm android` — debug APK (needs `JAVA_HOME` and `ANDROID_HOME`; see README)
+- `pnpm ios` — compiles the iOS app for the simulator, unsigned (needs Xcode); `pnpm ios:open` opens it in Xcode to run or archive
 
 ## Layout
 
@@ -31,6 +32,7 @@ Educational math fighting game for phones/tablets (Android + iOS, landscape), ta
 - `tests/` — vitest, including policy bots in `bots.ts` that guard game balance.
 - `e2e/` — Playwright playthrough: title → map → intro → a level in each region, direct `?level=` runs for quirks, a boss and the far lands, a journey through campfire, items, pause and settings, and an "extras" run from a stored save through a chest, a cave, the far map and the camp.
 - `android/` — Capacitor project. `android/local.properties` is machine-specific and not committed.
+- `ios/` — Capacitor project (Swift Package Manager, no CocoaPods). Landscape lock, hidden status bar and version are in `ios/App/App/Info.plist` and the Xcode project; keep the version in step with `package.json` and Android.
 
 ## Working rules
 
@@ -52,4 +54,4 @@ Educational math fighting game for phones/tablets (Android + iOS, landscape), ta
 
 ## Not built yet
 
-iOS project (see "iOS" under Technology in the design doc for what to do first), hero outfits (hats, capes), a combo meter, analytics.
+A run of the iOS app on a simulator or device and its App Store signing (see "iOS" under Technology in the design doc), hero outfits (hats, capes), a combo meter, analytics.

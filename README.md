@@ -50,6 +50,14 @@ keyPassword=...
 
 Without that file the release build still compiles but is unsigned. Keep a backup of the keystore and its password: updates to a published app must be signed with the same key. Raise `versionCode` in `android/app/build.gradle` for every upload.
 
+## iOS build
+
+Needs Xcode. `pnpm ios` builds the web app, copies it into `ios/` and compiles the app for the simulator without signing, which checks that the project builds.
+
+To run it, `pnpm ios:open` opens the project in Xcode. Pick a simulator (Xcode > Settings > Components installs one) or a connected iPhone or iPad and press Run. A real device, TestFlight and the App Store need an Apple Developer team chosen under the App target's Signing & Capabilities; the bundle id is `com.axiomstrike.game`.
+
+Raise `CURRENT_PROJECT_VERSION` in the Xcode project for every upload and keep `MARKETING_VERSION` in step with `package.json`.
+
 ## Where things are
 
 ```
@@ -59,6 +67,7 @@ src/ui/         screens, animation, sound
 tests/          vitest, including simulated players that guard balance
 e2e/            Playwright playthrough
 android/        Capacitor Android project (landscape, full screen)
+ios/            Capacitor iOS project (iPhone and iPad, landscape, full screen)
 public/assets/  images and audio
 art-src/        original generated art before slicing
 docs/           design documentation; start with GAME_DESIGN.md
