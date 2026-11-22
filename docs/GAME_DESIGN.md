@@ -29,9 +29,9 @@ The first version of this game was built in Defold and is preserved as the git t
 - Above each monster, two tappable chips:
   - **Weakness** (sword): the number that hurts it.
   - **Attack** (claw marks): the number it will hit for, and how many turns until it lands.
-- Sword and shield belong to the hero only. Aiming at a weakness shows a sword beside the number to make and the big button reads **STRIKE!**; aiming at an attack shows a shield and the button reads **BLOCK!**. The chips above a monster show what the monster has (a weak spot, a claw), the panel shows what the hero does about it.
+- Sword and shield belong to the hero only. Aiming at a weakness puts a sword and the number to make on the big button, which reads **STRIKE!**; aiming at an attack puts a shield and that number there, and it reads **BLOCK!**. The chips above a monster show what the monster has (a weak spot, a claw), the panel shows what the hero does about it.
 - A hand of **seven number tiles**, dealt fresh every turn.
-- The control panel: **STRIKE!** fills the whole right-hand end, two rows tall, so a thumb reaching for it cannot land on anything else. Hint and Impossible! sit at the far left, the number to make and the equation between them, tiles and signs underneath.
+- The control panel: **STRIKE!** fills the whole right-hand end, two rows tall, so a thumb reaching for it cannot land on anything else, and it carries the number to make (sword or shield above it). Impossible! and Hint are stacked at the far left. The equation has the rest of the top row to itself; tiles and signs sit underneath.
 - The level's **operator signs**. Signs are always available and are not used up. A level with one sign (e.g. only `+`) applies it automatically, so the youngest players just tap numbers.
 
 ### Building an equation
@@ -71,8 +71,8 @@ The code calls this a parry; on screen it is always "block", which a six-year-ol
 ### Turn structure
 
 - Tiles are used up when cast. The player may cast several equations in a turn.
-- The turn ends when the player taps **End turn**, or automatically when fewer than two tiles are left.
-- **End turn is not on screen at the start of a turn.** It takes the place of the Impossible! button once that turn's call has been made, so the way to pass is: say whether the number can be made, and then, if still stuck, end the turn. A turn cannot be given away by one stray tap, and the new button ignores taps for its first 0.7 seconds so a double tap on Impossible! cannot do it either.
+- The turn ends when the player taps **Pass**, or automatically when fewer than two tiles are left.
+- **Pass is not on screen at the start of a turn.** It takes the place of the Impossible! button once that turn's call has been made, so the way to pass is: say whether the number can be made, and then, if still stuck, pass. A turn cannot be given away by one stray tap, and the new button ignores taps for its first 0.7 seconds so a double tap on Impossible! cannot do it either.
 - Then each monster's countdown drops by one; any that reach zero attack. Monsters attack every two turns, and never on the first turn of a wave. At most two attacks land on the same turn.
 - Hero health is 100 and carries across the waves of a level. It is restored between levels.
 
@@ -80,7 +80,7 @@ The code calls this a parry; on screen it is always "block", which a six-year-ol
 
 Spotting that a number cannot be made is maths too, and it is the way out when the tiles left are no use.
 
-- The **Impossible!** button sits at the left of the panel beside the hint, away from Strike. It is a claim that the aimed number cannot be made exactly from the tiles left this turn.
+- The **Impossible!** button sits at the left of the panel above the hint, away from Strike. It is a claim that the aimed number cannot be made exactly from the tiles left this turn.
 - **Right:** "Sharp eye!" The leftover tiles are traded for the same number of new ones, which always include an exact two-number answer for the aimed number. The monsters do not get a turn.
 - **Wrong:** "These numbers could make it. Look again!" Nothing is lost.
 - **One call each turn**, right or wrong, so it cannot be tapped as a free check or chained to keep the monsters waiting.
@@ -126,7 +126,7 @@ Spare tiles first go to a three-number answer for the same weakness, then to ran
 - A player who only ever makes exact two-number sums wins the first level at least 90% of the time, even if they never parry.
 - A player who uses longer equations finishes in fewer turns.
 - A player who taps two random tiles and casts loses most of the time, and still does if they also call "Impossible!" blindly.
-- A player who calls "Impossible!" whenever they are truly stuck finishes in about a third fewer turns than one who ends the turn instead. That is the reward for it, in line with pillar 3.
+- A player who calls "Impossible!" whenever they are truly stuck finishes in about a third fewer turns than one who passes instead. That is the reward for it, in line with pillar 3.
 
 ## Enemies
 

@@ -184,16 +184,16 @@ const callImpossible = async (page, shotOnce) => {
   return hand.some((tile) => !before.includes(tile.id)) ? "right" : "wrong";
 };
 
-/** End turn only appears once the turn's Impossible call is made, and takes a moment to arm. */
+/** Pass only appears once the turn's Impossible call is made, and takes a moment to arm. */
 const END_TURN_ARMS_MS = 800;
 
 const endTurn = async (page, shotOnce) => {
-  if ((await page.locator("[data-action=end-turn]").count()) === 0) {
+  if ((await page.locator("[data-action=pass]").count()) === 0) {
     await tap(page, "[data-action=impossible]");
     await idle(page);
   }
   await page.waitForTimeout(END_TURN_ARMS_MS);
-  await tap(page, "[data-action=end-turn]");
+  await tap(page, "[data-action=pass]");
   await page.waitForTimeout(250);
   await shotOnce("attack");
   await idle(page);

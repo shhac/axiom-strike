@@ -24,7 +24,6 @@ const useShrinkToFit = (content: string) => {
 const EquationBar = ({ state }: { state: BattleState }) => {
   const target = aimTarget(state);
   const total = equationTotal(state);
-  const kind = state.aim?.kind ?? "strike";
   const placed = equationValues(state);
   const exact = total !== null && total === target;
   const { ops, pendingOp } = state.equation;
@@ -32,12 +31,7 @@ const EquationBar = ({ state }: { state: BattleState }) => {
   const terms = useShrinkToFit(`${placed.join()} ${ops.join()} ${pendingOp ?? ""}`);
   return (
     <div class="row row-equation">
-      <HintButton hints={state.hints} />
-      <CallOrEnd called={state.called} />
-      <div class={`goal goal-${kind}`}>
-        <img src={icon(kind === "strike" ? "sword" : "shield")} alt="" />
-        <Num class="goal-number" key={target} value={target ?? "?"} />
-      </div>
+      <CallOrPass called={state.called} />
       <div class="equation" aria-live="polite">
         {placed.length === 0 && <span class="equation-empty">Tap numbers to make {target}</span>}
         <div class="eq-room">
@@ -104,27 +98,27 @@ const Ops = ({ state, hinted }: { state: BattleState; hinted: Hinted }) => {
   );
 };
 
-/** How long the End turn button ignores taps after it replaces Impossible, so a double tap on that cannot give the turn away. */
-const END_TURN_ARMS_AFTER_MS = 700;
+/** How long the Pass button ignores taps after it replaces Impossible, so a double tap on that cannot give the turn away. */
+const PASS_ARMS_AFTER_MS = 700;
 
-const EndTurn = () => {
+const Pass = () => {
   const shownAt = useRef(performance.now());
   const endTurn = () => {
-    if (performance.now() - shownAt.current < END_TURN_ARMS_AFTER_MS) return;
+    if (performance.now() - shownAt.current < PASS_ARMS_AFTER_MS) return;
     act("button", { type: "endTurn" })();
   };
   return (
-    <button class="btn btn-call" data-action="end-turn" onClick={endTurn}>
+    <button class="btn btn-call" data-action="pass" onClick={endTurn}>
       <img src={icon("hourglass")} alt="" />
-      <span>End turn</span>
+      <span>Pass</span>
     </button>
   );
 };
 
 /** One call each turn, so once it is made its button becomes the way to give the turn away. */
-const CallOrEnd = ({ called }: { called: boolean }) =>
+const CallOrPass = ({ called }: { called: boolean }) =>
   called ? (
-    <EndTurn />
+    <Pass />
   ) : (
     <button
       class="btn btn-call"
@@ -145,6 +139,7 @@ const HintButton = ({ hints }: { hints: number }) => (
     onClick={act("hint", { type: "hint" })}
   >
     <img src={icon("hint")} alt="" />
+    <span>Hint</span>
     <b class="badge">{hints}</b>
   </button>
 );
@@ -153,15 +148,20 @@ const CastButton = ({ state }: { state: BattleState }) => {
   const kind = state.aim?.kind ?? "strike";
   const total = equationTotal(state);
   const ready = state.equation.tiles.length >= 2;
-  const exact = total !== null && total === aimTarget(state);
+  const target = aimTarget(state);
+  const exact = total !== null && total === target;
   return (
     <button
       class={`btn btn-cast btn-cast-${kind} ${ready ? "" : "is-waiting"} ${ready && exact ? "is-exact" : ""}`}
       data-action="cast"
+      aria-label={`${kind === "strike" ? "Strike" : "Block"}: make ${target ?? "the number"}`}
       onClick={() => dispatch({ type: "cast" })}
     >
-      <img src={icon(kind === "strike" ? "sword" : "shield")} alt="" />
-      {kind === "strike" ? "STRIKE!" : "BLOCK!"}
+      <span class="cast-goal">
+        <img src={icon(kind === "strike" ? "sword" : "shield")} alt="" />
+        <Num class="cast-number" key={target} value={target ?? "?"} />
+      </span>
+      <span class="cast-label">{kind === "strike" ? "STRIKE!" : "BLOCK!"}</span>
     </button>
   );
 };
@@ -170,6 +170,7 @@ const Hand = ({ state }: { state: BattleState }) => {
   const hinted = hintNext(state);
   return (
     <div class="row row-hand">
+      <HintButton hints={state.hints} />
       <Tiles state={state} hinted={hinted} />
       <Ops state={state} hinted={hinted} />
     </div>
