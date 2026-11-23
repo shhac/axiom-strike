@@ -49,13 +49,19 @@ const RewardLine = ({ reward, kind }: { reward: Reward; kind: Answer["kind"] }) 
   );
 };
 
+/** Longer stories are set a little smaller, in two steps, so each fits the card on a phone without scrolling. */
+const textSize = (text: string) => {
+  if (text.length > 520) return "is-longest";
+  return text.length > 400 ? "is-long" : "";
+};
+
 const ReadCard = ({ passage, done }: { passage: Passage; done: () => void }) => (
   <div class="scroll-card" data-phase="read">
     <div class="scroll-top">
       <span class="scroll-subject">{passage.subject}</span>
       <Prizes lead="Read, then answer to win" />
     </div>
-    <p class="scroll-text">{passage.text}</p>
+    <p class={`scroll-text ${textSize(passage.text)}`}>{passage.text}</p>
     <button class="btn btn-wide btn-go" data-action="read-done" onClick={done}>
       I have read it
     </button>

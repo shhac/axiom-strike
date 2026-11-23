@@ -159,7 +159,9 @@ The campfire is a camp with five things to do, each a big button, and a flame sh
 
 - **Story time**: the reading game below. The victory panel's button goes straight to it.
 - **Target practice**: sixty seconds, one number to make after another from a fresh hand of seven, no monsters. The numbers are those of the level the hero stands at, at the tier a battle there would use. An exact sum scores 1, or 2 with three or more numbers; a wrong one hands the tiles back; Skip deals another. The best score is kept. The first run each day that scores 3 or more wins a potion.
-- **Word lab**: five questions. Three words share a part ("TRIangle, TRIcycle, TRIo"); pick what the part means from four choices. Twenty-four parts, mostly ones that turn up in maths (`src/content/wordParts.ts`). The first run each day with four or more right wins a hint scroll.
+- **Word lab**: five questions a run, from 120 word parts (`src/content/wordParts.ts`), each with a meaning and three to six example words. A part is asked in one of three ways: three words that share it are shown and the child says what it means ("TRIangle, TRIcycle, TRIo"); one word is shown and the child says what the part means in it; or the meaning is given and the child picks the part. Always four choices, and a part whose meaning is close to the right one ("see" and "look") is never offered as a wrong answer.
+- **The lab remembers.** A part met for the first time is always shown with three words. A run brings in about two new parts, commonest first, and spends the rest going over parts already met. A right answer makes a part wait longer before it returns (1, 2, 4, 8, then 16 runs); a wrong one brings it back soonest. This is saved, so the lab picks up where the child left off.
+- The first run each day with four or more right wins a hint scroll.
 - **Monster book**: a page for every monster (three ranks of five families, and the lucky one). An unbeaten monster is a shadow; a beaten one shows its picture, name, a silly line with some real maths in it, and how many have been beaten. Ten beaten gilds the page.
 - **Pets and tiles**: choose the pet that follows the hero and the look of the number tiles, from what the star chests have given. Things not won yet say which chest they are in.
 
@@ -184,10 +186,10 @@ The prize is shown wherever a story is on offer, never as a surprise: the victor
 
 - An honest read is at least a quarter of a second per word with the passage on screen. The time is never shown.
 - The story, its reward and the fact it was read are saved in one step when an answer is tapped, so quitting cannot re-roll an answer.
-- Passages do not repeat until all fifty have been read.
+- Passages do not repeat until every one has been read. Longer passages are set slightly smaller so each fits the card without scrolling.
 - **Reading level** is chosen for the child: until three stories are answered it sits half a grade below the land they have reached (Addition 2, Subtraction 2.5, Multiplication 3.5, Division 4.5); after that it follows its own rating from their answers. Settings can fix it to Easy, Medium or Hard.
 
-The fifty passages (grades 1 to 7) are in `src/content/passages.ts`; they were written for the first version and still need review. Content pipeline: see [Reading Corpus Pipeline](READING_CORPUS_PIPELINE.md).
+There are 350 passages, fifty for each of grades 1 to 7, so a child reading five a day stays near their own level for about a month. The first fifty are in `src/content/passages.ts` and the rest in `src/content/morePassages.ts`. The 300 added later, and the word parts, were written for the game and then checked by a second, independent model with web search (facts, whether each wrong answer is really wrong, suitability, etymology); its findings were applied and the changed passages checked again until it found nothing more. The first fifty have not had that check. A save remembers a passage by its place in the list, so new ones are only ever added at the end.
 
 ## Adaptive difficulty
 

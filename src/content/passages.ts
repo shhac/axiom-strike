@@ -1,3 +1,5 @@
+import { MORE_PASSAGES } from "./morePassages";
+
 export type Passage = {
   text: string;
   question: string;
@@ -9,7 +11,8 @@ export type Passage = {
   grade: number;
 };
 
-export const PASSAGES: readonly Passage[] = [
+/** The first fifty stories. Their order is fixed: a save remembers a story by its place in `PASSAGES`. */
+const FIRST_PASSAGES: readonly Passage[] = [
   {
     text: "The Sun is a star at the centre of our solar system. It is made up of very hot gases, mostly hydrogen and helium. The Sun is so large that about 1.3 million Earths could fit inside it. Light from the Sun takes about 8 minutes to reach Earth.",
     question: "How long does light from the Sun take to reach Earth?",
@@ -473,3 +476,5 @@ export const PASSAGES: readonly Passage[] = [
     grade: 7,
   },
 ];
+
+export const PASSAGES: readonly Passage[] = [...FIRST_PASSAGES, ...MORE_PASSAGES];

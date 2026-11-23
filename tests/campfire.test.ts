@@ -10,8 +10,18 @@ describe("campfire", () => {
   const passage = PASSAGES[0]!;
   const longRead = 60_000;
 
-  it("has fifty passages, each with one right, one nearly right and three other answers", () => {
-    expect(PASSAGES).toHaveLength(50);
+  it("has fifty stories for every grade, so a month of five a day stays at the reader's level", () => {
+    const perGrade = [1, 2, 3, 4, 5, 6, 7].map((grade) => PASSAGES.filter((entry) => entry.grade === grade).length);
+    expect(perGrade).toEqual([50, 50, 50, 50, 50, 50, 50]);
+    expect(new Set(PASSAGES.map((entry) => entry.text)).size).toBe(PASSAGES.length);
+    expect(new Set(PASSAGES.map((entry) => entry.question)).size).toBe(PASSAGES.length);
+  });
+
+  it("keeps the first story where saves expect it", () => {
+    expect(PASSAGES[0]?.question).toBe("How long does light from the Sun take to reach Earth?");
+  });
+
+  it("gives each passage one right, one nearly right and three other answers", () => {
     PASSAGES.forEach((entry) => {
       const answers = answersFor(entry, createRng(3));
       expect(answers.map((answer) => answer.kind).sort()).toEqual(["almost", "correct", "other", "other", "other"]);

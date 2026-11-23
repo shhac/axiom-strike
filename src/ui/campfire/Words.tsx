@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
 import { recordWords } from "../../engine/progress";
-import { wordQuiz, WORD_ROUNDS } from "../../engine/words";
+import { wordQuiz, WORD_ROUNDS, type WordAnswer, type WordQuestion } from "../../engine/words";
 import { icon } from "../assets";
 import { CampButton, Pips } from "../common";
 import { playSfx } from "../audio";
@@ -49,68 +49,87 @@ const Finished = ({
 );
 
 /** Once an answer is picked the right one lights up, and the picked one too if it was wrong. */
-const answerMark = (picked: string | null, option: string, meaning: string) => {
+const answerMark = (picked: string | null, option: string, answer: string) => {
   if (!picked) return "";
-  if (option === meaning) return "is-right";
+  if (option === answer) return "is-right";
   return picked === option ? "is-wrong" : "";
 };
 
-/** Spot the part three words share, and say what it means. */
+/** The question in words, for each way a part can be asked. */
+const Ask = ({ question }: { question: WordQuestion }) => {
+  if (question.kind === "part") {
+    return (
+      <p class="words-ask words-ask-big">
+        Which word part means <b>{question.part.meaning}</b>?
+      </p>
+    );
+  }
+  return (
+    <p class="words-ask">
+      What does <b>{question.part.part}</b> mean{question.kind === "word" ? " in this word" : ""}?
+    </p>
+  );
+};
+
+/** Spot the part words share and say what it means, or pick the part for a meaning. */
 export const Words = ({ back }: { back: () => void }) => {
-  const [quiz, setQuiz] = useState(() => wordQuiz(randomSeed()));
+  const [quiz, setQuiz] = useState(() => wordQuiz(randomSeed(), save.value.wordLab));
+  const [answers, setAnswers] = useState<WordAnswer[]>([]);
   const [round, setRound] = useState(0);
   const [right, setRight] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
   const [prize, setPrize] = useState(false);
   const question = quiz[round];
 
-  const finish = (total: number) => {
+  const finish = (given: WordAnswer[]) => {
     const before = save.value.scrolls;
-    updateSave((current) => recordWords(current, total, localDay()));
+    updateSave((current) => recordWords(current, given, localDay()));
     setPrize(save.value.scrolls > before);
     playSfx("jingle_victory");
   };
 
   const answer = (option: string) => {
     if (!question || picked) return;
-    const correct = option === question.part.meaning;
-    const total = right + (correct ? 1 : 0);
+    const correct = option === question.answer;
+    const given = [...answers, { part: question.part.part, right: correct }];
     playSfx(correct ? "reward" : "miss");
     setPicked(option);
-    setRight(total);
+    setRight(right + (correct ? 1 : 0));
+    setAnswers(given);
     setTimeout(() => {
       setPicked(null);
       setRound(round + 1);
-      if (round + 1 >= quiz.length) finish(total);
+      if (round + 1 >= quiz.length) finish(given);
     }, NEXT_AFTER_MS);
   };
 
   const again = () => {
-    setQuiz(wordQuiz(randomSeed()));
+    setQuiz(wordQuiz(randomSeed(), save.value.wordLab));
     setRound(0);
     setRight(0);
+    setAnswers([]);
   };
 
   if (!question) return <Finished right={right} prize={prize} again={again} back={back} />;
   return (
-    <div class="camp-sheet" data-phase="words" data-round={round}>
+    <div class="camp-sheet" data-phase="words" data-round={round} data-kind={question.kind}>
       <div class="words-top">
         <h1>Word lab</h1>
         <Pips count={quiz.length} now={round} />
       </div>
-      <p class="words-examples">
-        {question.part.examples.map((word) => (
-          <Example word={word} />
-        ))}
-      </p>
-      <p class="words-ask">
-        What does <b>{question.part.part}</b> mean?
-      </p>
+      {question.examples.length > 0 && (
+        <p class="words-examples">
+          {question.examples.map((word) => (
+            <Example word={word} />
+          ))}
+        </p>
+      )}
+      <Ask question={question} />
       <div class="answers words-answers">
         {question.options.map((option) => (
           <button
-            class={`btn answer ${answerMark(picked, option, question.part.meaning)}`}
-            data-answer={option === question.part.meaning ? "correct" : "other"}
+            class={`btn answer ${answerMark(picked, option, question.answer)}`}
+            data-answer={option === question.answer ? "correct" : "other"}
             onClick={() => answer(option)}
           >
             {option}

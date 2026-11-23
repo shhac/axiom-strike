@@ -10,6 +10,8 @@ import {
   type Settings,
 } from "./progress";
 import { NEW_SKILL, RATING_CEILING, RATING_FLOOR, type Skill } from "./skill";
+import { WORD_PARTS } from "../content/wordParts";
+import { NEW_WORD_LAB, TOP_BOX, type WordLab } from "./words";
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
 
@@ -71,6 +73,19 @@ const daily = (value: unknown): Save["daily"] =>
     ? { day: dayNumber(value.day), practice: flag(value.practice, false), words: flag(value.words, false) }
     : EMPTY_SAVE.daily;
 
+/** Only parts the game still has are kept, so a part dropped from the list cannot linger in a save. */
+const wordLab = (value: unknown): WordLab => {
+  if (!isRecord(value)) return NEW_WORD_LAB;
+  const runs = wholeNumber(value.runs, 0, 1e6, 0);
+  const stored = isRecord(value.parts) ? value.parts : {};
+  const parts = WORD_PARTS.flatMap(({ part }): [string, WordLab["parts"][string]][] => {
+    const memory = stored[part];
+    if (!isRecord(memory)) return [];
+    return [[part, { box: wholeNumber(memory.box, 0, TOP_BOX, 0), last: wholeNumber(memory.last, 0, runs, 0) }]];
+  });
+  return { runs, parts: Object.fromEntries(parts) };
+};
+
 const parseJson = (raw: string): unknown => {
   try {
     return JSON.parse(raw);
@@ -109,6 +124,7 @@ export const parseSave = (raw: string | null): Save => {
     streak: streak(parsed.streak),
     daily: daily(parsed.daily),
     practiceBest: wholeNumber(parsed.practiceBest, 0, 1e4, 0),
+    wordLab: wordLab(parsed.wordLab),
     seen: list(parsed.seen, isString),
     settings: settings(parsed.settings),
   };

@@ -309,6 +309,15 @@
   text-transform: uppercase;
 }
 
+/* With no example words above it, the question is the whole screen and is written larger. */
+.words-ask-big {
+  font-size: 1.4rem;
+}
+
+.words-ask-big b {
+  text-transform: none;
+}
+
 .words-answers {
   width: 100%;
   grid-template-columns: 1fr 1fr;

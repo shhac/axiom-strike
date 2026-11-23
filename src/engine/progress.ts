@@ -12,6 +12,7 @@ import {
   type Tier,
 } from "./levels";
 import { chooseTier, decay, NEW_SKILL, rate, type Skill } from "./skill";
+import { learn, NEW_WORD_LAB, type WordAnswer, type WordLab } from "./words";
 
 export const DIFFICULTIES = ["auto", ...TIERS] as const;
 export type Difficulty = (typeof DIFFICULTIES)[number];
@@ -49,6 +50,8 @@ export type Save = {
   /** Which once-a-day camp prizes have been won on `day`. */
   daily: { day: number | null; practice: boolean; words: boolean };
   practiceBest: number;
+  /** Which word parts the child has met and how well each is known, so shaky ones come back sooner. */
+  wordLab: WordLab;
   /** Intro scenes already shown. */
   seen: readonly string[];
   settings: Settings;
@@ -78,6 +81,7 @@ export const EMPTY_SAVE: Save = {
   streak: { days: 0, lastDay: null },
   daily: { day: null, practice: false, words: false },
   practiceBest: 0,
+  wordLab: NEW_WORD_LAB,
   seen: [],
   settings: DEFAULT_SETTINGS,
 };
@@ -286,9 +290,10 @@ export const recordPractice = (save: Save, score: number, day: number): Save => 
   return { ...addPotion(best), daily: { ...played.daily, practice: true } };
 };
 
-/** The first word lab of the day with enough right wins a hint scroll. */
-export const recordWords = (save: Save, right: number, day: number): Save => {
-  const played = markPlayed(save, day);
+/** Every run teaches the lab what the child knows; the first of the day with enough right wins a hint scroll. */
+export const recordWords = (save: Save, answers: readonly WordAnswer[], day: number): Save => {
+  const played = { ...markPlayed(save, day), wordLab: learn(save.wordLab, answers) };
+  const right = answers.filter((answer) => answer.right).length;
   if (played.daily.words || right < WORDS_PRIZE_SCORE) return played;
   return { ...played, scrolls: gain(played.scrolls, 1), daily: { ...played.daily, words: true } };
 };
