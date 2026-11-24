@@ -22,7 +22,7 @@ export const BattleScreen = () => {
           />
         </div>
         {save.value.pet && <Pet land={save.value.pet} class="hero-pet" />}
-        <div class="enemies">
+        <div class={`enemies ${state.aim ? "has-aim" : ""}`}>
           {state.enemies.map((enemy) => (
             <EnemyView key={enemy.id} enemy={enemy} state={state} />
           ))}

@@ -37,7 +37,7 @@ The first version of this game was built in Defold and is preserved as the git t
 
 ### Building an equation
 
-- Tap a chip to choose what to aim at. The game always starts a turn aimed at a weakness that the hand can make exactly.
+- Tap a chip to choose what to aim at. The aimed chip grows and glows gold and every other chip dims, so the number to make stands out; an attack landing this turn dims less, so the danger still shows. The game always starts a turn aimed at a weakness that the hand can make exactly.
 - Tap tiles (and signs, when there is more than one) to build `number sign number sign number …`.
 - Each sign applies to the **total so far**, and the running total is always on screen.
 - The equation is written so that it is true under the usual order of operations: picking `×` or `÷` after a `+` or `−` wraps everything so far in brackets, so `1 + 1` then `× 2` shows `(1 + 1) × 2 = 4`, never `1 + 1 × 2 = 4`. The brackets appear the moment the sign is picked. There is no way to build `1 + (1 × 2)`; the player multiplies first and adds after (`1 × 2 + 1`).

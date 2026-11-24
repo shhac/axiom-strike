@@ -236,7 +236,11 @@
   border: 0.16rem solid var(--ink);
   box-shadow: 0 0.22rem 0 var(--ink);
   background: var(--strike);
-  transition: transform 120ms;
+  filter: saturate(calc(var(--chip-soft, 1) * var(--chip-sat, 1))) brightness(var(--chip-lit, 1));
+  transition:
+    transform 120ms,
+    scale 160ms,
+    filter 200ms;
 }
 
 .chip-parry {
@@ -283,15 +287,30 @@
 }
 
 .chip.is-softened {
-  filter: saturate(0.55);
+  --chip-soft: 0.55;
 }
 
+/* Scale and translate, not transform: an urgent chip's throb animates transform and must not undo these. */
 .chip.is-aimed {
+  z-index: 1;
   border-color: var(--gold);
   box-shadow:
     0 0.22rem 0 var(--ink),
-    0 0 0 0.2rem rgb(255 210 63 / 0.55);
-  transform: translateY(-0.2rem);
+    0 0 0 0.24rem var(--gold),
+    0 0 0.9rem 0.3rem rgb(255 210 63 / 0.7);
+  scale: 1.14;
+  translate: 0 -0.2rem;
+}
+
+.enemies.has-aim .chip:not(.is-aimed) {
+  --chip-sat: 0.7;
+  --chip-lit: 0.62;
+}
+
+/* An attack about to land stays loud even when the player is aiming elsewhere. */
+.enemies.has-aim .chip.is-urgent:not(.is-aimed) {
+  --chip-sat: 0.9;
+  --chip-lit: 0.82;
 }
 
 .banner {
