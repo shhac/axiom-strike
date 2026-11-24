@@ -45,6 +45,21 @@ const unlike = (part: WordPart): WordPart[] =>
 const overdueBy = (lab: WordLab, memory: WordMemory) => lab.runs - memory.last - (WAIT_RUNS[memory.box] ?? 1);
 
 /**
+ * Fills a run's places. Parts to go over come first but leave room for new ones while any are left;
+ * whatever is still empty goes to more of the due parts, then to parts not yet due.
+ */
+export const fillRun = (
+  due: readonly WordPart[],
+  fresh: readonly WordPart[],
+  resting: readonly WordPart[],
+): WordPart[] => {
+  const reviewPlaces = Math.max(WORD_ROUNDS - FRESH_PER_RUN, WORD_ROUNDS - fresh.length);
+  const reviews = due.slice(0, reviewPlaces);
+  const added = fresh.slice(0, WORD_ROUNDS - reviews.length);
+  return [...reviews, ...added, ...due.slice(reviews.length), ...resting].slice(0, WORD_ROUNDS);
+};
+
+/**
  * The parts for a run: those due to be gone over (shakiest first), then new ones in the order the
  * list gives them, which starts with the most common. Parts not yet due only fill what is left.
  */
@@ -65,10 +80,7 @@ export const partsForRun = (lab: WordLab, rng: Rng): WordPart[] => {
     .sort((a, b) => b.overdue - a.overdue)
     .map((entry) => entry.part);
 
-  const reviews = due.slice(0, Math.max(WORD_ROUNDS - FRESH_PER_RUN, WORD_ROUNDS - fresh.length));
-  const added = fresh.slice(0, WORD_ROUNDS - reviews.length);
-  const chosen = [...reviews, ...added, ...due.slice(reviews.length), ...resting].slice(0, WORD_ROUNDS);
-  return rng.shuffle(chosen);
+  return rng.shuffle(fillRun(due, fresh, resting));
 };
 
 /** A part met for the first time is shown with three words; after that any way of asking may come up. */
@@ -97,6 +109,8 @@ export const wordQuiz = (seed: number, lab: WordLab = NEW_WORD_LAB): WordQuestio
 };
 
 export type WordAnswer = { part: string; right: boolean };
+
+export const rightCount = (answers: readonly WordAnswer[]): number => answers.filter((answer) => answer.right).length;
 
 /** What the lab knows after a run: each part asked moves up or back to the start, and the run is counted. */
 export const learn = (lab: WordLab, answers: readonly WordAnswer[]): WordLab => {

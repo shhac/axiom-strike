@@ -3,7 +3,7 @@ import { cheerFor, leadOf, tauntFor, MONSTER_NAMES } from "../content/taunts";
 import type { BattleEvent, BattleState } from "../engine/battle";
 import type { HeroPose } from "./assets";
 import { playMusic, playSfx } from "./audio";
-import { petFeels } from "./petMood";
+import { petCheers, petCowers, petFeels } from "./petMood";
 import { burst, enemyNode, find, flash, float, heroNode, knockOut, lunge, shake, wait } from "./motion";
 import { REFUSALS } from "./sums/SumPanel";
 
@@ -109,7 +109,7 @@ const strikeFx = async (event: EventOf<"strike">) => {
       float(combo, target, "good", -1.6);
     }
     if (!event.exact) float("So close!", target, "miss", -1.6);
-    if (event.exact) petFeels("cheer", 700);
+    if (event.exact) petCheers();
   } else {
     playSfx("miss", 0.8);
     float("MISS", target, "miss");
@@ -121,7 +121,7 @@ const strikeFx = async (event: EventOf<"strike">) => {
 const parryFeedback = (event: EventOf<"parry">, target: HTMLElement | null) => {
   if (event.exact) {
     playSfx("parry");
-    petFeels("cheer", 700);
+    petCheers();
     float("BLOCKED!", target, "good", -1.6);
     float(`-${event.counter}`, target, "damage");
     shake(target);
@@ -145,14 +145,14 @@ const enemyAttackFx = async (event: EventOf<"enemyAttack">) => {
   const hero = heroNode();
   if (event.damage > 0) {
     heroPose.value = "hurt";
-    petFeels("scared", 1100);
+    petCowers();
     playSfx("hero_hurt");
     shake(hero);
     shake(find(".stage"), 260);
     float(`-${event.damage}`, hero, "hurt");
   } else {
     playSfx("block");
-    petFeels("cheer", 700);
+    petCheers();
     float("BLOCKED!", hero, "good");
   }
   await wait(520);
@@ -171,7 +171,7 @@ const wonFx = (event: EventOf<"won">) => {
 /** The hero celebrates for `ms`, and for whatever `then` adds, before settling again. */
 const cheer = async (ms: number, then?: () => Promise<void>) => {
   heroPose.value = "victory";
-  petFeels("cheer", 700);
+  petCheers();
   await wait(ms);
   await then?.();
   heroPose.value = "idle";

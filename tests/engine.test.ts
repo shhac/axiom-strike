@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { createBattle, equationTotal, hintNext, reduce, type Action, type BattleState } from "../src/engine/battle";
+import {
+  attacksLanding,
+  createBattle,
+  equationTotal,
+  hintNext,
+  reduce,
+  type Action,
+  type BattleState,
+} from "../src/engine/battle";
 import { dealHand, HAND_SIZE } from "../src/engine/deal";
 import { bracketEnds, evaluate, writeSum } from "../src/engine/equation";
 import { findLevel, LEVELS, TIERS, tuneLevel } from "../src/engine/levels";
@@ -456,5 +464,20 @@ describe("simulated players", () => {
     );
     expect(gentle).toBeGreaterThan(standard!);
     expect(standard).toBeGreaterThan(tough!);
+  });
+});
+
+describe("attacks about to land", () => {
+  it("counts only attacks due this turn that have not been blocked away", () => {
+    const state = start();
+    const enemy = state.enemies[0]!;
+    const withIntent = (id: number, turns: number, remaining: number) => ({
+      ...enemy,
+      id,
+      intent: { ...enemy.intent, damage: 6, turns, remaining },
+    });
+    const rigged = { ...state, enemies: [withIntent(1, 1, 6), withIntent(2, 1, 0), withIntent(3, 2, 6)] };
+    expect(attacksLanding(rigged)).toEqual([6]);
+    expect(attacksLanding({ ...rigged, enemies: [{ ...withIntent(1, 1, 6), hp: 0 }] })).toEqual([]);
   });
 });

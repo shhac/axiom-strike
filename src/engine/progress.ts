@@ -12,7 +12,7 @@ import {
   type Tier,
 } from "./levels";
 import { chooseTier, decay, NEW_SKILL, rate, type Skill } from "./skill";
-import { learn, NEW_WORD_LAB, type WordAnswer, type WordLab } from "./words";
+import { learn, NEW_WORD_LAB, rightCount, type WordAnswer, type WordLab } from "./words";
 
 export const DIFFICULTIES = ["auto", ...TIERS] as const;
 export type Difficulty = (typeof DIFFICULTIES)[number];
@@ -212,9 +212,13 @@ export const chestReady = (save: Save, land: LandId): boolean => {
   return gate !== null && landIsOpen(save, land) && landStars(save, land) >= gate;
 };
 
-export const ownsStyle = (save: Save, land: LandId) => save.chests[land] >= 3;
-export const hasCaveKey = (save: Save, land: LandId) => save.chests[land] >= 2;
-export const ownsPet = (save: Save, land: LandId) => save.chests[land] >= 1;
+/** Which of a land's chests gives a prize, counting from one. Everything about who owns what follows from this. */
+export const chestGiving = (prize: ChestPrize): number => CHEST_PRIZES.indexOf(prize) + 1;
+
+const owns = (prize: ChestPrize) => (save: Save, land: LandId) => save.chests[land] >= chestGiving(prize);
+export const ownsStyle = owns("style");
+export const hasCaveKey = owns("key");
+export const ownsPet = owns("pet");
 
 /** Opens a land's next chest. A new tile style or pet is put to use straight away. */
 export const openChest = (save: Save, land: LandId): Save => {
@@ -293,8 +297,7 @@ export const recordPractice = (save: Save, score: number, day: number): Save => 
 /** Every run teaches the lab what the child knows; the first of the day with enough right wins a hint scroll. */
 export const recordWords = (save: Save, answers: readonly WordAnswer[], day: number): Save => {
   const played = { ...markPlayed(save, day), wordLab: learn(save.wordLab, answers) };
-  const right = answers.filter((answer) => answer.right).length;
-  if (played.daily.words || right < WORDS_PRIZE_SCORE) return played;
+  if (played.daily.words || rightCount(answers) < WORDS_PRIZE_SCORE) return played;
   return { ...played, scrolls: gain(played.scrolls, 1), daily: { ...played.daily, words: true } };
 };
 

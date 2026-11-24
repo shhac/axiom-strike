@@ -14,8 +14,9 @@ import { SumPanel } from "./sums/SumPanel";
 import { useHint } from "./useHint";
 import { randomSeed } from "./seed";
 
-/** The style or the key, as one of the things in the chest. A pet is shown on its own, above them. */
-const Prize = ({ prize, land }: { prize: ChestPrize; land: LandId }) => {
+type Thing = Exclude<ChestPrize, "pet">;
+
+const Prize = ({ prize, land }: { prize: Thing; land: LandId }) => {
   if (prize === "style") {
     return (
       <span data-prize="style">
@@ -27,16 +28,13 @@ const Prize = ({ prize, land }: { prize: ChestPrize; land: LandId }) => {
       </span>
     );
   }
-  if (prize === "key") {
-    return (
-      <span data-prize="key">
-        <img src={icon("key")} alt="" />
-        <b>Cave key</b>
-        <small>opens this land's cave</small>
-      </span>
-    );
-  }
-  return null;
+  return (
+    <span data-prize="key">
+      <img src={icon("key")} alt="" />
+      <b>Cave key</b>
+      <small>opens this land's cave</small>
+    </span>
+  );
 };
 
 /** A pet is met, not just handed over: it bounds in where the open chest would be and is introduced by name. */
@@ -48,14 +46,30 @@ const NewFriend = ({ land }: { land: LandId }) => (
   </div>
 );
 
+/** A pet takes the open chest's place at the top of the panel; a style or a key is listed with the other things. */
+const Headline = ({ prize, land }: { prize: ChestPrize; land: LandId }) => {
+  if (prize === "pet") {
+    return (
+      <>
+        <h1>A new friend!</h1>
+        <NewFriend land={land} />
+      </>
+    );
+  }
+  return (
+    <>
+      <img class="chest-open" src={icon("chest_open")} alt="" />
+      <h1>Treasure!</h1>
+    </>
+  );
+};
+
 const Opened = ({ prize, land }: { prize: ChestPrize; land: LandId }) => (
   <div class="overlay" data-result="chest">
     <div class="result">
-      {prize !== "pet" && <img class="chest-open" src={icon("chest_open")} alt="" />}
-      <h1>{prize === "pet" ? "A new friend!" : "Treasure!"}</h1>
-      {prize === "pet" && <NewFriend land={land} />}
+      <Headline prize={prize} land={land} />
       <div class="reward-items">
-        <Prize prize={prize} land={land} />
+        {prize !== "pet" && <Prize prize={prize} land={land} />}
         <span>
           <img src={icon("potion")} alt="" />
           <b>+1 Potion</b>

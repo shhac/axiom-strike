@@ -651,6 +651,12 @@ const swapUnspent = (state: BattleState, target: number): BattleState => {
   return { ...state, seed, hand, nextId: state.nextId + places.length };
 };
 
+/** Tiles thrown away before a right call have been judged; they must not count against the next one. */
+const forgiveWasted = (state: BattleState): BattleState => ({
+  ...state,
+  hand: state.hand.map((tile) => (tile.wasted ? { ...tile, wasted: false } : tile)),
+});
+
 /**
  * The player says the aimed number cannot be made from the tiles left. Being right trades those
  * tiles for new ones that can make it, without the monsters getting a turn, and may be done again:
@@ -665,9 +671,7 @@ const impossible = (state: BattleState): Step[] => {
   const cleared: BattleState = { ...lastState(clear(state), state), hintPath: null };
   if (wasMakeable(cleared)) return [{ state: { ...cleared, called: true }, event: { type: "lookAgain" } }];
   const swapped = unspentPlaces(cleared).length;
-  // Tiles thrown away before a right call have been judged; they must not count against the next one.
-  const judged = { ...cleared, hand: cleared.hand.map((tile) => (tile.wasted ? { ...tile, wasted: false } : tile)) };
-  return [{ state: swapUnspent(judged, target), event: { type: "sharpEye", swapped } }];
+  return [{ state: swapUnspent(forgiveWasted(cleared), target), event: { type: "sharpEye", swapped } }];
 };
 
 const potion = (state: BattleState): Step[] => {

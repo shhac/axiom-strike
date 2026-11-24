@@ -8,7 +8,7 @@ import { act } from "./act";
 
 const EquationRow = ({ state }: { state: BattleState }) => (
   <div class="row row-equation">
-    <CallOrPass called={state.called} attacks={attacksLanding(state).length} />
+    <CallOrPass called={state.called} risky={attacksLanding(state).length > 0} />
     <EquationBox board={state} total={equationTotal(state)} target={aimTarget(state)} />
     <button class="btn btn-icon" aria-label="Undo" onClick={act("tile_undo", { type: "undo" })}>
       <img src={icon("undo")} alt="" />
@@ -20,7 +20,7 @@ const EquationRow = ({ state }: { state: BattleState }) => (
 const PASS_ARMS_AFTER_MS = 700;
 
 /** The button says what passing costs: new numbers always, and a hit when a monster is ready to attack. */
-const Pass = ({ attacks }: { attacks: number }) => {
+const Pass = ({ risky }: { risky: boolean }) => {
   const shownAt = useRef(performance.now());
   const endTurn = () => {
     if (performance.now() - shownAt.current < PASS_ARMS_AFTER_MS) return;
@@ -28,24 +28,24 @@ const Pass = ({ attacks }: { attacks: number }) => {
   };
   return (
     <button
-      class={`btn btn-call btn-pass ${attacks > 0 ? "is-risky" : ""}`}
+      class={`btn btn-call btn-pass ${risky ? "is-risky" : ""}`}
       data-action="pass"
-      aria-label={attacks > 0 ? "Pass: new numbers, and the monsters attack" : "Pass: new numbers"}
+      aria-label={risky ? "Pass: new numbers, and the monsters attack" : "Pass: new numbers"}
       onClick={endTurn}
     >
       <span class="pass-title">
-        <img src={icon(attacks > 0 ? "claw" : "hourglass")} alt="" />
+        <img src={icon(risky ? "claw" : "hourglass")} alt="" />
         Pass
       </span>
-      <span class="pass-cost">{attacks > 0 ? "They attack!" : "New numbers"}</span>
+      <span class="pass-cost">{risky ? "They attack!" : "New numbers"}</span>
     </button>
   );
 };
 
 /** A wrong call uses up the turn's call, and its button becomes the way to give the turn away. */
-const CallOrPass = ({ called, attacks }: { called: boolean; attacks: number }) =>
+const CallOrPass = ({ called, risky }: { called: boolean; risky: boolean }) =>
   called ? (
-    <Pass attacks={attacks} />
+    <Pass risky={risky} />
   ) : (
     <button
       class="btn btn-call"

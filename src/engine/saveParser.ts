@@ -1,5 +1,6 @@
 import { perLand, REGIONS, type LandId } from "./levels";
 import {
+  chestGiving,
   DEFAULT_SETTINGS,
   DIFFICULTIES,
   EMPTY_SAVE,
@@ -55,10 +56,6 @@ const settings = (value: unknown): Settings => {
     reading: oneOf(value.reading, READING_LEVELS, "auto"),
   };
 };
-
-/** How many of a land's chests must be open for its tile style and its pet to have been won. */
-const PET_CHEST = 1;
-const STYLE_CHEST = 3;
 
 const land = (value: unknown): LandId | null => REGIONS.find((region) => region.id === value)?.id ?? null;
 
@@ -118,8 +115,8 @@ export const parseSave = (raw: string | null): Save => {
     read: list(parsed.read, isIndex),
     heroAt: typeof parsed.heroAt === "string" ? parsed.heroAt : null,
     chests,
-    pet: worn(parsed.pet, PET_CHEST),
-    tileStyle: worn(parsed.tileStyle, STYLE_CHEST),
+    pet: worn(parsed.pet, chestGiving("pet")),
+    tileStyle: worn(parsed.tileStyle, chestGiving("style")),
     beaten: counts(parsed.beaten, 1, 1e6),
     streak: streak(parsed.streak),
     daily: daily(parsed.daily),

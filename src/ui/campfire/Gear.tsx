@@ -1,6 +1,6 @@
 import { PETS, STYLE_NAMES } from "../../content/gear";
 import { REGIONS, type LandId } from "../../engine/levels";
-import { ownsPet, ownsStyle, wear, type Save } from "../../engine/progress";
+import { chestGiving, ownsPet, ownsStyle, wear, type ChestPrize, type Save } from "../../engine/progress";
 import { icon } from "../assets";
 import { playSfx } from "../audio";
 import { CampButton, Num, Pet } from "../common";
@@ -33,8 +33,10 @@ const Choice = ({ picked, owned, label, where, name, pick, children }: ChoicePro
   </button>
 );
 
-const chestOf = (land: LandId, which: string) =>
-  `${which} ${REGIONS.find((region) => region.id === land)?.label ?? ""} chest`;
+const ORDINALS = ["1st", "2nd", "3rd"];
+
+const chestOf = (land: LandId, prize: ChestPrize) =>
+  `${ORDINALS[chestGiving(prize) - 1] ?? ""} ${REGIONS.find((region) => region.id === land)?.label ?? ""} chest`;
 
 /** The pet that follows the hero and the look of the number tiles, from what the chests have given. */
 export const Gear = ({ save, back }: { save: Save; back: () => void }) => {
@@ -54,7 +56,7 @@ export const Gear = ({ save, back }: { save: Save; back: () => void }) => {
             picked={save.pet === id}
             owned={ownsPet(save, id)}
             label={PETS[id].name}
-            where={chestOf(id, "1st")}
+            where={chestOf(id, "pet")}
             name={`pet-${id}`}
             pick={wearing({ pet: id })}
           >
@@ -80,7 +82,7 @@ export const Gear = ({ save, back }: { save: Save; back: () => void }) => {
             picked={save.tileStyle === id}
             owned={ownsStyle(save, id)}
             label={STYLE_NAMES[id]}
-            where={chestOf(id, "3rd")}
+            where={chestOf(id, "style")}
             name={`tiles-${id}`}
             pick={wearing({ tileStyle: id })}
           >

@@ -3,7 +3,7 @@ import { PETS, petLine } from "../../content/gear";
 import type { LandId } from "../../engine/levels";
 import { playSfx } from "../audio";
 import { PetBuddy } from "../PetBuddy";
-import { petFeels, petMood } from "../petMood";
+import { petCheers, petFeels, petMood } from "../petMood";
 import { press } from "../press";
 
 const LINE_MS = 2200;
@@ -21,7 +21,7 @@ export const CampPet = ({ land }: { land: LandId }) => {
 
   const pat = () => {
     playSfx("star", 0.7);
-    petFeels("cheer", 700);
+    petCheers();
     setLine(petLine(PETS[land].name, taps));
     setTaps(taps + 1);
   };

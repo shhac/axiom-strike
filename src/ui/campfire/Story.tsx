@@ -5,7 +5,7 @@ import { createRng } from "../../engine/rng";
 import { icon } from "../assets";
 import { playSfx } from "../audio";
 import { MapButton, Prizes } from "../common";
-import { petFeels } from "../petMood";
+import { petCheers, petDances } from "../petMood";
 import { save, updateSave } from "../save";
 import { useReadingClock } from "./readingClock";
 
@@ -129,8 +129,8 @@ export const Story = ({ passage, passageId, seed, another }: StoryProps) => {
     updateSave((current) => finishReading(current, passageId, picked.kind, spent));
     const reward = rewardFor(picked.kind, wasRead(passage, spent));
     const items = reward.potions + reward.scrolls;
-    if (picked.kind === "correct") petFeels("dance", 1900);
-    if (picked.kind === "almost") petFeels("cheer", 700);
+    if (picked.kind === "correct") petDances();
+    if (picked.kind === "almost") petCheers();
     playSfx(items > 0 ? "reward" : "tile_undo");
     // A second chime as the second prize pops in.
     if (items > 1) setTimeout(() => playSfx("star"), 260);
