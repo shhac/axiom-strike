@@ -30,14 +30,14 @@ Needs a JDK and the Android SDK (platform 36, build-tools 36). With Homebrew:
 brew install openjdk@21 && brew install --cask android-commandlinetools
 export JAVA_HOME=/opt/homebrew/opt/openjdk@21 ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
 sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
-pnpm android    # writes android/app/build/outputs/apk/debug/axiom-strike-v0.6.0-debug.apk
+pnpm android    # writes android/app/build/outputs/apk/debug/axiom-strike-v0.7.0-debug.apk
 ```
 
-Install on a connected phone with `$ANDROID_HOME/platform-tools/adb install -r android/app/build/outputs/apk/debug/axiom-strike-v0.6.0-debug.apk`.
+Install on a connected phone with `$ANDROID_HOME/platform-tools/adb install -r android/app/build/outputs/apk/debug/axiom-strike-v0.7.0-debug.apk`.
 
 ### Release build
 
-APK file names carry the version from `versionName`. `pnpm android:release` writes a signed APK (`android/app/build/outputs/apk/release/axiom-strike-v0.6.0.apk`) and a Play Store bundle (`android/app/build/outputs/bundle/release/app-release.aab`).
+APK file names carry the version from `versionName`. `pnpm android:release` writes a signed APK (`android/app/build/outputs/apk/release/axiom-strike-v0.7.0.apk`) and a Play Store bundle (`android/app/build/outputs/bundle/release/app-release.aab`).
 
 Signing is read from `android/keystore.properties`, which is not committed:
 
