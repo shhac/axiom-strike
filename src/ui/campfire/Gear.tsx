@@ -54,7 +54,7 @@ export const Gear = ({ save, back }: { save: Save; back: () => void }) => {
             picked={save.pet === id}
             owned={ownsPet(save, id)}
             label={PETS[id].name}
-            where={chestOf(id, "3rd")}
+            where={chestOf(id, "1st")}
             name={`pet-${id}`}
             pick={wearing({ pet: id })}
           >
@@ -80,7 +80,7 @@ export const Gear = ({ save, back }: { save: Save; back: () => void }) => {
             picked={save.tileStyle === id}
             owned={ownsStyle(save, id)}
             label={STYLE_NAMES[id]}
-            where={chestOf(id, "1st")}
+            where={chestOf(id, "3rd")}
             name={`tiles-${id}`}
             pick={wearing({ tileStyle: id })}
           >

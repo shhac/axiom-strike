@@ -3,6 +3,7 @@ import { cheerFor, leadOf, tauntFor, MONSTER_NAMES } from "../content/taunts";
 import type { BattleEvent, BattleState } from "../engine/battle";
 import type { HeroPose } from "./assets";
 import { playMusic, playSfx } from "./audio";
+import { petFeels } from "./petMood";
 import { burst, enemyNode, find, flash, float, heroNode, knockOut, lunge, shake, wait } from "./motion";
 import { REFUSALS } from "./sums/SumPanel";
 
@@ -108,6 +109,7 @@ const strikeFx = async (event: EventOf<"strike">) => {
       float(combo, target, "good", -1.6);
     }
     if (!event.exact) float("So close!", target, "miss", -1.6);
+    if (event.exact) petFeels("cheer", 700);
   } else {
     playSfx("miss", 0.8);
     float("MISS", target, "miss");
@@ -119,6 +121,7 @@ const strikeFx = async (event: EventOf<"strike">) => {
 const parryFeedback = (event: EventOf<"parry">, target: HTMLElement | null) => {
   if (event.exact) {
     playSfx("parry");
+    petFeels("cheer", 700);
     float("BLOCKED!", target, "good", -1.6);
     float(`-${event.counter}`, target, "damage");
     shake(target);
@@ -142,12 +145,14 @@ const enemyAttackFx = async (event: EventOf<"enemyAttack">) => {
   const hero = heroNode();
   if (event.damage > 0) {
     heroPose.value = "hurt";
+    petFeels("scared", 1100);
     playSfx("hero_hurt");
     shake(hero);
     shake(find(".stage"), 260);
     float(`-${event.damage}`, hero, "hurt");
   } else {
     playSfx("block");
+    petFeels("cheer", 700);
     float("BLOCKED!", hero, "good");
   }
   await wait(520);
@@ -156,6 +161,7 @@ const enemyAttackFx = async (event: EventOf<"enemyAttack">) => {
 
 const wonFx = (event: EventOf<"won">) => {
   heroPose.value = "victory";
+  petFeels("dance");
   playMusic(null);
   playSfx("jingle_victory");
   // One ding per star, in time with the stars popping in on the result panel.
@@ -165,6 +171,7 @@ const wonFx = (event: EventOf<"won">) => {
 /** The hero celebrates for `ms`, and for whatever `then` adds, before settling again. */
 const cheer = async (ms: number, then?: () => Promise<void>) => {
   heroPose.value = "victory";
+  petFeels("cheer", 700);
   await wait(ms);
   await then?.();
   heroPose.value = "idle";
@@ -271,6 +278,7 @@ export const afterEvent = async (event: BattleEvent, state: BattleState) => {
       playMusic(null);
       playSfx("jingle_defeat");
       heroPose.value = "hurt";
+      petFeels("sad");
       return;
     case "rejected":
       playSfx("error", 0.7);

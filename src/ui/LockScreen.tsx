@@ -5,14 +5,16 @@ import { isUnlocked, lockLevel, newLock, pickDial, redealLock, tryDial } from ".
 import { CHEST_PRIZES, openChest, type ChestPrize } from "../engine/progress";
 import { icon } from "./assets";
 import { playMusic, playSfx } from "./audio";
-import { MapButton, Num, Pet } from "./common";
+import { MapButton, Num } from "./common";
 import { goTo, visiting } from "./nav";
+import { PetBuddy } from "./PetBuddy";
 import { press } from "./press";
 import { save, updateSave } from "./save";
 import { SumPanel } from "./sums/SumPanel";
 import { useHint } from "./useHint";
 import { randomSeed } from "./seed";
 
+/** The style or the key, as one of the things in the chest. A pet is shown on its own, above them. */
 const Prize = ({ prize, land }: { prize: ChestPrize; land: LandId }) => {
   if (prize === "style") {
     return (
@@ -34,20 +36,24 @@ const Prize = ({ prize, land }: { prize: ChestPrize; land: LandId }) => {
       </span>
     );
   }
-  return (
-    <span data-prize="pet">
-      <Pet land={land} class="prize-pet" />
-      <b>{PETS[land].name}</b>
-      <small>a pet to keep you company</small>
-    </span>
-  );
+  return null;
 };
+
+/** A pet is met, not just handed over: it bounds in where the open chest would be and is introduced by name. */
+const NewFriend = ({ land }: { land: LandId }) => (
+  <div class="friend" data-prize="pet">
+    <PetBuddy land={land} mood="dance" class="friend-pet" />
+    <b>{PETS[land].name} wants to come with you!</b>
+    <small>It will cheer you on in battle and wait for you by the campfire.</small>
+  </div>
+);
 
 const Opened = ({ prize, land }: { prize: ChestPrize; land: LandId }) => (
   <div class="overlay" data-result="chest">
     <div class="result">
-      <img class="chest-open" src={icon("chest_open")} alt="" />
-      <h1>Treasure!</h1>
+      {prize !== "pet" && <img class="chest-open" src={icon("chest_open")} alt="" />}
+      <h1>{prize === "pet" ? "A new friend!" : "Treasure!"}</h1>
+      {prize === "pet" && <NewFriend land={land} />}
       <div class="reward-items">
         <Prize prize={prize} land={land} />
         <span>

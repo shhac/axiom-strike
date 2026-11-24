@@ -4,6 +4,7 @@ import { wordQuiz, WORD_ROUNDS, type WordAnswer, type WordQuestion } from "../..
 import { icon } from "../assets";
 import { CampButton, Pips } from "../common";
 import { playSfx } from "../audio";
+import { petFeels } from "../petMood";
 import { press } from "../press";
 import { localDay, save, updateSave } from "../save";
 import { randomSeed } from "../seed";
@@ -86,12 +87,14 @@ export const Words = ({ back }: { back: () => void }) => {
     updateSave((current) => recordWords(current, given, localDay()));
     setPrize(save.value.scrolls > before);
     playSfx("jingle_victory");
+    petFeels("dance", 1900);
   };
 
   const answer = (option: string) => {
     if (!question || picked) return;
     const correct = option === question.answer;
     const given = [...answers, { part: question.part.part, right: correct }];
+    if (correct) petFeels("cheer", 700);
     playSfx(correct ? "reward" : "miss");
     setPicked(option);
     setRight(right + (correct ? 1 : 0));

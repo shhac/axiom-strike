@@ -26,7 +26,7 @@ The first version of this game was built in Defold and is preserved as the git t
 ### What the player sees
 
 - The hero on the left, up to three monsters on the right.
-- Sometimes a small pet beside the hero, once one has been won from a chest. It is company only.
+- A small pet beside the hero, once one has been won from a chest. It changes nothing about the fight, but it takes part: it hops with a star over its head for an exact strike, a block or a knockout, cowers when the hero is hurt, shivers with a `!` while an attack is about to land, dances at a win and droops at a loss.
 - Above each monster, two tappable chips:
   - **Weakness** (sword): the number that hurts it.
   - **Attack** (claw marks): the number it will hit for, and how many turns until it lands.
@@ -164,6 +164,7 @@ The campfire is a camp with five things to do, each a big button, and a flame sh
 - The first run each day with four or more right wins a hint scroll.
 - **Monster book**: a page for every monster (three ranks of five families, and the lucky one). An unbeaten monster is a shadow; a beaten one shows its picture, name, a silly line with some real maths in it, and how many have been beaten. Ten beaten gilds the page.
 - **Pets and tiles**: choose the pet that follows the hero and the look of the number tiles, from what the star chests have given. Things not won yet say which chest they are in.
+- **The pet at camp**: the pet in use waits in the corner by the fire on every camp screen. Tapping it gets a hop and a few words ("Blobling is happy to see you!"). It hops for a right answer in the word lab and a near answer to a story, and dances for a right story answer and a finished word lab.
 
 **Days in a row.** Finishing a battle or a practice run or a word lab marks the day (the player's own local day) as played. The next day adds one; after a gap the count is halved, never wiped. The flame is shown on the title screen and at the camp and grows at 3 and 7 days.
 
@@ -221,7 +222,7 @@ Opened from the title, the map and the pause button: music on/off, sounds on/off
 - Six regions of five levels each (30 levels). The fifth level of a region ends with its boss.
 - **The map heals.** A land with no stars is drawn three-quarters grey and gains its colour star by star. At 15 stars its title turns gold with a crown and stars twinkle over it.
 - **Star trail.** Stars newly won are held back from the land's counter until the map is next opened, then fly from the level that earned them into the counter, which counts up as the colour comes in.
-- **Star chests.** Under each land's title is its chest, showing progress to the next one: 5, 10 and 15 stars in that land. When it is ready it glows; tapping it opens its lock. The three chests give, in order, a tile style in the land's colours, the key to the land's cave, and a pet (a small tame one of the land's monsters), each with a potion and a hint scroll. A new style or pet is put to use at once.
+- **Star chests.** Under each land's title is its chest, showing progress to the next one: 5, 10 and 15 stars in that land. When it is ready it glows; tapping it opens its lock. The three chests give, in order, a pet (a small tame one of the land's monsters), the key to the land's cave, and a tile style in the land's colours, each with a potion and a hint scroll. The pet comes first so that every child meets one early: five stars is two good levels. A new style or pet is put to use at once. The pet's chest opens on "A new friend!": the pet bounds in, dancing, and is introduced by name.
 - **The lock.** Three dials, each a number, and one hand of eight tiles that holds a two-number answer for every dial on separate tiles, using the numbers of the land's first, third or fifth level. Pick a dial, build its number, tap Unlock: right opens it and uses the tiles up, wrong hands them back. There is no timer and no way to fail; "New numbers" deals again for the dials still shut.
 - **Caves ("Impossible or not?").** Beside the chest is the land's cave, opened by its key. Eight riddles: five tiles, a number and the land's signs, and the question "Can these make it?" with **Yes!** and **Impossible!**. The truth is the solver's over all five tiles, so a long answer is never marked wrong; about half are possible. After each answer the game shows one way to make the number, or says there is none. Eight right is three stars, six two, four one; the stars are kept beside the level stars and the first clear gives a potion and a scroll.
 - Stars earned are saved on the device and shown on the map; replaying never lowers them.

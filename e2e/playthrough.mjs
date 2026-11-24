@@ -458,6 +458,7 @@ const JOURNEY = [
 const RICH_SAVE = {
   stars: { add_1: 3, add_2: 3, add_3: 3, add_4: 3, add_5: 3, sub_1: 3, sub_2: 3, mul_1: 3 },
   chests: { add: 1 },
+  pet: "add",
   beaten: { add_minion: 12, add_boss: 1 },
   heroAt: "add_5",
   seen: ["add", "sub", "mul", "div", "big", "frac", "add_boss"],
@@ -578,6 +579,10 @@ const useTheCamp = async ({ page, problems, shot }) => {
   await tap(page, "[data-action=campfire]");
   await onScreen(page, "campfire");
   await checkScreen(page, problems, shot, { name: "camp", where: "camp", settleMs: 500 });
+  await tap(page, "[data-action=pet]");
+  expectThat(problems, await appears(page, ".camp-pet-says"), "the pet said nothing when tapped");
+  expectThat(problems, await appears(page, "[data-pet=cheer]"), "the pet did not hop when tapped");
+  await checkScreen(page, problems, shot, { name: "camp_pet", where: "camp with the pet tapped", settleMs: 200 });
 
   await tap(page, "[data-camp=book]");
   await checkScreen(page, problems, shot, { name: "camp_book", where: "monster book", settleMs: 300 });
@@ -586,10 +591,20 @@ const useTheCamp = async ({ page, problems, shot }) => {
 
   await tap(page, "[data-camp=gear]");
   await checkScreen(page, problems, shot, { name: "camp_gear", where: "pets and tiles", settleMs: 300 });
-  await tap(page, "[data-gear=tiles-classic]");
-  expectThat(problems, (await readSave(page)).tileStyle === null, "picking classic tiles did not change the save");
-  await tap(page, "[data-gear=tiles-add]");
-  expectThat(problems, (await readSave(page)).tileStyle === "add", "picking a won tile style did not change the save");
+  await tap(page, "[data-gear=pet-none]");
+  expectThat(problems, (await readSave(page)).pet === null, "picking no pet did not change the save");
+  expectThat(
+    problems,
+    (await page.locator("[data-action=pet]").count()) === 0,
+    "the camp showed a pet with none picked",
+  );
+  await tap(page, "[data-gear=pet-add]");
+  expectThat(problems, (await readSave(page)).pet === "add", "picking a won pet did not change the save");
+  expectThat(
+    problems,
+    await page.locator("[data-gear=tiles-add]").isDisabled(),
+    "a tile style was on offer before its chest was opened",
+  );
   await tap(page, "[data-action=camp]");
 
   await tap(page, "[data-camp=words]");

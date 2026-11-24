@@ -1,0 +1,152 @@
+/* ---------- The pet as a character: battle, camp and the chest it comes from ---------- */
+
+/* Moods move the wrapper with translate, rotate and scale, because the sprite inside is flipped with transform. */
+.buddy {
+  position: relative;
+  transform-origin: 50% 100%;
+}
+
+.buddy .pet {
+  width: 100%;
+  height: 100%;
+}
+
+.buddy-emote {
+  position: absolute;
+  top: -0.9rem;
+  right: -0.2rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  filter: drop-shadow(0 0.1rem 0 var(--ink));
+  animation: pop 260ms ease-out;
+  pointer-events: none;
+}
+
+.buddy-alarm {
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+}
+
+.buddy.is-cheer {
+  animation: buddy-hop 340ms ease-out 2;
+}
+
+.buddy.is-dance {
+  animation: buddy-dance 640ms ease-in-out infinite;
+}
+
+.buddy.is-worried {
+  animation: buddy-shiver 260ms ease-in-out infinite alternate;
+}
+
+.buddy.is-scared {
+  scale: 0.9;
+  animation: buddy-shiver 90ms linear infinite alternate;
+}
+
+.buddy.is-sad {
+  scale: 1 0.86;
+  filter: saturate(0.6);
+}
+
+@keyframes buddy-hop {
+  50% {
+    translate: 0 -1.1rem;
+  }
+}
+
+@keyframes buddy-dance {
+  25% {
+    translate: -0.25rem -0.7rem;
+    rotate: -9deg;
+  }
+
+  75% {
+    translate: 0.25rem -0.7rem;
+    rotate: 9deg;
+  }
+}
+
+@keyframes buddy-shiver {
+  from {
+    translate: -0.09rem 0;
+  }
+
+  to {
+    translate: 0.09rem 0;
+  }
+}
+
+.hero-pet {
+  position: absolute;
+  left: max(0.3rem, env(safe-area-inset-left));
+  bottom: 0.5rem;
+  width: 4.2rem;
+  height: 4.2rem;
+  z-index: 1;
+}
+
+/* By the fire in the camp art, which fills the left of the screen. */
+.camp-pet {
+  position: absolute;
+  left: max(1.2rem, env(safe-area-inset-left));
+  bottom: 1rem;
+  width: 5rem;
+  height: 5rem;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.camp-pet .buddy {
+  width: 100%;
+  height: 100%;
+}
+
+.camp-pet-says {
+  position: absolute;
+  left: 0;
+  bottom: 6.2rem;
+  width: max-content;
+  max-width: 11rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.6rem;
+  background: var(--cream);
+  color: var(--ink);
+  font-size: 0.75rem;
+  text-align: left;
+  animation: pop 200ms ease-out;
+  pointer-events: none;
+}
+
+/* A pet won from a chest bounds in, then keeps dancing. */
+.friend {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  animation: friend-arrive 700ms cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+
+.friend-pet {
+  width: 4.6rem;
+  height: 4.6rem;
+}
+
+/* The dance says enough here, and the star would sit on the headline. */
+.friend .buddy-emote {
+  display: none;
+}
+
+.friend b {
+  font-size: 1.1rem;
+  color: var(--gold);
+}
+
+@keyframes friend-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(2.5rem) scale(0.2);
+  }
+}

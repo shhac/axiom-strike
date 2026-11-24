@@ -17,6 +17,7 @@ import {
 } from "../engine/progress";
 import { battleDifficulty, castResult, castScore } from "../engine/skill";
 import { playMusic } from "./audio";
+import { petFeels } from "./petMood";
 import { afterEvent, beforeEvent, heroPose, hush, showToast } from "./fx";
 import { localDay, save, updateSave } from "./save";
 import { randomSeed } from "./seed";
@@ -120,6 +121,7 @@ export const startBattle = (level: Level, seed = randomSeed()) => {
   hush();
   session.difficulty = battleDifficulty(level, tier);
   heroPose.value = "idle";
+  petFeels("calm");
   playMusic("music_battle");
   battle.value = steps[0].state;
   void play(steps);

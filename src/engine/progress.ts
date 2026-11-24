@@ -198,7 +198,7 @@ export const addPotion = (save: Save): Save => ({ ...save, potions: gain(save.po
 export const GATES = [5, 10, 15] as const;
 
 /** What each chest holds besides a potion and a scroll, in the order they are opened. */
-export const CHEST_PRIZES = ["style", "key", "pet"] as const;
+export const CHEST_PRIZES = ["pet", "key", "style"] as const;
 export type ChestPrize = (typeof CHEST_PRIZES)[number];
 
 export const landStars = (save: Save, land: LandId): number =>
@@ -212,9 +212,9 @@ export const chestReady = (save: Save, land: LandId): boolean => {
   return gate !== null && landIsOpen(save, land) && landStars(save, land) >= gate;
 };
 
-export const ownsStyle = (save: Save, land: LandId) => save.chests[land] >= 1;
+export const ownsStyle = (save: Save, land: LandId) => save.chests[land] >= 3;
 export const hasCaveKey = (save: Save, land: LandId) => save.chests[land] >= 2;
-export const ownsPet = (save: Save, land: LandId) => save.chests[land] >= 3;
+export const ownsPet = (save: Save, land: LandId) => save.chests[land] >= 1;
 
 /** Opens a land's next chest. A new tile style or pet is put to use straight away. */
 export const openChest = (save: Save, land: LandId): Save => {

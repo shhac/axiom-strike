@@ -5,6 +5,7 @@ import { createRng } from "../engine/rng";
 import { icon } from "./assets";
 import { playMusic, playSfx } from "./audio";
 import { Book } from "./campfire/Book";
+import { CampPet } from "./campfire/CampPet";
 import { Gear } from "./campfire/Gear";
 import { Hub } from "./campfire/Hub";
 import { PracticeGame } from "./campfire/Practice";
@@ -69,6 +70,7 @@ export const CampfireScreen = () => {
         <h1>Camp</h1>
         <Bag />
       </header>
+      {save.value.pet && <CampPet land={save.value.pet} />}
       {activity === null && <Hub save={save.value} open={open} />}
       {activity === "story" && <StoryTime back={back} />}
       {activity === "book" && <Book save={save.value} back={back} />}

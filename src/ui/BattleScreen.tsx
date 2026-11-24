@@ -2,10 +2,20 @@ import { heroStrip } from "./assets";
 import { ControlPanel } from "./battle/ControlPanel";
 import { Result } from "./battle/Result";
 import { EnemyView, Hud } from "./battle/Stage";
-import { Pet, Sprite } from "./common";
+import { attacksLanding, type BattleState } from "../engine/battle";
+import type { LandId } from "../engine/levels";
+import { Sprite } from "./common";
 import { banner, heroPose, speech, toast } from "./fx";
+import { PetBuddy } from "./PetBuddy";
+import { petMood } from "./petMood";
 import { save } from "./save";
 import { battle, busy } from "./store";
+
+/** The pet watches the fight: it frets while an attack is about to land, unless something has just happened. */
+const BattlePet = ({ land, state }: { land: LandId; state: BattleState }) => {
+  const fretting = petMood.value === "calm" && state.phase === "player" && attacksLanding(state).length > 0;
+  return <PetBuddy land={land} mood={fretting ? "worried" : petMood.value} class="hero-pet" />;
+};
 
 export const BattleScreen = () => {
   const state = battle.value;
@@ -21,7 +31,7 @@ export const BattleScreen = () => {
             class={`pose-${heroPose.value}`}
           />
         </div>
-        {save.value.pet && <Pet land={save.value.pet} class="hero-pet" />}
+        {save.value.pet && <BattlePet land={save.value.pet} state={state} />}
         <div class={`enemies ${state.aim ? "has-aim" : ""}`}>
           {state.enemies.map((enemy) => (
             <EnemyView key={enemy.id} enemy={enemy} state={state} />

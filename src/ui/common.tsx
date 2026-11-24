@@ -32,11 +32,22 @@ export const Num = ({ value, class: className = "" }: { value: number | string; 
   );
 };
 
-/** A tamed small monster. It faces the way the hero does, so the strip is flipped. */
-export const Pet = ({ land, class: className = "" }: { land: LandId; class?: string }) => {
+/** A tamed small monster. It faces the way the hero does, so the strip is flipped. `upset` is its frightened look. */
+export const Pet = ({
+  land,
+  class: className = "",
+  upset = false,
+}: {
+  land: LandId;
+  class?: string;
+  upset?: boolean;
+}) => {
   const pet = PETS[land];
   return (
-    <Sprite class={`pet ${pet.golden ? "is-golden" : ""} ${className}`} strip={enemyStrip(pet.family, "minion")} />
+    <Sprite
+      class={`pet ${pet.golden ? "is-golden" : ""} ${className}`}
+      strip={enemyStrip(pet.family, "minion", upset)}
+    />
   );
 };
 

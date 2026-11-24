@@ -57,8 +57,8 @@ const settings = (value: unknown): Settings => {
 };
 
 /** How many of a land's chests must be open for its tile style and its pet to have been won. */
-const STYLE_CHEST = 1;
-const PET_CHEST = 3;
+const PET_CHEST = 1;
+const STYLE_CHEST = 3;
 
 const land = (value: unknown): LandId | null => REGIONS.find((region) => region.id === value)?.id ?? null;
 

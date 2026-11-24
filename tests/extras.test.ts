@@ -159,14 +159,14 @@ describe("target practice", () => {
 });
 
 describe("star chests", () => {
-  it("open at five, ten and fifteen stars and give a style, a key and a pet in turn", () => {
+  it("open at five, ten and fifteen stars and give a pet, a key and a style in turn", () => {
     expect(chestReady(withStars({ add_1: 3, add_2: 1 }), "add")).toBe(false);
     const five = withStars({ add_1: 3, add_2: 2 });
     expect(chestReady(five, "add")).toBe(true);
 
     const first = openChest(five, "add");
-    expect(first).toMatchObject({ potions: 1, scrolls: 1, tileStyle: "add", pet: null });
-    expect([ownsStyle(first, "add"), hasCaveKey(first, "add"), ownsPet(first, "add")]).toEqual([true, false, false]);
+    expect(first).toMatchObject({ potions: 1, scrolls: 1, tileStyle: null, pet: "add" });
+    expect([ownsPet(first, "add"), hasCaveKey(first, "add"), ownsStyle(first, "add")]).toEqual([true, false, false]);
     expect(nextGate(first, "add")).toBe(10);
     expect(openChest(first, "add")).toBe(first);
 
@@ -238,8 +238,8 @@ describe("saving the new progress", () => {
     const played: Save = {
       ...recordWin(markPlayed(EMPTY_SAVE, 200), findLevel("add_1"), 3),
       chests: { ...EMPTY_SAVE.chests, add: 3, frac: 1 },
-      pet: "add",
-      tileStyle: "frac",
+      pet: "frac",
+      tileStyle: "add",
       beaten: { add_minion: 4, lucky: 1 },
       practiceBest: 12,
       daily: { day: 200, practice: true, words: false },
@@ -251,8 +251,8 @@ describe("saving the new progress", () => {
     expect(junk).toMatchObject({ pet: null, streak: EMPTY_SAVE.streak, daily: EMPTY_SAVE.daily });
     // A pet or style whose chest was never opened is not kept.
     expect(parseSave(JSON.stringify({ pet: "sub", tileStyle: "sub", chests: { sub: 1 } }))).toMatchObject({
-      pet: null,
-      tileStyle: "sub",
+      pet: "sub",
+      tileStyle: null,
     });
   });
 });

@@ -540,15 +540,6 @@
   transform: none;
 }
 
-.hero-pet {
-  position: absolute;
-  left: max(0.3rem, env(safe-area-inset-left));
-  bottom: 0.5rem;
-  width: 4.2rem;
-  height: 4.2rem;
-  z-index: 1;
-}
-
 /* On squarer screens a land is narrower, so its title is set smaller to keep the star count in view. */
 @media (max-aspect-ratio: 17/9) {
   .region-title {
